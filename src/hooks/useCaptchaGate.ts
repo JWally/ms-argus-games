@@ -21,7 +21,7 @@ export function useCaptchaGate() {
     setState((s) => ({ ...s, loading: true, error: null }));
 
     return new Promise((resolve) => {
-      fetch(`${API_URL}/session`, {
+      fetch(`${API_URL}/v1/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ merchantId: 'argus-arcade' }),
