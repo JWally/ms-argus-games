@@ -8,33 +8,44 @@ import {
   SecurityPolicyProtocol,
   HttpVersion,
   PriceClass,
+  AllowedMethods,
   CachePolicy,
   CacheHeaderBehavior,
   CacheCookieBehavior,
   CacheQueryStringBehavior,
   OriginAccessIdentity,
+  OriginRequestPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
-import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
+import { S3Origin, HttpOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { PolicyStatement, CanonicalUserPrincipal } from 'aws-cdk-lib/aws-iam';
 import { BucketDeployment, Source, CacheControl } from 'aws-cdk-lib/aws-s3-deployment';
 import { HostedZone, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
+import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambdaRuntime from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as eventTargets from 'aws-cdk-lib/aws-events-targets';
 
 interface GamesStackProps extends cdk.StackProps {
   stage: string;
   rootDomain: string;
   subdomain: string;
+  bioApiUrl: string;
+  bioApiSecret: string;
 }
 
 export class GamesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GamesStackProps) {
     super(scope, id, props);
 
-    const { stage, rootDomain, subdomain } = props;
+    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret } = props;
     const domainName = `${subdomain}.${rootDomain}`;
 
-    // S3 bucket
+    // ── S3 bucket ────────────────────────────────────────────────────────
     const bucket = new Bucket(this, 'SiteBucket', {
       encryption: BucketEncryption.S3_MANAGED,
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
@@ -42,7 +53,6 @@ export class GamesStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // OAI
     const oai = new OriginAccessIdentity(this, 'SiteOAI');
     bucket.addToResourcePolicy(
       new PolicyStatement({
@@ -54,7 +64,7 @@ export class GamesStack extends cdk.Stack {
       })
     );
 
-    // Hosted zone + certificate
+    // ── DNS & Certificate ────────────────────────────────────────────────
     const zone = HostedZone.fromLookup(this, 'HostedZone', { domainName: rootDomain });
 
     const certificate = new Certificate(this, 'SiteCertificate', {
@@ -62,7 +72,53 @@ export class GamesStack extends cdk.Stack {
       validation: CertificateValidation.fromDns(zone),
     });
 
-    // Cache policies
+    // ── API Proxy Lambda ─────────────────────────────────────────────────
+    const proxyFn = new lambda.NodejsFunction(this, 'ApiProxy', {
+      entry: path.join(__dirname, 'api-proxy.ts'),
+      handler: 'handler',
+      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+      architecture: lambdaRuntime.Architecture.ARM_64,
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        BIO_API_URL: bioApiUrl,
+        BIO_API_SECRET: bioApiSecret,
+        RETURN_URL: `https://${domainName}`,
+      },
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      bundling: { minify: true, sourceMap: false, target: 'node22' },
+    });
+
+    // Warmer — keep Lambda warm
+    new events.Rule(this, 'WarmerRule', {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      targets: [new eventTargets.LambdaFunction(proxyFn)],
+    });
+
+    // ── API Gateway ──────────────────────────────────────────────────────
+    const api = new apigatewayv2.HttpApi(this, 'Api', {
+      corsPreflight: {
+        allowOrigins: [`https://${domainName}`],
+        allowMethods: [apigatewayv2.CorsHttpMethod.POST],
+        allowHeaders: ['content-type'],
+      },
+    });
+
+    const lambdaIntegration = new integrations.HttpLambdaIntegration('ProxyIntegration', proxyFn);
+
+    api.addRoutes({
+      path: '/api/session',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: lambdaIntegration,
+    });
+
+    api.addRoutes({
+      path: '/api/verify',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: lambdaIntegration,
+    });
+
+    // ── Cache policies ───────────────────────────────────────────────────
     const staticCachePolicy = new CachePolicy(this, 'StaticAssetsCachePolicy', {
       cachePolicyName: `${stage}-games-static-assets`,
       defaultTtl: cdk.Duration.days(30),
@@ -87,32 +143,43 @@ export class GamesStack extends cdk.Stack {
       queryStringBehavior: CacheQueryStringBehavior.none(),
     });
 
-    // CloudFront distribution
-    const origin = new S3Origin(bucket, { originAccessIdentity: oai });
+    // ── CloudFront ───────────────────────────────────────────────────────
+    const s3Origin = new S3Origin(bucket, { originAccessIdentity: oai });
+    const apiOrigin = new HttpOrigin(`${api.apiId}.execute-api.${this.region}.amazonaws.com`);
 
     const distribution = new Distribution(this, 'SiteDistribution', {
       defaultBehavior: {
-        origin,
+        origin: s3Origin,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: htmlCachePolicy,
       },
-      additionalBehaviors: Object.fromEntries(
-        ['*.js', '*.css', '*.woff*', '*.png', '*.jpg', '*.svg'].map((pattern) => [
-          pattern,
-          {
-            origin,
-            cachePolicy: staticCachePolicy,
-            viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          },
-        ])
-      ),
+      additionalBehaviors: {
+        // API proxy — no caching, forward all
+        '/api/*': {
+          origin: apiOrigin,
+          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: AllowedMethods.ALLOW_ALL,
+          cachePolicy: CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        },
+        // Static assets — long cache
+        ...Object.fromEntries(
+          ['*.js', '*.css', '*.woff*', '*.png', '*.jpg', '*.svg'].map((pattern) => [
+            pattern,
+            {
+              origin: s3Origin,
+              cachePolicy: staticCachePolicy,
+              viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            },
+          ])
+        ),
+      },
       domainNames: [domainName],
       certificate,
       minimumProtocolVersion: SecurityPolicyProtocol.TLS_V1_2_2021,
       httpVersion: HttpVersion.HTTP2,
       priceClass: PriceClass.PRICE_CLASS_100,
       defaultRootObject: 'index.html',
-      // SPA fallback — serve index.html for 403/404
       errorResponses: [
         {
           httpStatus: 403,
@@ -129,14 +196,14 @@ export class GamesStack extends cdk.Stack {
       ],
     });
 
-    // DNS record
+    // ── DNS ──────────────────────────────────────────────────────────────
     new ARecord(this, 'AliasRecord', {
       zone,
       recordName: domainName,
       target: RecordTarget.fromAlias(new CloudFrontTarget(distribution)),
     });
 
-    // Deploy dist/ to S3
+    // ── Deploy site ──────────────────────────────────────────────────────
     const distPath = path.join(__dirname, '../../dist');
     new BucketDeployment(this, 'DeploySite', {
       sources: [Source.asset(distPath)],
@@ -147,7 +214,7 @@ export class GamesStack extends cdk.Stack {
       cacheControl: [CacheControl.fromString('public, max-age=0, must-revalidate')],
     });
 
-    // Outputs
+    // ── Outputs ──────────────────────────────────────────────────────────
     new cdk.CfnOutput(this, 'SiteURL', {
       value: `https://${domainName}`,
       description: 'Argus Arcade URL',

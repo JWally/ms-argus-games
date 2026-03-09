@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-const API_URL = 'https://api-bio-dev-jw.argus.pw';
+// Proxy through our own backend (holds the merchant secret server-side)
 
 interface CaptchaState {
   verified: boolean;
@@ -21,11 +21,7 @@ export function useCaptchaGate() {
     setState((s) => ({ ...s, loading: true, error: null }));
 
     return new Promise((resolve) => {
-      fetch(`${API_URL}/v1/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merchantId: 'argus-arcade' }),
-      })
+      fetch('/api/session', { method: 'POST' })
         .then((res) => {
           if (!res.ok) throw new Error('Failed to create session');
           return res.json();

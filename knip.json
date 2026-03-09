@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["cdk/bin/app.ts"],
+  "entry": ["cdk/bin/app.ts", "cdk/lib/api-proxy.ts"],
   "project": ["src/**/*.{ts,tsx}", "cdk/**/*.ts"],
   "exclude": ["types", "nsTypes", "exports"]
 }
