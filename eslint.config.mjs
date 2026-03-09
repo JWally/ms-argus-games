@@ -108,4 +108,39 @@ export default [
       react: { version: 'detect' },
     },
   },
+  // CDK / Node files
+  {
+    files: ['cdk/**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+      },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        __dirname: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescript,
+      sonarjs,
+      unicorn,
+      'import-x': importX,
+    },
+    rules: {
+      ...typescript.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-console': 'warn',
+      'prefer-const': 'error',
+      'no-var': 'error',
+      ...qualityRules,
+    },
+  },
 ];
