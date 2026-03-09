@@ -44,7 +44,7 @@ function neighbors(r: number, c: number, size: number): [number, number][] {
 }
 
 /** Par values per board size. */
-export function parForSize(size: number): number {
+function parForSize(size: number): number {
   if (size <= 10) return 18;
   if (size <= 14) return 25;
   return 32;
@@ -52,7 +52,7 @@ export function parForSize(size: number): number {
 
 // ── Board generation ─────────────────────────────────────────────────
 
-export function generateBoard(size: number): ColorIndex[][] {
+function generateBoard(size: number): ColorIndex[][] {
   const board: ColorIndex[][] = [];
   for (let r = 0; r < size; r++) {
     const row: ColorIndex[] = [];

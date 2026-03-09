@@ -5,7 +5,7 @@
 
 export type WeaponId = 'basic' | 'napalm' | 'mirv' | 'deaths-head';
 
-export interface Weapon {
+interface Weapon {
   id: WeaponId;
   name: string;
   radius: number;
