@@ -6,10 +6,17 @@ const app = new App();
 
 const account = process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID || '';
 const bioApiSecret = app.node.tryGetContext('bioApiSecret') as string;
+const tbJwtSecret = app.node.tryGetContext('tbJwtSecret') as string;
 
 if (!bioApiSecret) {
   throw new Error(
     'Missing bioApiSecret context. Deploy with: npx cdk deploy -c bioApiSecret=ak_live_...'
+  );
+}
+
+if (!tbJwtSecret) {
+  throw new Error(
+    'Missing tbJwtSecret context. Deploy with: npx cdk deploy -c tbJwtSecret=<64-char-hex>'
   );
 }
 
@@ -21,6 +28,7 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   subdomain: 'games',
   bioApiUrl: 'https://api-bio-dev-jw.argus.pw',
   bioApiSecret,
+  tbJwtSecret,
   synthesizer: new CliCredentialsStackSynthesizer(),
 });
 

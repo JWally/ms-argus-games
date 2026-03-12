@@ -36,13 +36,14 @@ interface GamesStackProps extends cdk.StackProps {
   subdomain: string;
   bioApiUrl: string;
   bioApiSecret: string;
+  tbJwtSecret: string;
 }
 
 export class GamesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GamesStackProps) {
     super(scope, id, props);
 
-    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret } = props;
+    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret, tbJwtSecret } = props;
     const domainName = `${subdomain}.${rootDomain}`;
 
     // ── S3 bucket ────────────────────────────────────────────────────────
@@ -72,6 +73,31 @@ export class GamesStack extends cdk.Stack {
       validation: CertificateValidation.fromDns(zone),
     });
 
+    // ── DynamoDB tables (Ticket Blaster) ──────────────────────────────────
+    const tbSessionsTable = new cdk.aws_dynamodb.Table(this, 'TbSessions', {
+      tableName: `${props.stackName}-tb-sessions`,
+      partitionKey: { name: 'sessionId', type: cdk.aws_dynamodb.AttributeType.STRING },
+      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'ttl',
+    });
+
+    const tbPurchasesTable = new cdk.aws_dynamodb.Table(this, 'TbPurchases', {
+      tableName: `${props.stackName}-tb-purchases`,
+      partitionKey: { name: 'email', type: cdk.aws_dynamodb.AttributeType.STRING },
+      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const tbRateLimitsTable = new cdk.aws_dynamodb.Table(this, 'TbRateLimits', {
+      tableName: `${props.stackName}-tb-rate-limits`,
+      partitionKey: { name: 'ip', type: cdk.aws_dynamodb.AttributeType.STRING },
+      sortKey: { name: 'window', type: cdk.aws_dynamodb.AttributeType.STRING },
+      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'ttl',
+    });
+
     // ── API Proxy Lambda ─────────────────────────────────────────────────
     const proxyFn = new lambda.NodejsFunction(this, 'ApiProxy', {
       entry: path.join(__dirname, 'api-proxy.ts'),
@@ -95,12 +121,42 @@ export class GamesStack extends cdk.Stack {
       targets: [new eventTargets.LambdaFunction(proxyFn)],
     });
 
+    // ── Ticket Blaster Lambda ─────────────────────────────────────────────
+    const tbFn = new lambda.NodejsFunction(this, 'TicketBlasterApi', {
+      entry: path.join(__dirname, 'ticket-blaster/handler.ts'),
+      handler: 'handler',
+      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+      architecture: lambdaRuntime.Architecture.ARM_64,
+      memorySize: 1024,
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        TB_SESSIONS_TABLE: tbSessionsTable.tableName,
+        TB_PURCHASES_TABLE: tbPurchasesTable.tableName,
+        TB_RATE_LIMITS_TABLE: tbRateLimitsTable.tableName,
+        TB_JWT_SECRET: tbJwtSecret,
+        BIO_API_URL: bioApiUrl,
+        BIO_API_SECRET: bioApiSecret,
+      },
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      bundling: { minify: true, sourceMap: false, target: 'node22' },
+    });
+
+    tbSessionsTable.grantReadWriteData(tbFn);
+    tbPurchasesTable.grantReadWriteData(tbFn);
+    tbRateLimitsTable.grantReadWriteData(tbFn);
+
+    // Warmer for TB Lambda
+    new events.Rule(this, 'TbWarmerRule', {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      targets: [new eventTargets.LambdaFunction(tbFn)],
+    });
+
     // ── API Gateway ──────────────────────────────────────────────────────
     const api = new apigatewayv2.HttpApi(this, 'Api', {
       corsPreflight: {
         allowOrigins: [`https://${domainName}`],
-        allowMethods: [apigatewayv2.CorsHttpMethod.POST],
-        allowHeaders: ['content-type'],
+        allowMethods: [apigatewayv2.CorsHttpMethod.GET, apigatewayv2.CorsHttpMethod.POST],
+        allowHeaders: ['content-type', 'authorization'],
       },
     });
 
@@ -116,6 +172,27 @@ export class GamesStack extends cdk.Stack {
       path: '/api/verify',
       methods: [apigatewayv2.HttpMethod.POST],
       integration: lambdaIntegration,
+    });
+
+    // Ticket Blaster routes
+    const tbIntegration = new integrations.HttpLambdaIntegration('TbIntegration', tbFn);
+
+    api.addRoutes({
+      path: '/api/ticket-blaster/session',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: tbIntegration,
+    });
+
+    api.addRoutes({
+      path: '/api/ticket-blaster/purchase',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: tbIntegration,
+    });
+
+    api.addRoutes({
+      path: '/api/ticket-blaster/signout',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: tbIntegration,
     });
 
     // ── Cache policies ───────────────────────────────────────────────────

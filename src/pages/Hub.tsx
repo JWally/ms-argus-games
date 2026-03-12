@@ -1,19 +1,75 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCaptchaGate } from '../hooks/useCaptchaGate';
 
 const games = [
   {
-    id: 'scorched-earth',
-    name: 'Scorched Earth',
-    description: 'Artillery duel — aim, choose your weapon, and obliterate your opponent.',
-    path: '/scorched-earth',
-    gradient: 'from-orange-600 to-red-800',
-    emoji: '\u{1F4A5}',
+    id: 'ataxx',
+    name: 'Ataxx',
+    desc: 'Clone & conquer the board',
+    path: '/ataxx',
+    gradient: 'from-blue-600 to-red-600',
+    emoji: '\u{1F7E6}',
+  },
+  {
+    id: 'breakout',
+    name: 'Breakout',
+    desc: 'Smash bricks, chain combos',
+    path: '/breakout',
+    gradient: 'from-violet-600 to-fuchsia-600',
+    emoji: '\u{1F9F1}',
+  },
+  {
+    id: 'flappy',
+    name: 'Flappy Bird',
+    desc: 'Tap to flap, dodge pipes',
+    path: '/flappy',
+    gradient: 'from-yellow-400 to-green-500',
+    emoji: '\u{1F426}',
+  },
+  {
+    id: 'multiply',
+    name: 'Multiply',
+    desc: 'Speed-run your times tables',
+    path: '/multiply',
+    gradient: 'from-amber-500 to-orange-600',
+    emoji: '\u{2716}',
+  },
+  {
+    id: 'river-rat',
+    name: 'River Rat',
+    desc: 'Steer a mouse down the river',
+    path: '/river-rat',
+    gradient: 'from-cyan-500 to-blue-700',
+    emoji: '\u{1F42D}',
+  },
+  {
+    id: 'checkers',
+    name: 'Checkers',
+    desc: 'Jump & king on a 6×6 board',
+    path: '/checkers',
+    gradient: 'from-red-700 to-amber-900',
+    emoji: '\u{26C0}',
+  },
+  {
+    id: 'peg-solitaire',
+    name: 'Peg Solitaire',
+    desc: 'Jump pegs, leave just one',
+    path: '/peg-solitaire',
+    gradient: 'from-purple-600 to-indigo-700',
+    emoji: '\u{1F534}',
+  },
+  {
+    id: 'connect-4',
+    name: 'Connect 4',
+    desc: 'Outsmart the AI, drop four',
+    path: '/connect-4',
+    gradient: 'from-blue-700 to-yellow-500',
+    emoji: '\u{1F7E1}',
   },
   {
     id: 'color-flood',
     name: 'Color Flood',
-    description: 'Capture the board by flooding from the corner. Fewest moves wins.',
+    desc: 'Flood-fill in fewest moves',
     path: '/color-flood',
     gradient: 'from-emerald-500 to-cyan-600',
     emoji: '\u{1F3A8}',
@@ -25,12 +81,6 @@ export default function Hub() {
   const { loading, error, requestAccess } = useCaptchaGate();
 
   const handlePlay = async (path: string) => {
-    const existing = sessionStorage.getItem('argus_arcade_token');
-    if (existing) {
-      navigate(path);
-      return;
-    }
-
     const verified = await requestAccess();
     if (verified) {
       navigate(path);
@@ -38,70 +88,109 @@ export default function Hub() {
   };
 
   return (
-    <div className="min-h-screen bg-arcade-bg">
+    <div className="flex min-h-[100dvh] flex-col bg-arcade-bg">
       {/* Header */}
-      <header className="border-b border-arcade-border px-4 py-6">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="font-display text-2xl text-arcade-accent sm:text-3xl">ARGUS ARCADE</h1>
-          <p className="mt-2 text-sm text-gray-400">Prove you&apos;re human. Then have some fun.</p>
-        </div>
+      <header className="px-4 pb-4 pt-6 text-center sm:pb-6 sm:pt-10">
+        <h1 className="font-display text-xl text-arcade-accent sm:text-3xl">ARGUS ARCADE</h1>
+        <p className="mt-1.5 text-xs text-gray-500 sm:mt-2 sm:text-sm">
+          Prove you&apos;re human. Then have some fun.
+        </p>
       </header>
 
       {/* Error banner */}
       {error && (
-        <div className="mx-auto mt-4 max-w-4xl px-4">
+        <div className="mx-auto w-full max-w-2xl px-4">
           <div className="rounded-lg bg-red-900/50 px-4 py-2 text-sm text-red-300">{error}</div>
         </div>
       )}
 
-      {/* Game grid */}
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="grid gap-6 sm:grid-cols-2">
+      {/* Game list */}
+      <main className="mx-auto w-full max-w-2xl flex-1 px-3 pb-6 sm:px-6">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4">
           {games.map((game) => (
-            <div
+            <button
               key={game.id}
-              className="group overflow-hidden rounded-xl border border-arcade-border bg-arcade-card transition-all hover:border-arcade-accent/50 hover:shadow-lg hover:shadow-arcade-accent/10"
+              onClick={() => handlePlay(game.path)}
+              disabled={loading}
+              className="group flex items-center gap-3 rounded-xl border border-arcade-border bg-arcade-card p-3 text-left transition-all hover:border-arcade-accent/50 hover:bg-arcade-card/80 active:scale-[0.98] disabled:opacity-50 sm:gap-4 sm:p-4"
             >
-              {/* Thumbnail area */}
+              {/* Icon */}
               <div
-                className={`flex h-40 items-center justify-center bg-gradient-to-br ${game.gradient}`}
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br sm:h-14 sm:w-14 ${game.gradient}`}
               >
-                <span className="text-6xl">{game.emoji}</span>
+                <span className="text-2xl sm:text-3xl">{game.emoji}</span>
               </div>
 
-              {/* Info */}
-              <div className="p-5">
-                <h2 className="text-lg font-semibold text-white">{game.name}</h2>
-                <p className="mt-1 text-sm text-gray-400">{game.description}</p>
-
-                <button
-                  onClick={() => handlePlay(game.path)}
-                  disabled={loading}
-                  className="mt-4 w-full rounded-lg bg-arcade-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-arcade-accent-hover disabled:opacity-50"
-                >
-                  {loading ? 'Verifying...' : 'Play Now'}
-                </button>
+              {/* Text */}
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm font-semibold text-white sm:text-base">{game.name}</h2>
+                <p className="mt-0.5 text-xs text-gray-500">{game.desc}</p>
               </div>
-            </div>
+
+              {/* Arrow */}
+              <svg
+                className="h-4 w-4 shrink-0 text-gray-600 transition-colors group-hover:text-arcade-accent"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           ))}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-12 border-t border-arcade-border pt-6 text-center text-xs text-gray-500">
-          <p>Each game requires a quick handwriting verification to play.</p>
-          <p className="mt-1">
-            Powered by{' '}
-            <a
-              href="https://bio-dev-jw.argus.pw"
-              className="text-arcade-accent hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
+        {/* Loading state */}
+        {loading && <p className="mt-4 text-center text-xs text-gray-500">Verifying...</p>}
+
+        {/* Ticket Blaster promo */}
+        <div className="mt-4">
+          <Link
+            to="/ticket-blaster"
+            className="group flex items-center gap-3 rounded-xl border-2 border-dashed border-arcade-gold/40 bg-arcade-card p-3 text-left transition-all hover:border-arcade-gold/70 hover:bg-arcade-card/80 active:scale-[0.98] sm:gap-4 sm:p-4"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 sm:h-14 sm:w-14">
+              <span className="text-2xl sm:text-3xl">{'\u{1F3AB}'}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-white sm:text-base">Ticket Blaster</h2>
+                <span className="rounded bg-arcade-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-arcade-gold">
+                  CTF
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Build a bot to buy Taylor Swift tickets. Most tickets wins.
+              </p>
+            </div>
+            <svg
+              className="h-4 w-4 shrink-0 text-gray-600 transition-colors group-hover:text-arcade-gold"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              Argus Bio
-            </a>
-          </p>
-        </footer>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-arcade-border px-4 py-4 text-center text-[10px] text-gray-600">
+        <span>
+          Powered by{' '}
+          <a
+            href="https://bio-dev-jw.argus.pw"
+            className="text-arcade-accent/70 hover:text-arcade-accent hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Argus Bio
+          </a>
+        </span>
+      </footer>
     </div>
   );
 }

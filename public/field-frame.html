@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #111827;
+      }
+      input[type='text'],
+      input[type='email'],
+      input[type='tel'],
+      input[type='date'] {
+        padding: 0 14px;
+        height: 100%;
+      }
+      select {
+        padding: 0 14px;
+        height: 100%;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+        padding-right: 32px;
+      }
+      textarea {
+        padding: 10px 14px;
+        height: 100%;
+        resize: none;
+      }
+      .cb {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px;
+        height: 100%;
+        cursor: pointer;
+      }
+      .cb input {
+        width: 18px;
+        height: 18px;
+        accent-color: #4f46e5;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .cb span {
+        font-size: 14px;
+        color: #374151;
+        user-select: none;
+      }
+      .rb {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 0 14px;
+        height: 100%;
+        flex-wrap: wrap;
+      }
+      .rb label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 14px;
+        color: #374151;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .rb input {
+        width: 18px;
+        height: 18px;
+        accent-color: #4f46e5;
+        cursor: pointer;
+      }
+      ::placeholder {
+        color: #9ca3af;
+      }
+      .invalid {
+        color: #dc2626;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var p = new URLSearchParams(location.search),
+          nm = p.get('name'),
+          tp = p.get('type') || 'text',
+          ph = p.get('placeholder') || '',
+          opts = p.get('options') ? p.get('options').split(',') : [],
+          lbl = p.get('label') || '',
+          vld = p.get('validation') || '';
+
+        function tx(t, v) {
+          parent.postMessage({ type: t, name: nm, value: v }, '*');
+        }
+
+        // Input filter config
+        var filterRe = null,
+          maxLen = 0,
+          validRe = null;
+        if (vld === 'card-ones') {
+          filterRe = /[^1]/g;
+          maxLen = 16;
+          validRe = /^1{16}$/;
+        } else if (vld === 'cvv-ones') {
+          filterRe = /[^1]/g;
+          maxLen = 3;
+          validRe = /^1{3}$/;
+        } else if (vld === 'email') {
+          validRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+        }
+
+        function applyFilter(inp) {
+          var v = inp.value;
+          if (filterRe) v = v.replace(filterRe, '');
+          if (maxLen && v.length > maxLen) v = v.slice(0, maxLen);
+          if (v !== inp.value) inp.value = v;
+          // Real-time validation visual
+          if (validRe && v.length > 0) {
+            inp.className = validRe.test(v) ? '' : 'invalid';
+            tx('tb:valid', validRe.test(v));
+          } else if (validRe) {
+            inp.className = '';
+            tx('tb:valid', true);
+          }
+        }
+
+        function onTab(e) {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            tx('tb:tab', e.shiftKey ? 'backward' : 'forward');
+          }
+        }
+
+        var el;
+
+        if (tp === 'checkbox') {
+          var w = document.createElement('label');
+          w.className = 'cb';
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          var s = document.createElement('span');
+          s.textContent = lbl;
+          w.append(cb, s);
+          document.body.appendChild(w);
+          cb.addEventListener('change', function () {
+            tx('tb:change', cb.checked);
+          });
+          cb.addEventListener('focus', function () {
+            tx('tb:focus');
+          });
+          cb.addEventListener('blur', function () {
+            tx('tb:blur');
+          });
+          cb.addEventListener('keydown', onTab);
+          el = cb;
+        } else if (tp === 'radio') {
+          var w = document.createElement('div');
+          w.className = 'rb';
+          var radioEls = [];
+          opts.forEach(function (o, i) {
+            var l = document.createElement('label');
+            var r = document.createElement('input');
+            r.type = 'radio';
+            r.name = 'f';
+            r.value = o;
+            l.append(r, document.createTextNode(' ' + o));
+            w.appendChild(l);
+            r.addEventListener('change', function () {
+              tx('tb:change', o);
+            });
+            r.addEventListener('focus', function () {
+              tx('tb:focus');
+            });
+            r.addEventListener('blur', function () {
+              tx('tb:blur');
+            });
+            r.addEventListener('keydown', function (e) {
+              if (e.key === 'Tab') {
+                if (!e.shiftKey && i === opts.length - 1) {
+                  e.preventDefault();
+                  tx('tb:tab', 'forward');
+                } else if (e.shiftKey && i === 0) {
+                  e.preventDefault();
+                  tx('tb:tab', 'backward');
+                }
+              }
+            });
+            radioEls.push(r);
+          });
+          document.body.appendChild(w);
+          el = radioEls[0];
+        } else if (tp === 'select') {
+          var sel = document.createElement('select');
+          var d = document.createElement('option');
+          d.value = '';
+          d.textContent = 'Select\u2026';
+          d.disabled = true;
+          d.selected = true;
+          sel.appendChild(d);
+          opts.forEach(function (o) {
+            var op = document.createElement('option');
+            op.value = o;
+            op.textContent = o;
+            sel.appendChild(op);
+          });
+          document.body.appendChild(sel);
+          sel.addEventListener('change', function () {
+            tx('tb:change', sel.value);
+          });
+          sel.addEventListener('focus', function () {
+            tx('tb:focus');
+          });
+          sel.addEventListener('blur', function () {
+            tx('tb:blur');
+          });
+          sel.addEventListener('keydown', onTab);
+          el = sel;
+        } else if (tp === 'textarea') {
+          var ta = document.createElement('textarea');
+          ta.placeholder = ph;
+          document.body.appendChild(ta);
+          ta.addEventListener('input', function () {
+            tx('tb:change', ta.value);
+          });
+          ta.addEventListener('focus', function () {
+            tx('tb:focus');
+          });
+          ta.addEventListener('blur', function () {
+            tx('tb:blur');
+          });
+          ta.addEventListener('keydown', function (e) {
+            if (e.key === 'Tab') {
+              e.preventDefault();
+              tx('tb:tab', e.shiftKey ? 'backward' : 'forward');
+            }
+          });
+          el = ta;
+        } else {
+          var inp = document.createElement('input');
+          inp.type = tp;
+          inp.placeholder = ph;
+          inp.autocomplete = 'off';
+          if (maxLen) inp.maxLength = maxLen;
+          if (vld === 'card-ones' || vld === 'cvv-ones') inp.inputMode = 'numeric';
+          document.body.appendChild(inp);
+          inp.addEventListener('input', function () {
+            applyFilter(inp);
+            tx('tb:change', inp.value);
+          });
+          inp.addEventListener('focus', function () {
+            tx('tb:focus');
+          });
+          inp.addEventListener('blur', function () {
+            tx('tb:blur');
+          });
+          inp.addEventListener('keydown', onTab);
+          el = inp;
+        }
+
+        window.addEventListener('message', function (e) {
+          if (!e.data) return;
+          if (e.data.type === 'tb:reset') {
+            if (el && el.type === 'checkbox') el.checked = false;
+            else if (tp === 'radio') {
+              for (var r of document.querySelectorAll('input[type=radio]')) r.checked = false;
+            } else if (tp === 'select') el.selectedIndex = 0;
+            else if (el) {
+              el.value = '';
+              el.className = '';
+            }
+          }
+          if (e.data.type === 'tb:focus-input' && el) {
+            el.focus();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
