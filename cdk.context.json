@@ -1,0 +1,10 @@
+{
+  "hosted-zone:account=263318538229:domainName=wolcott.io:region=us-east-1": {
+    "Id": "/hostedzone/Z26NIK6FG5FP6",
+    "Name": "wolcott.io."
+  },
+  "hosted-zone:account=263318538229:domainName=arcades.click:region=us-east-1": {
+    "Id": "/hostedzone/Z03834201HJF6DQ9RHDMF",
+    "Name": "arcades.click."
+  }
+}

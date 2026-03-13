@@ -31,10 +31,15 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   }
 
   return {
-    statusCode: 404,
+    statusCode: 400,
     headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
     body: JSON.stringify({ error: 'Not found' }),
   };
+}
+
+// CloudFront's SPA error responses intercept 403/404 globally — remap to 400
+function safeStatus(status: number): number {
+  return status === 403 || status === 404 ? 400 : status;
 }
 
 async function createSession(): Promise<APIGatewayProxyResultV2> {
@@ -46,7 +51,7 @@ async function createSession(): Promise<APIGatewayProxyResultV2> {
     });
     const data = await res.json();
     return {
-      statusCode: res.status,
+      statusCode: safeStatus(res.status),
       headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
       body: JSON.stringify(data),
     };
@@ -76,7 +81,7 @@ async function verifyToken(event: APIGatewayProxyEventV2): Promise<APIGatewayPro
     });
     const data = await res.json();
     return {
-      statusCode: res.status,
+      statusCode: safeStatus(res.status),
       headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
       body: JSON.stringify(data),
     };

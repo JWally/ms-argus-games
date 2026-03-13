@@ -103,6 +103,14 @@ const games = [
     gradient: 'from-pink-500 to-yellow-500',
     emoji: '\u{1F41D}',
   },
+  {
+    id: 'card-counter',
+    name: 'Card Counter',
+    desc: 'Card counting tutor',
+    path: '/card-counter',
+    gradient: 'from-green-700 to-emerald-900',
+    emoji: '\u{1F0CF}',
+  },
 ];
 
 export default function Hub() {

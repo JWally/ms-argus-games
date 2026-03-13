@@ -12,6 +12,7 @@ import RiverRat from './pages/RiverRat';
 import PegSolitaire from './pages/PegSolitaire';
 import TicketBlaster from './pages/TicketBlaster';
 import SpellingBee from './pages/SpellingBee';
+import CardCounter from './pages/CardCounter';
 import CaptchaGate from './components/CaptchaGate';
 
 function Gated({ children }: { children: ReactNode }) {
@@ -99,6 +100,14 @@ export default function App() {
         element={
           <Gated>
             <SpellingBee />
+          </Gated>
+        }
+      />
+      <Route
+        path="/card-counter"
+        element={
+          <Gated>
+            <CardCounter />
           </Gated>
         }
       />

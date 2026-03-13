@@ -33,7 +33,7 @@ import * as eventTargets from 'aws-cdk-lib/aws-events-targets';
 interface GamesStackProps extends cdk.StackProps {
   stage: string;
   rootDomain: string;
-  subdomain: string;
+  subdomain?: string;
   bioApiUrl: string;
   bioApiSecret: string;
   tbJwtSecret: string;
@@ -44,7 +44,7 @@ export class GamesStack extends cdk.Stack {
     super(scope, id, props);
 
     const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret, tbJwtSecret } = props;
-    const domainName = `${subdomain}.${rootDomain}`;
+    const domainName = subdomain ? `${subdomain}.${rootDomain}` : rootDomain;
 
     // ── S3 bucket ────────────────────────────────────────────────────────
     const bucket = new Bucket(this, 'SiteBucket', {
