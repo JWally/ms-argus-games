@@ -1,5 +1,26 @@
 import { useNavigate, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { useCaptchaGate } from '../hooks/useCaptchaGate';
+
+const taglines = [
+  'Insert coin to continue.',
+  'No quarters required.',
+  'Player one, ready?',
+  'The cake is a lie.',
+  'All your base are belong to us.',
+  'It\u2019s dangerous to go alone!',
+  'Do a barrel roll!',
+  'Would you like to play a game?',
+  'Up up down down left right left right B A start.',
+  'The princess is in another castle.',
+  'Game over, man. Game over!',
+  'Stay awhile and listen.',
+  'War. War never changes.',
+  'Hey! Listen!',
+  'Finish him!',
+  'Hadouken!',
+  'Thank you, but our princess is in another castle!',
+];
 
 const games = [
   {
@@ -74,11 +95,20 @@ const games = [
     gradient: 'from-emerald-500 to-cyan-600',
     emoji: '\u{1F3A8}',
   },
+  {
+    id: 'spelling-bee',
+    name: 'Spelling Bee',
+    desc: 'Listen, spell, repeat',
+    path: '/spelling-bee',
+    gradient: 'from-pink-500 to-yellow-500',
+    emoji: '\u{1F41D}',
+  },
 ];
 
 export default function Hub() {
   const navigate = useNavigate();
   const { loading, error, requestAccess } = useCaptchaGate();
+  const [tagline] = useState(() => taglines[Math.floor(Math.random() * taglines.length)]);
 
   const handlePlay = async (path: string) => {
     const verified = await requestAccess();
@@ -91,9 +121,9 @@ export default function Hub() {
     <div className="flex min-h-[100dvh] flex-col bg-arcade-bg">
       {/* Header */}
       <header className="px-4 pb-4 pt-6 text-center sm:pb-6 sm:pt-10">
-        <h1 className="font-display text-xl text-arcade-accent sm:text-3xl">ARGUS ARCADE</h1>
-        <p className="mt-1.5 text-xs text-gray-500 sm:mt-2 sm:text-sm">
-          Prove you&apos;re human. Then have some fun.
+        <h1 className="font-display text-xl text-arcade-accent sm:text-3xl">OLD SCHOOL ARCADE</h1>
+        <p className="mt-1.5 text-xs italic text-gray-500 sm:mt-2 sm:text-sm">
+          &ldquo;{tagline}&rdquo;
         </p>
       </header>
 

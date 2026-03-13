@@ -10,6 +10,7 @@ import Multiply from './pages/Multiply';
 import RiverRat from './pages/RiverRat';
 import PegSolitaire from './pages/PegSolitaire';
 import TicketBlaster from './pages/TicketBlaster';
+import SpellingBee from './pages/SpellingBee';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="/multiply" element={<Multiply />} />
       <Route path="/peg-solitaire" element={<PegSolitaire />} />
       <Route path="/river-rat" element={<RiverRat />} />
+      <Route path="/spelling-bee" element={<SpellingBee />} />
       <Route path="/ticket-blaster" element={<TicketBlaster />} />
     </Routes>
   );
