@@ -27,6 +27,7 @@ const games = [
     id: 'ataxx',
     name: 'Ataxx',
     desc: 'Clone & conquer the board',
+    tag: 'Strategy',
     path: '/ataxx',
     gradient: 'from-blue-600 to-red-600',
     emoji: '\u{1F7E6}',
@@ -35,6 +36,7 @@ const games = [
     id: 'breakout',
     name: 'Breakout',
     desc: 'Smash bricks, chain combos',
+    tag: 'Arcade',
     path: '/breakout',
     gradient: 'from-violet-600 to-fuchsia-600',
     emoji: '\u{1F9F1}',
@@ -43,6 +45,7 @@ const games = [
     id: 'flappy',
     name: 'Flappy Bird',
     desc: 'Tap to flap, dodge pipes',
+    tag: 'Arcade',
     path: '/flappy',
     gradient: 'from-yellow-400 to-green-500',
     emoji: '\u{1F426}',
@@ -51,6 +54,7 @@ const games = [
     id: 'multiply',
     name: 'Multiply',
     desc: 'Speed-run your times tables',
+    tag: 'Brain',
     path: '/multiply',
     gradient: 'from-amber-500 to-orange-600',
     emoji: '\u{2716}',
@@ -59,6 +63,7 @@ const games = [
     id: 'river-rat',
     name: 'River Rat',
     desc: 'Steer a mouse down the river',
+    tag: 'Arcade',
     path: '/river-rat',
     gradient: 'from-cyan-500 to-blue-700',
     emoji: '\u{1F42D}',
@@ -66,7 +71,8 @@ const games = [
   {
     id: 'checkers',
     name: 'Checkers',
-    desc: 'Jump & king on a 6×6 board',
+    desc: 'Jump & king on a 6\u00D76 board',
+    tag: 'Strategy',
     path: '/checkers',
     gradient: 'from-red-700 to-amber-900',
     emoji: '\u{26C0}',
@@ -75,6 +81,7 @@ const games = [
     id: 'peg-solitaire',
     name: 'Peg Solitaire',
     desc: 'Jump pegs, leave just one',
+    tag: 'Puzzle',
     path: '/peg-solitaire',
     gradient: 'from-purple-600 to-indigo-700',
     emoji: '\u{1F534}',
@@ -83,6 +90,7 @@ const games = [
     id: 'connect-4',
     name: 'Connect 4',
     desc: 'Outsmart the AI, drop four',
+    tag: 'Strategy',
     path: '/connect-4',
     gradient: 'from-blue-700 to-yellow-500',
     emoji: '\u{1F7E1}',
@@ -91,6 +99,7 @@ const games = [
     id: 'color-flood',
     name: 'Color Flood',
     desc: 'Flood-fill in fewest moves',
+    tag: 'Puzzle',
     path: '/color-flood',
     gradient: 'from-emerald-500 to-cyan-600',
     emoji: '\u{1F3A8}',
@@ -99,6 +108,7 @@ const games = [
     id: 'spelling-bee',
     name: 'Spelling Bee',
     desc: 'Listen, spell, repeat',
+    tag: 'Brain',
     path: '/spelling-bee',
     gradient: 'from-pink-500 to-yellow-500',
     emoji: '\u{1F41D}',
@@ -107,11 +117,19 @@ const games = [
     id: 'card-counter',
     name: 'Card Counter',
     desc: 'Card counting tutor',
+    tag: 'Brain',
     path: '/card-counter',
     gradient: 'from-green-700 to-emerald-900',
     emoji: '\u{1F0CF}',
   },
 ];
+
+const TAG_COLORS: Record<string, string> = {
+  Arcade: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30',
+  Strategy: 'text-amber-400 bg-amber-400/10 border-amber-400/30',
+  Puzzle: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30',
+  Brain: 'text-pink-400 bg-pink-400/10 border-pink-400/30',
+};
 
 export default function Hub() {
   const navigate = useNavigate();
@@ -127,54 +145,103 @@ export default function Hub() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-arcade-bg">
+      {/* Scanline overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)',
+        }}
+      />
+
       {/* Header */}
-      <header className="px-4 pb-4 pt-6 text-center sm:pb-6 sm:pt-10">
-        <h1 className="font-display text-xl text-arcade-accent sm:text-3xl">OLD SCHOOL ARCADE</h1>
-        <p className="mt-1.5 text-xs italic text-gray-500 sm:mt-2 sm:text-sm">
+      <header className="px-4 pb-6 pt-8 text-center sm:pb-8 sm:pt-14">
+        <h1
+          className="font-display text-xl tracking-wider sm:text-3xl lg:text-4xl"
+          style={{
+            background: 'linear-gradient(135deg, #8b5cf6, #22d3ee, #8b5cf6)',
+            backgroundSize: '200% 200%',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            animation: 'gradient-shift 6s ease infinite',
+          }}
+        >
+          ARCADES.CLICK
+        </h1>
+        <p className="mt-2 text-xs italic text-gray-500 sm:mt-3 sm:text-sm">
           &ldquo;{tagline}&rdquo;
         </p>
+        <div className="mx-auto mt-4 h-px w-32 bg-gradient-to-r from-transparent via-arcade-accent/50 to-transparent sm:w-48" />
       </header>
 
       {/* Error banner */}
       {error && (
-        <div className="mx-auto w-full max-w-2xl px-4">
+        <div className="mx-auto w-full max-w-5xl px-4">
           <div className="rounded-lg bg-red-900/50 px-4 py-2 text-sm text-red-300">{error}</div>
         </div>
       )}
 
-      {/* Game list */}
-      <main className="mx-auto w-full max-w-2xl flex-1 px-3 pb-6 sm:px-6">
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4">
+      {/* Section label */}
+      <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
+        <p className="font-display text-[10px] tracking-[0.3em] text-gray-600 sm:text-xs">
+          SELECT YOUR GAME
+        </p>
+      </div>
+
+      {/* Game grid */}
+      <main className="mx-auto w-full max-w-5xl flex-1 px-3 pb-6 pt-3 sm:px-6 sm:pt-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {games.map((game) => (
             <button
               key={game.id}
               onClick={() => handlePlay(game.path)}
               disabled={loading}
-              className="group flex items-center gap-3 rounded-xl border border-arcade-border bg-arcade-card p-3 text-left transition-all hover:border-arcade-accent/50 hover:bg-arcade-card/80 active:scale-[0.98] disabled:opacity-50 sm:gap-4 sm:p-4"
+              className="group overflow-hidden rounded-xl border border-arcade-border bg-arcade-card text-left transition-all duration-300 hover:-translate-y-1 hover:border-arcade-accent/50 hover:shadow-[0_8px_30px_-8px_rgba(139,92,246,0.3)] active:scale-[0.98] disabled:opacity-50"
             >
-              {/* Icon */}
+              {/* Card art */}
               <div
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br sm:h-14 sm:w-14 ${game.gradient}`}
+                className={`relative flex h-24 items-center justify-center bg-gradient-to-br sm:h-28 ${game.gradient}`}
               >
-                <span className="text-2xl sm:text-3xl">{game.emoji}</span>
+                {/* Grid overlay */}
+                <div
+                  className="absolute inset-0 opacity-10"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                  }}
+                />
+                <span className="relative text-5xl drop-shadow-lg transition-transform duration-300 group-hover:scale-110 sm:text-6xl">
+                  {game.emoji}
+                </span>
               </div>
 
-              {/* Text */}
-              <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-semibold text-white sm:text-base">{game.name}</h2>
-                <p className="mt-0.5 text-xs text-gray-500">{game.desc}</p>
-              </div>
+              {/* Card body */}
+              <div className="p-3 sm:p-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-white sm:text-base">{game.name}</h2>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[9px] font-medium ${TAG_COLORS[game.tag] ?? ''}`}
+                  >
+                    {game.tag}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">{game.desc}</p>
 
-              {/* Arrow */}
-              <svg
-                className="h-4 w-4 shrink-0 text-gray-600 transition-colors group-hover:text-arcade-accent"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+                {/* Play prompt */}
+                <div className="mt-3 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-arcade-accent/60 transition-colors group-hover:text-arcade-accent">
+                  <span>Play</span>
+                  <svg
+                    className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
             </button>
           ))}
         </div>
@@ -183,13 +250,13 @@ export default function Hub() {
         {loading && <p className="mt-4 text-center text-xs text-gray-500">Verifying...</p>}
 
         {/* Ticket Blaster promo */}
-        <div className="mt-4">
+        <div className="mt-5 sm:mt-6">
           <Link
             to="/ticket-blaster"
-            className="group flex items-center gap-3 rounded-xl border-2 border-dashed border-arcade-gold/40 bg-arcade-card p-3 text-left transition-all hover:border-arcade-gold/70 hover:bg-arcade-card/80 active:scale-[0.98] sm:gap-4 sm:p-4"
+            className="group flex items-center gap-4 overflow-hidden rounded-xl border-2 border-dashed border-arcade-gold/30 bg-arcade-card p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-arcade-gold/60 hover:shadow-[0_8px_30px_-8px_rgba(245,158,11,0.2)] active:scale-[0.99] sm:p-5"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 sm:h-14 sm:w-14">
-              <span className="text-2xl sm:text-3xl">{'\u{1F3AB}'}</span>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 sm:h-16 sm:w-16">
+              <span className="text-3xl sm:text-4xl">{'\u{1F3AB}'}</span>
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -203,7 +270,7 @@ export default function Hub() {
               </p>
             </div>
             <svg
-              className="h-4 w-4 shrink-0 text-gray-600 transition-colors group-hover:text-arcade-gold"
+              className="h-5 w-5 shrink-0 text-gray-600 transition-all duration-300 group-hover:translate-x-1 group-hover:text-arcade-gold"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -229,6 +296,14 @@ export default function Hub() {
           </a>
         </span>
       </footer>
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+      `}</style>
     </div>
   );
 }

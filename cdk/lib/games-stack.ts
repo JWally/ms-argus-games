@@ -159,7 +159,7 @@ export class GamesStack extends cdk.Stack {
       handler: 'handler',
       runtime: lambdaRuntime.Runtime.NODEJS_22_X,
       architecture: lambdaRuntime.Architecture.ARM_64,
-      memorySize: 256,
+      memorySize: 512,
       timeout: cdk.Duration.seconds(5),
       environment: {
         ...(sigintAesKey ? { SIGINT_AES_KEY: sigintAesKey } : {}),
