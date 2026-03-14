@@ -68,11 +68,11 @@ export default function Breakout() {
       const s = tick(state, 1);
       stateRef.current = s;
 
-      // Sync React state
-      setPhase(s.phase);
-      setScore(s.score);
-      setLives(s.lives);
-      setLevel(s.level);
+      // Sync React state only when values change
+      if (s.phase !== state.phase) setPhase(s.phase);
+      if (s.score !== state.score) setScore(s.score);
+      if (s.lives !== state.lives) setLives(s.lives);
+      if (s.level !== state.level) setLevel(s.level);
 
       // Save high score on game over
       if (s.phase === 'game-over') {

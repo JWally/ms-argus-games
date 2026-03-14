@@ -58,8 +58,8 @@ export default function Connect4() {
       const s = tick(state, 1);
       stateRef.current = s;
 
-      setPhase(s.phase);
-      setTurn(s.turn);
+      if (s.phase !== state.phase) setPhase(s.phase);
+      if (s.turn !== state.turn) setTurn(s.turn);
 
       // Detect player win
       if (s.phase === 'done' && state.phase !== 'done' && s.winner === 1) {

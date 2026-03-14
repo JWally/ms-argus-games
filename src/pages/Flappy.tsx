@@ -58,8 +58,8 @@ export default function Flappy() {
       const s = tick(state, 1);
       stateRef.current = s;
 
-      setPhase(s.phase);
-      setScore(s.score);
+      if (s.phase !== state.phase) setPhase(s.phase);
+      if (s.score !== state.score) setScore(s.score);
 
       if (s.phase === 'dead' && state.phase !== 'dead') {
         saveHighScore(s.score);

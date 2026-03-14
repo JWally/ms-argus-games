@@ -61,8 +61,8 @@ export default function PegSolitaire() {
       const s = tick(state, 1);
       stateRef.current = s;
 
-      setPhase(s.phase);
-      setPegsLeft(s.pegsRemaining);
+      if (s.phase !== state.phase) setPhase(s.phase);
+      if (s.pegsRemaining !== state.pegsRemaining) setPegsLeft(s.pegsRemaining);
 
       // Detect transition to done
       if (s.phase === 'done' && state.phase !== 'done' && s.pegsRemaining === 1) {
