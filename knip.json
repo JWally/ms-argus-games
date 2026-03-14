@@ -1,6 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["cdk/bin/app.ts", "cdk/lib/api-proxy.ts", "cdk/lib/ticket-blaster/handler.ts"],
+  "entry": [
+    "cdk/bin/app.ts",
+    "cdk/lib/api-proxy.ts",
+    "cdk/lib/ticket-blaster/handler.ts",
+    "cdk/lib/sigint-check.ts"
+  ],
   "project": ["src/**/*.{ts,tsx}", "cdk/**/*.ts"],
   "exclude": ["types", "nsTypes", "exports"]
 }
