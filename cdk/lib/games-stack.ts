@@ -37,13 +37,15 @@ interface GamesStackProps extends cdk.StackProps {
   bioApiUrl: string;
   bioApiSecret: string;
   tbJwtSecret: string;
+  sigintAesKey?: string;
 }
 
 export class GamesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GamesStackProps) {
     super(scope, id, props);
 
-    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret, tbJwtSecret } = props;
+    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret, tbJwtSecret, sigintAesKey } =
+      props;
     const domainName = subdomain ? `${subdomain}.${rootDomain}` : rootDomain;
 
     // ── S3 bucket ────────────────────────────────────────────────────────
@@ -151,6 +153,26 @@ export class GamesStack extends cdk.Stack {
       targets: [new eventTargets.LambdaFunction(tbFn)],
     });
 
+    // ── Sigint Check Lambda ──────────────────────────────────────────────
+    const sigintFn = new lambda.NodejsFunction(this, 'SigintCheck', {
+      entry: path.join(__dirname, 'sigint-check.ts'),
+      handler: 'handler',
+      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+      architecture: lambdaRuntime.Architecture.ARM_64,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(5),
+      environment: {
+        ...(sigintAesKey ? { SIGINT_AES_KEY: sigintAesKey } : {}),
+      },
+      logRetention: logs.RetentionDays.ONE_WEEK,
+      bundling: { minify: true, sourceMap: false, target: 'node22' },
+    });
+
+    new events.Rule(this, 'SigintWarmerRule', {
+      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+      targets: [new eventTargets.LambdaFunction(sigintFn)],
+    });
+
     // ── API Gateway ──────────────────────────────────────────────────────
     const api = new apigatewayv2.HttpApi(this, 'Api', {
       corsPreflight: {
@@ -172,6 +194,15 @@ export class GamesStack extends cdk.Stack {
       path: '/api/verify',
       methods: [apigatewayv2.HttpMethod.POST],
       integration: lambdaIntegration,
+    });
+
+    // Sigint check route
+    const sigintIntegration = new integrations.HttpLambdaIntegration('SigintIntegration', sigintFn);
+
+    api.addRoutes({
+      path: '/api/sigint-check',
+      methods: [apigatewayv2.HttpMethod.POST],
+      integration: sigintIntegration,
     });
 
     // Ticket Blaster routes

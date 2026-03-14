@@ -29,6 +29,7 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   bioApiUrl: 'https://api-bio-dev-jw.argus.pw',
   bioApiSecret,
   tbJwtSecret,
+  sigintAesKey: app.node.tryGetContext('sigintAesKey') as string | undefined,
   synthesizer: new CliCredentialsStackSynthesizer(),
 });
 

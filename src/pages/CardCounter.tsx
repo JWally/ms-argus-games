@@ -121,7 +121,6 @@ function makeConfettiPieces() {
 }
 
 function Confetti() {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const pieces = useMemo(() => makeConfettiPieces(), []);
   return (
     <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center overflow-hidden">

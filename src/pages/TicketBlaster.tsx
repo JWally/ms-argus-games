@@ -7,6 +7,8 @@ import { FIELDS, SECTIONS, HONEYPOT_NAMES, type Field } from '../games/ticket-bl
 import { CountdownTimer } from '../games/ticket-blaster/components/CountdownTimer';
 import type { LeaderboardEntry } from '../games/ticket-blaster/types';
 import { launchConfetti } from '../games/confetti';
+import { useSigintGuard } from '../hooks/useSigintGuard';
+import { NedryModal } from '../components/NedryModal';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -378,6 +380,7 @@ function SuccessPage({
 /* ── Main Component ──────────────────────────────────────── */
 
 export default function TicketBlaster() {
+  const { blocked, reason } = useSigintGuard();
   const { session, startSession } = useTicketSession();
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [focused, setFocused] = useState<string | null>(null);
@@ -544,6 +547,7 @@ export default function TicketBlaster() {
 
   /* ── Render ──────────────────────────────────────────── */
 
+  if (blocked) return <NedryModal reason={reason} />;
   if (phase === 'expired') return <ExpiredPage />;
   if (phase === 'success')
     return (
