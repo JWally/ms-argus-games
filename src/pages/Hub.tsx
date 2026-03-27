@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useCaptchaGate } from '../hooks/useCaptchaGate';
 
@@ -211,9 +211,19 @@ export default function Hub() {
                     backgroundSize: '20px 20px',
                   }}
                 />
-                <span className="relative text-5xl drop-shadow-lg transition-transform duration-300 group-hover:scale-110 sm:text-6xl">
-                  {game.emoji}
-                </span>
+                {game.id === 'multiply' ? (
+                  <span className="relative font-mono font-bold text-white drop-shadow-lg transition-transform duration-300 group-hover:scale-110">
+                    <span className="text-xl sm:text-2xl">2 </span>
+                    <span className="text-2xl text-amber-200 sm:text-3xl">×</span>
+                    <span className="text-xl sm:text-2xl"> 2 </span>
+                    <span className="text-xl text-amber-100/70 sm:text-2xl">=</span>
+                    <span className="text-2xl text-amber-300 sm:text-3xl"> ?</span>
+                  </span>
+                ) : (
+                  <span className="relative text-5xl drop-shadow-lg transition-transform duration-300 group-hover:scale-110 sm:text-6xl">
+                    {game.emoji}
+                  </span>
+                )}
               </div>
 
               {/* Card body */}
@@ -248,38 +258,6 @@ export default function Hub() {
 
         {/* Loading state */}
         {loading && <p className="mt-4 text-center text-xs text-gray-500">Verifying...</p>}
-
-        {/* Ticket Blaster promo */}
-        <div className="mt-5 sm:mt-6">
-          <Link
-            to="/ticket-blaster"
-            className="group flex items-center gap-4 overflow-hidden rounded-xl border-2 border-dashed border-arcade-gold/30 bg-arcade-card p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-arcade-gold/60 hover:shadow-[0_8px_30px_-8px_rgba(245,158,11,0.2)] active:scale-[0.99] sm:p-5"
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700 sm:h-16 sm:w-16">
-              <span className="text-3xl sm:text-4xl">{'\u{1F3AB}'}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-white sm:text-base">Ticket Blaster</h2>
-                <span className="rounded bg-arcade-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-arcade-gold">
-                  CTF
-                </span>
-              </div>
-              <p className="mt-0.5 text-xs text-gray-500">
-                Build a bot to buy Taylor Swift tickets. Most tickets wins.
-              </p>
-            </div>
-            <svg
-              className="h-5 w-5 shrink-0 text-gray-600 transition-all duration-300 group-hover:translate-x-1 group-hover:text-arcade-gold"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
       </main>
 
       {/* Footer */}
