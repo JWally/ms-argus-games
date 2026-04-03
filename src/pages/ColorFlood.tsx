@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { getLeaderboard } from '../games/leaderboard';
 import {
   COLORS,
   type ColorIndex,
@@ -61,6 +62,23 @@ export default function ColorFlood() {
   );
 
   const pct = useMemo(() => capturePercent(game), [game]);
+
+  const lb = useMemo(
+    () =>
+      game.won
+        ? getLeaderboard(
+            {
+              gameId: `color-flood-${boardSize}`,
+              baseScore: Math.round(game.par * 1.5),
+              lowerIsBetter: true,
+            },
+            game.moves
+          )
+        : null,
+    // Only recompute when the game is won or the board changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [game.won, boardSize]
+  );
 
   // Cell pixel size — fill available width (max 400px), minus gaps.
   const cellSize = `calc((min(100vw - 32px, 400px) - ${(boardSize - 1) * 2}px) / ${boardSize})`;
@@ -245,6 +263,7 @@ export default function ColorFlood() {
               BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''}
             </p>
           )}
+          {lb && <Leaderboard result={lb} className="mt-4 text-left" />}
           <button
             onClick={() => restart()}
             className="mt-5 px-6 py-2.5 text-sm font-bold tracking-widest transition-all hover:scale-105"

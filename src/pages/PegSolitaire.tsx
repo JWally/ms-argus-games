@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import {
   type GameState,
   initGame,
@@ -23,6 +24,7 @@ export default function PegSolitaire() {
   const [phase, setPhase] = useState<string>('ready');
   const [pegsLeft, setPegsLeft] = useState(14);
   const [highScore, setHighScore] = useState(() => getHighScore());
+  const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
   const getCanvasSize = useCallback(() => {
     const w = Math.min(window.innerWidth - 16, 400);
@@ -41,6 +43,7 @@ export default function PegSolitaire() {
     setPegsLeft(14);
     setPhase('ready');
     setHighScore(getHighScore());
+    setLb(null);
   }, [getCanvasSize]);
 
   // Game loop
@@ -70,6 +73,9 @@ export default function PegSolitaire() {
         saveHighScore(score);
         setHighScore(getHighScore());
         launchConfetti();
+        setLb(
+          getLeaderboard({ gameId: 'peg-solitaire', baseScore: 90, lowerIsBetter: true }, score)
+        );
       }
 
       render(ctx, s);
@@ -198,11 +204,18 @@ export default function PegSolitaire() {
         }}
       />
 
-      {/* Hint */}
+      {/* Hint / leaderboard */}
       {phase === 'ready' && (
         <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
           TAP TO BEGIN — JUMP PEGS TO ELIMINATE THEM
         </p>
+      )}
+      {phase === 'done' && lb && (
+        <Leaderboard
+          result={lb}
+          className="mt-3 w-full max-w-[400px]"
+          format={(s) => `${s.toFixed(1)}s`}
+        />
       )}
 
       <style>{`

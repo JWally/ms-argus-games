@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -11,6 +11,8 @@ import {
   getHighScore,
   saveHighScore,
 } from '../games/breakout/engine';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
+import { launchConfetti } from '../games/confetti';
 
 export default function Breakout() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,6 +24,7 @@ export default function Breakout() {
   const [lives, setLives] = useState(3);
   const [level, setLevel] = useState(1);
   const [highScore, setHighScore] = useState(() => getHighScore());
+  const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
   // ── Canvas sizing (portrait-optimized) ────────────────────────────
 
@@ -47,6 +50,7 @@ export default function Breakout() {
     setLives(3);
     setLevel(1);
     setHighScore(getHighScore());
+    setLb(null);
   }, [getCanvasSize]);
 
   // ── Game loop ─────────────────────────────────────────────────────
@@ -75,9 +79,17 @@ export default function Breakout() {
       if (s.level !== state.level) setLevel(s.level);
 
       // Save high score on game over
-      if (s.phase === 'game-over') {
+      if (s.phase === 'game-over' && state.phase !== 'game-over') {
         saveHighScore(s.score);
         setHighScore(getHighScore());
+        const result = getLeaderboard(
+          { gameId: 'breakout', baseScore: 15, lowerIsBetter: false },
+          s.score
+        );
+        setLb(result);
+        if (result.isNewBest || (result.playerRank !== null && result.playerRank <= 5)) {
+          launchConfetti();
+        }
       }
 
       render(ctx, s);
@@ -193,6 +205,9 @@ export default function Breakout() {
           </span>
         )}
       </div>
+      {phase === 'game-over' && lb && (
+        <Leaderboard result={lb} className="mt-3 w-full max-w-[400px]" />
+      )}
 
       <style>{`
         @keyframes bs-victory {

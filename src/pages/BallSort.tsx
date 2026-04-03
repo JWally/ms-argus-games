@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { getLeaderboard } from '../games/leaderboard';
 import {
   BALL_COLORS,
   DIFFICULTIES,
@@ -352,47 +353,9 @@ function ModalStep({ n, text, children }: { n: number; text: string; children: R
   );
 }
 
-// ── Fake leaderboard data ─────────────────────────────────────────────
+// ── Leaderboard config per difficulty ────────────────────────────────
 
-const FAKE_BOARDS: Record<DifficultyKey, { name: string; score: number }[]> = {
-  easy: [
-    { name: 'APEX-7', score: 14 },
-    { name: 'FALCON-2', score: 18 },
-    { name: 'VENOM-4', score: 21 },
-    { name: 'DELTA-9', score: 26 },
-    { name: 'GHOST-1', score: 31 },
-    { name: 'RAZOR-6', score: 38 },
-    { name: 'BRAVO-5', score: 47 },
-  ],
-  medium: [
-    { name: 'APEX-7', score: 24 },
-    { name: 'SIGMA-3', score: 29 },
-    { name: 'COBRA-8', score: 35 },
-    { name: 'HAWK-2', score: 43 },
-    { name: 'NOVA-5', score: 51 },
-    { name: 'REAPER-1', score: 60 },
-    { name: 'TANGO-4', score: 74 },
-  ],
-  hard: [
-    { name: 'TITAN-1', score: 40 },
-    { name: 'VIPER-6', score: 49 },
-    { name: 'ECHO-3', score: 58 },
-    { name: 'STORM-9', score: 67 },
-    { name: 'ALPHA-7', score: 79 },
-    { name: 'NEXUS-2', score: 93 },
-    { name: 'PHANTOM-5', score: 108 },
-  ],
-};
-
-function buildLeaderboard(difficulty: DifficultyKey, userScore: number) {
-  const fakes = FAKE_BOARDS[difficulty];
-  const rows: { name: string; score: number; isUser: boolean }[] = [
-    ...fakes.map((f) => ({ ...f, isUser: false })),
-    { name: 'YOU', score: userScore, isUser: true },
-  ];
-  rows.sort((a, b) => a.score - b.score);
-  return rows;
-}
+const LB_BASE: Record<DifficultyKey, number> = { easy: 25, medium: 42, hard: 65 };
 
 // ── Win modal ─────────────────────────────────────────────────────────
 
@@ -409,8 +372,16 @@ function WinModal({
   isNewRecord: boolean;
   onClose: () => void;
 }) {
-  const board = buildLeaderboard(difficulty, moves);
-  const userRank = board.findIndex((r) => r.isUser) + 1;
+  const lb = getLeaderboard(
+    {
+      gameId: `ball-sort-${difficulty}`,
+      baseScore: LB_BASE[difficulty],
+      lowerIsBetter: true,
+      count: 7,
+    },
+    moves
+  );
+  const userRank = lb.playerRank ?? lb.entries.length;
 
   return (
     <div
@@ -534,49 +505,10 @@ function WinModal({
             }}
           />
 
-          {/* Leaderboard */}
-          <div className="text-xs tracking-[0.25em] mb-2 text-center" style={{ color: '#166534' }}>
-            CONTAINMENT LEADERBOARD · {difficulty.toUpperCase()}
-          </div>
-          <div className="space-y-0.5">
-            {board.map((row, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 px-2 py-1"
-                style={{
-                  background: row.isUser ? '#0a2a14' : i % 2 === 0 ? '#030c06' : '#040e07',
-                  border: row.isUser ? BORDER_GREEN_DIM : '1px solid transparent',
-                  borderRadius: '2px',
-                  boxShadow: row.isUser ? '0 0 8px #22c55e22' : undefined,
-                }}
-              >
-                <span
-                  className="w-5 text-center font-mono text-xs"
-                  style={{
-                    color:
-                      i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#166534',
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <span
-                  className="flex-1 font-mono text-xs tracking-wider"
-                  style={{
-                    color: row.isUser ? '#4ade80' : '#1a6632',
-                    fontWeight: row.isUser ? 'bold' : undefined,
-                  }}
-                >
-                  {row.isUser ? '▶ YOU' : row.name}
-                </span>
-                <span
-                  className="font-mono text-xs"
-                  style={{ color: row.isUser ? '#4ade80' : '#166534' }}
-                >
-                  {row.score}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Leaderboard
+            result={lb}
+            title={`CONTAINMENT LEADERBOARD · ${difficulty.toUpperCase()}`}
+          />
 
           {/* CTA */}
           <button

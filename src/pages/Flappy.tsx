@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -10,7 +10,7 @@ import {
   saveHighScore,
 } from '../games/flappy/engine';
 import { launchConfetti } from '../games/confetti';
-import { getLeaderboard } from '../games/leaderboard';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 
 export default function Flappy() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,6 +20,7 @@ export default function Flappy() {
   const [score, setScore] = useState(0);
   const [phase, setPhase] = useState<string>('ready');
   const [highScore, setHighScore] = useState(() => getHighScore());
+  const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
   const getCanvasSize = useCallback(() => {
     const w = Math.min(window.innerWidth - 16, 400);
@@ -38,6 +39,7 @@ export default function Flappy() {
     setScore(0);
     setPhase('ready');
     setHighScore(getHighScore());
+    setLb(null);
   }, [getCanvasSize]);
 
   // Game loop
@@ -64,13 +66,13 @@ export default function Flappy() {
       if (s.phase === 'dead' && state.phase !== 'dead') {
         saveHighScore(s.score);
         setHighScore(getHighScore());
-        // Celebrate if good score
         if (s.score > 0) {
-          const lb = getLeaderboard(
+          const result = getLeaderboard(
             { gameId: 'flappy', baseScore: 12, lowerIsBetter: false },
             s.score
           );
-          if (lb.isNewBest || (lb.playerRank !== null && lb.playerRank <= 5)) {
+          setLb(result);
+          if (result.isNewBest || (result.playerRank !== null && result.playerRank <= 5)) {
             launchConfetti();
           }
         }
@@ -172,12 +174,13 @@ export default function Flappy() {
         }}
       />
 
-      {/* Hint */}
+      {/* Hint / leaderboard */}
       {phase === 'ready' && (
         <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
           TAP OR SPACE TO FLAP
         </p>
       )}
+      {phase === 'dead' && lb && <Leaderboard result={lb} className="mt-2 w-full max-w-[400px]" />}
 
       <style>{`
         @keyframes bs-victory {

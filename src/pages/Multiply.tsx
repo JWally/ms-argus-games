@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   startRound,
@@ -512,54 +512,12 @@ function MultiplyResults({
         )}
       </div>
 
-      {/* Leaderboard */}
-      <div
-        className="mt-5 w-full max-w-[400px] p-4"
-        style={{
-          background: '#040e07',
-          border: '1px solid #1a6632',
-          borderRadius: '2px',
-        }}
-      >
-        <h2
-          className="mb-3 text-center text-xs font-semibold uppercase tracking-wider"
-          style={{ color: '#166534' }}
-        >
-          LEADERBOARD — {game.factor !== null ? `${game.factor}s` : 'Random'}
-        </h2>
-        <div className="space-y-1">
-          {lb.entries.map((entry, i) => (
-            <div
-              key={`${entry.name}-${i}`}
-              className="flex items-center justify-between px-3 py-1.5 text-sm"
-              style={
-                entry.isPlayer
-                  ? {
-                      background: '#0a2a14',
-                      border: BORDER_GREEN_BRIGHT,
-                      borderRadius: '2px',
-                      color: '#86efac',
-                      fontWeight: 600,
-                    }
-                  : { color: '#166534' }
-              }
-            >
-              <span className="flex items-center gap-2">
-                <span
-                  className="w-5 text-right text-xs"
-                  style={{ color: i < 3 ? '#f59e0b' : '#166534' }}
-                >
-                  {i + 1}.
-                </span>
-                {entry.name}
-              </span>
-              <span className="text-xs" style={{ color: '#166534' }}>
-                {formatTime(entry.score)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Leaderboard
+        result={lb}
+        title={`LEADERBOARD — ${game.factor !== null ? `${game.factor}s` : 'Random'}`}
+        format={formatTime}
+        className="mt-5 w-full max-w-[400px]"
+      />
 
       {/* Problem breakdown */}
       <details className="mt-4 w-full max-w-[400px]">

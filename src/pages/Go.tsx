@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { CrtOverlay } from '../components/GameShell';
+import { CrtOverlay, Leaderboard } from '../components/GameShell';
 import {
   createGame,
   placeStone,
@@ -528,41 +528,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
         </div>
       )}
 
-      {/* Leaderboard */}
-      <div
-        style={{
-          background: '#040e07',
-          border: BORDER_DARKEST,
-          padding: '0.75rem',
-          marginBottom: '0.75rem',
-        }}
-      >
-        <div
-          className="mb-2 text-xs tracking-[0.3em]"
-          style={{ color: '#166534', fontFamily: 'monospace' }}
-        >
-          {lb.isNewBest ? '▲ NEW PERSONAL BEST — ' : ''}LEADERBOARD
-        </div>
-        <div className="space-y-0.5">
-          {lb.entries.map((entry, i) => (
-            <div
-              key={i}
-              className="flex justify-between font-mono text-xs"
-              style={{
-                color: entry.isPlayer ? '#4ade80' : '#1a6632',
-                fontWeight: entry.isPlayer ? 'bold' : 'normal',
-                background: entry.isPlayer ? '#0a2a1444' : 'transparent',
-                padding: '1px 4px',
-              }}
-            >
-              <span>
-                {String(i + 1).padStart(2, ' ')}. {entry.name}
-              </span>
-              <span>{entry.score}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Leaderboard result={lb} className="mb-3" />
 
       <button
         onClick={onNewGame}

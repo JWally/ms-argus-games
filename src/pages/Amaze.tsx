@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import {
   type Direction,
   type GameState,
@@ -127,6 +128,7 @@ export default function Amaze() {
   const [showBriefing, setShowBriefing] = useState(true);
   const [showComplete, setShowComplete] = useState(false);
   const [showLost, setShowLost] = useState(false);
+  const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
   // Ghost runner
   const [ghostGame, setGhostGame] = useState<GameState | null>(null);
@@ -205,8 +207,20 @@ export default function Amaze() {
 
   // ── Win / loss detection ──────────────────────────────────────────────────
   useEffect(() => {
-    if (game.won) setShowComplete(true);
-  }, [game.won]);
+    if (game.won) {
+      setShowComplete(true);
+      setLb(
+        getLeaderboard(
+          {
+            gameId: `amaze-${game.size}`,
+            baseScore: Math.round(game.par * 1.5),
+            lowerIsBetter: true,
+          },
+          game.moves
+        )
+      );
+    }
+  }, [game.won, game.size, game.par, game.moves]);
 
   useEffect(() => {
     if (game.lost) setShowLost(true);
@@ -231,6 +245,7 @@ export default function Amaze() {
       setBestScore(getBestScore(s));
       setShowComplete(false);
       setShowLost(false);
+      setLb(null);
       setNow(Date.now());
       setGhostGame(null);
       setGhostStep(0);
@@ -615,7 +630,9 @@ export default function Amaze() {
               {bestScore !== null && <span style={{ color: '#0f3a1c' }}> · BEST: {bestScore}</span>}
             </p>
 
-            <div className="mt-5 flex gap-3">
+            {lb && <Leaderboard result={lb} className="mt-4" />}
+
+            <div className="mt-4 flex gap-3">
               <button
                 onClick={startGhost}
                 className="flex-1 py-2.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105"
