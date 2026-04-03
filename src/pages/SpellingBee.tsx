@@ -19,6 +19,10 @@ import {
 } from '../games/spelling-bee/engine';
 import { launchConfetti } from '../games/confetti';
 
+const BORDER_GREEN_DIM = '1px solid #1a6632';
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+const GLOW_GREEN = '0 0 10px #22c55e44';
+
 export default function SpellingBee() {
   const [game, setGame] = useState<GameState>({
     phase: 'setup',
@@ -174,7 +178,7 @@ export default function SpellingBee() {
             className="p-4"
             style={{
               background: '#040e07',
-              border: '1px solid #1a6632',
+              border: BORDER_GREEN_DIM,
               borderRadius: '2px',
             }}
           >
@@ -189,7 +193,7 @@ export default function SpellingBee() {
               className="w-full px-3 py-2 text-sm outline-none"
               style={{
                 background: '#040e07',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 color: '#86efac',
                 borderRadius: '2px',
               }}
@@ -204,7 +208,7 @@ export default function SpellingBee() {
               className="mt-2 w-full px-3 py-2 text-sm outline-none resize-none"
               style={{
                 background: '#040e07',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 color: '#86efac',
                 borderRadius: '2px',
               }}
@@ -221,9 +225,9 @@ export default function SpellingBee() {
                 className="px-4 py-1.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
                 style={{
                   background: '#040e07',
-                  border: '1px solid #22c55e',
+                  border: BORDER_GREEN_BRIGHT,
                   color: '#4ade80',
-                  boxShadow: '0 0 10px #22c55e44',
+                  boxShadow: GLOW_GREEN,
                   borderRadius: '2px',
                 }}
               >
@@ -261,9 +265,9 @@ export default function SpellingBee() {
                     className="shrink-0 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
                     style={{
                       background: '#040e07',
-                      border: '1px solid #22c55e',
+                      border: BORDER_GREEN_BRIGHT,
                       color: '#4ade80',
-                      boxShadow: '0 0 10px #22c55e44',
+                      boxShadow: GLOW_GREEN,
                       borderRadius: '2px',
                     }}
                   >
@@ -393,9 +397,9 @@ export default function SpellingBee() {
             className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
             style={{
               background: '#040e07',
-              border: '1px solid #22c55e',
+              border: BORDER_GREEN_BRIGHT,
               color: '#4ade80',
-              boxShadow: '0 0 10px #22c55e44',
+              boxShadow: GLOW_GREEN,
               borderRadius: '2px',
             }}
           >
@@ -579,9 +583,9 @@ export default function SpellingBee() {
             className="flex h-11 flex-1 max-w-[140px] items-center justify-center text-sm font-bold select-none transition-all active:scale-95 disabled:opacity-30"
             style={{
               background: '#040e07',
-              border: '1px solid #22c55e',
+              border: BORDER_GREEN_BRIGHT,
               color: '#4ade80',
-              boxShadow: '0 0 10px #22c55e44',
+              boxShadow: GLOW_GREEN,
               borderRadius: '2px',
             }}
           >

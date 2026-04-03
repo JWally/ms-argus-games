@@ -14,6 +14,7 @@ import {
 import { launchConfetti } from '../games/confetti';
 import { getLeaderboard } from '../games/leaderboard';
 
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
 const FACTORS_GRID = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 export default function Multiply() {
@@ -398,7 +399,7 @@ export default function Multiply() {
             className="w-full py-2 text-lg font-bold transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
             style={{
               background: '#040e07',
-              border: '1px solid #22c55e',
+              border: BORDER_GREEN_BRIGHT,
               color: '#4ade80',
               boxShadow: '0 0 10px #22c55e44',
               borderRadius: '2px',
@@ -535,7 +536,7 @@ function MultiplyResults({
                 entry.isPlayer
                   ? {
                       background: '#0a2a14',
-                      border: '1px solid #22c55e',
+                      border: BORDER_GREEN_BRIGHT,
                       borderRadius: '2px',
                       color: '#86efac',
                       fontWeight: 600,
@@ -603,7 +604,7 @@ function MultiplyResults({
           className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
           style={{
             background: '#040e07',
-            border: '1px solid #22c55e',
+            border: BORDER_GREEN_BRIGHT,
             color: '#4ade80',
             boxShadow: '0 0 10px #22c55e44',
             borderRadius: '2px',

@@ -15,6 +15,8 @@ import type { GoState } from '../games/go/engine';
 import { pickMove, STAR_POINTS } from '../games/go/mcts';
 import { getLeaderboard } from '../games/leaderboard';
 
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+const BORDER_DARKEST = '1px solid #0f2a18';
 const SIZE = 9;
 const COL_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J']; // no I
 const ROW_LABELS = ['9', '8', '7', '6', '5', '4', '3', '2', '1'];
@@ -76,7 +78,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
         className="w-full max-w-sm"
         style={{
           background: '#040e07',
-          border: '1px solid #22c55e',
+          border: BORDER_GREEN_BRIGHT,
           boxShadow: '0 0 40px #22c55e22',
           padding: '1.5rem',
         }}
@@ -129,7 +131,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           className="w-full py-2.5 font-mono text-xs font-bold tracking-[0.2em] transition-all"
           style={{
             background: '#0a2a14',
-            border: '1px solid #22c55e',
+            border: BORDER_GREEN_BRIGHT,
             color: '#4ade80',
           }}
           onMouseEnter={(e) => {
@@ -481,7 +483,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
           className="mb-3"
           style={{
             background: '#040e07',
-            border: '1px solid #0f2a18',
+            border: BORDER_DARKEST,
             padding: '0.75rem',
             fontFamily: 'monospace',
           }}
@@ -505,7 +507,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
                 style={{
                   color: highlight === 1 ? '#f87171' : highlight === 2 ? '#e2e8f0' : '#1a6632',
                   fontWeight: highlight ? 'bold' : 'normal',
-                  borderTop: highlight ? '1px solid #0f2a18' : undefined,
+                  borderTop: highlight ? BORDER_DARKEST : undefined,
                   paddingTop: highlight ? '0.25rem' : undefined,
                   marginTop: highlight ? '0.25rem' : undefined,
                 }}
@@ -517,7 +519,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
           </div>
           <div
             className="mt-2 pt-2 text-center text-xs tracking-widest"
-            style={{ borderTop: '1px solid #0f2a18', color: '#22c55e' }}
+            style={{ borderTop: BORDER_DARKEST, color: '#22c55e' }}
           >
             {playerWon
               ? `MARGIN: +${score.margin.toFixed(1)}`
@@ -530,7 +532,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
       <div
         style={{
           background: '#040e07',
-          border: '1px solid #0f2a18',
+          border: BORDER_DARKEST,
           padding: '0.75rem',
           marginBottom: '0.75rem',
         }}
@@ -567,7 +569,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
         className="w-full py-2 font-mono text-xs font-bold tracking-[0.2em] transition-all"
         style={{
           background: '#0a2a14',
-          border: '1px solid #22c55e',
+          border: BORDER_GREEN_BRIGHT,
           color: '#4ade80',
         }}
         onMouseEnter={(e) => {
@@ -750,7 +752,7 @@ export default function Go() {
             className="flex justify-between px-3 py-1"
             style={{
               background: '#040e07',
-              border: '1px solid #0f2a18',
+              border: BORDER_DARKEST,
               fontFamily: 'monospace',
             }}
           >
@@ -857,7 +859,7 @@ export default function Go() {
         {/* Footer */}
         <footer
           className="px-4 py-3 text-center font-mono text-xs tracking-wider"
-          style={{ borderTop: '1px solid #0f2a18', color: '#0f3018' }}
+          style={{ borderTop: BORDER_DARKEST, color: '#0f3018' }}
         >
           POWERED BY{' '}
           <a

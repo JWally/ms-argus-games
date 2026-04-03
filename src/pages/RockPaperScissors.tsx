@@ -24,6 +24,12 @@ import {
   saveResult,
 } from '../games/rps/engine';
 
+const BORDER_GREEN_DIM = '1px solid #1a6632';
+const BORDER_DARKEST = '1px solid #0f2a18';
+const BORDER_DARK = '1px solid #0f3018';
+const GLOW_GREEN_SM = '0 0 6px #22c55e';
+const FSZ_SM = 'clamp(11px, 3vw, 13px)';
+const FSZ_MD = 'clamp(12px, 3.2vw, 14px)';
 const LABEL: Record<Choice, string> = { rock: 'ROCK', paper: 'PAPER', scissors: 'SCISSORS' };
 type Phase = 'idle' | 'locked' | 'thinking' | 'result';
 const PEEK_MS = 2000;
@@ -240,7 +246,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
         className="w-full overflow-y-auto sm:max-w-md"
         style={{
           background: '#040e07',
-          border: '1px solid #1a6632',
+          border: BORDER_GREEN_DIM,
           borderRadius: '2px 2px 0 0',
           boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
           animation: 'modal-in 0.25s ease',
@@ -289,7 +295,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
                 width: 28,
                 height: 28,
                 background: '#0a2a14',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 borderRadius: '2px',
                 color: '#4ade80',
                 fontSize: 13,
@@ -300,14 +306,11 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
             <div className="flex-1">
               <div
                 className="font-mono font-bold tracking-[0.12em]"
-                style={{ fontSize: 'clamp(11px, 3vw, 13px)', color: '#4ade80' }}
+                style={{ fontSize: FSZ_SM, color: '#4ade80' }}
               >
                 STANDARD COMBAT
               </div>
-              <p
-                className="mt-1.5 leading-relaxed"
-                style={{ fontSize: 'clamp(12px, 3.2vw, 14px)', color: '#86efac' }}
-              >
+              <p className="mt-1.5 leading-relaxed" style={{ fontSize: FSZ_MD, color: '#86efac' }}>
                 Best of {TOTAL_ROUNDS} rounds against the AI. The system{' '}
                 <span style={{ color: '#4ade80' }}>studies your patterns</span> — if you keep
                 throwing rock, it learns. Draws don&apos;t count toward the score. Outwit the
@@ -326,7 +329,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
                 width: 28,
                 height: 28,
                 background: '#0a2a14',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 borderRadius: '2px',
                 color: '#4ade80',
                 fontSize: 13,
@@ -337,14 +340,11 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
             <div className="flex-1">
               <div
                 className="font-mono font-bold tracking-[0.12em]"
-                style={{ fontSize: 'clamp(11px, 3vw, 13px)', color: '#f87171' }}
+                style={{ fontSize: FSZ_SM, color: '#f87171' }}
               >
                 SNEAK PEEK — PROVING FAIRNESS
               </div>
-              <p
-                className="mt-1.5 leading-relaxed"
-                style={{ fontSize: 'clamp(12px, 3.2vw, 14px)', color: '#86efac' }}
-              >
+              <p className="mt-1.5 leading-relaxed" style={{ fontSize: FSZ_MD, color: '#86efac' }}>
                 Each round the AI{' '}
                 <span style={{ color: '#4ade80' }}>locks in its choice before you do</span>. Once
                 locked, hit{' '}
@@ -377,7 +377,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
                 width: 28,
                 height: 28,
                 background: '#0a2a14',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 borderRadius: '2px',
                 color: '#4ade80',
                 fontSize: 13,
@@ -388,7 +388,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
             <div className="flex-1">
               <div
                 className="font-mono font-bold tracking-[0.12em]"
-                style={{ fontSize: 'clamp(11px, 3vw, 13px)', color: '#22d3ee' }}
+                style={{ fontSize: FSZ_SM, color: '#22d3ee' }}
               >
                 CYBORG MODE — CRUSH YOUR FRIENDS
               </div>
@@ -399,10 +399,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
                 &quot;What is best in life? To crush your enemies, see them driven before you, and
                 hear the lamentations of their women.&quot; — Conan
               </p>
-              <p
-                className="mt-2 leading-relaxed"
-                style={{ fontSize: 'clamp(12px, 3.2vw, 14px)', color: '#86efac' }}
-              >
+              <p className="mt-2 leading-relaxed" style={{ fontSize: FSZ_MD, color: '#86efac' }}>
                 Hand your phone to a friend and{' '}
                 <span style={{ color: '#22d3ee' }}>enter whatever they throw</span>. The AI reads
                 their patterns and{' '}
@@ -427,7 +424,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           className="w-full font-mono font-bold tracking-[0.2em] transition-all hover:scale-105 active:scale-95"
           style={{
             padding: 'clamp(10px, 3vw, 14px)',
-            fontSize: 'clamp(12px, 3.2vw, 14px)',
+            fontSize: FSZ_MD,
             background: '#040e07',
             border: '1px solid #22c55e',
             color: '#4ade80',
@@ -1070,7 +1067,7 @@ export default function RockPaperScissors() {
             className="rounded px-2 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
             style={{
               background: '#040e07',
-              border: '1px solid #0f3018',
+              border: BORDER_DARK,
               color: '#1a6632',
               boxShadow: '0 0 6px #22c55e11',
             }}
@@ -1082,7 +1079,7 @@ export default function RockPaperScissors() {
             className="rounded px-3 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
             style={{
               background: '#040e07',
-              border: '1px solid #0f3018',
+              border: BORDER_DARK,
               color: '#1a6632',
               boxShadow: '0 0 6px #22c55e11',
             }}
@@ -1118,7 +1115,7 @@ export default function RockPaperScissors() {
         className="mb-2 w-full max-w-lg rounded px-3 py-2"
         style={{
           background: '#040e07',
-          border: '1px solid #0f3018',
+          border: BORDER_DARK,
           boxShadow: 'inset 0 0 20px #00000060',
         }}
       >
@@ -1139,7 +1136,7 @@ export default function RockPaperScissors() {
                     : '#22c55e',
               boxShadow: isOver
                 ? game.seriesWinner === 'human'
-                  ? '0 0 6px #22c55e'
+                  ? GLOW_GREEN_SM
                   : game.seriesWinner === 'ai'
                     ? '0 0 6px #dc2626'
                     : 'none'
@@ -1147,7 +1144,7 @@ export default function RockPaperScissors() {
                   ? '0 0 6px #f59e0b'
                   : phase === 'result' && outcome === 'lose'
                     ? '0 0 6px #dc2626'
-                    : '0 0 6px #22c55e',
+                    : GLOW_GREEN_SM,
             }}
           />
           <span
@@ -1164,7 +1161,7 @@ export default function RockPaperScissors() {
                   : streaking
                     ? '#fcd34d'
                     : '#86efac',
-              textShadow: isOver && game.seriesWinner === 'human' ? '0 0 6px #22c55e' : undefined,
+              textShadow: isOver && game.seriesWinner === 'human' ? GLOW_GREEN_SM : undefined,
             }}
           >
             {msg}
@@ -1184,7 +1181,7 @@ export default function RockPaperScissors() {
         className="w-full max-w-lg"
         style={{
           background: '#040e07',
-          border: '1px solid #0f2a18',
+          border: BORDER_DARKEST,
           boxShadow: 'inset 0 0 12px #00000050',
         }}
       >
@@ -1299,17 +1296,14 @@ export default function RockPaperScissors() {
 
       {/* Choice + Peek buttons */}
       {showChoiceButtons && !isOver && (
-        <div
-          className="w-full max-w-lg"
-          style={{ background: '#040e07', border: '1px solid #0f2a18' }}
-        >
+        <div className="w-full max-w-lg" style={{ background: '#040e07', border: BORDER_DARKEST }}>
           {/* Peek (vs-ai locked) */}
           {mode === 'vs-ai' && phase === 'locked' && (
             <button
               onClick={handlePeek}
               disabled={peeking}
               className={`${btnRow} hover:bg-red-950/20 disabled:opacity-40`}
-              style={{ borderBottom: '1px solid #0f2a18' }}
+              style={{ borderBottom: BORDER_DARKEST }}
             >
               <div
                 className="mr-4 w-px self-stretch transition-colors"
@@ -1348,9 +1342,7 @@ export default function RockPaperScissors() {
               className={`${btnRow} hover:bg-[#061a0c]`}
               style={{
                 borderTop:
-                  i > 0 || (mode === 'vs-ai' && phase === 'locked')
-                    ? '1px solid #0f2a18'
-                    : undefined,
+                  i > 0 || (mode === 'vs-ai' && phase === 'locked') ? BORDER_DARKEST : undefined,
               }}
             >
               <div className="mr-4 w-px self-stretch bg-[#22c55e33] transition-colors group-hover:bg-[#22c55e99]" />

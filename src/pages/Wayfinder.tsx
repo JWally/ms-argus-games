@@ -18,6 +18,8 @@ import {
 } from '../games/wayfinder/engine';
 import { launchConfetti } from '../games/confetti';
 
+const BORDER_GREEN_DIM = '1px solid #1a6632';
+
 export default function Wayfinder() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState | null>(null);
@@ -225,7 +227,7 @@ export default function Wayfinder() {
           disabled={numCities <= MIN_CITIES}
           className="flex h-7 w-7 items-center justify-center font-mono text-sm font-bold transition-colors disabled:opacity-25"
           style={{
-            border: '1px solid #1a6632',
+            border: BORDER_GREEN_DIM,
             color: '#22c55e',
             background: '#040e07',
             borderRadius: '2px',
@@ -246,7 +248,7 @@ export default function Wayfinder() {
           disabled={numCities >= MAX_CITIES}
           className="flex h-7 w-7 items-center justify-center font-mono text-sm font-bold transition-colors disabled:opacity-25"
           style={{
-            border: '1px solid #1a6632',
+            border: BORDER_GREEN_DIM,
             color: '#22c55e',
             background: '#040e07',
             borderRadius: '2px',
@@ -266,7 +268,7 @@ export default function Wayfinder() {
         onClick={handleClick}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-        style={{ border: '1px solid #1a6632', borderRadius: '2px' }}
+        style={{ border: BORDER_GREEN_DIM, borderRadius: '2px' }}
       />
 
       {phase === 'ready' && (
