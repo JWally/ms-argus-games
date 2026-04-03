@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
 import {
   type GameState,
   startRound,
@@ -170,14 +170,7 @@ export default function Multiply() {
           COMPUTATION SPEED DRILL
         </p>
 
-        <div
-          className="my-2 h-px w-full max-w-md"
-          style={{
-            background:
-              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-            boxShadow: '0 0 6px #22c55e44',
-          }}
-        />
+        <GameDivider className="my-2 max-w-md" />
 
         <p className="mb-3 text-xs tracking-[0.2em]" style={{ color: '#166534' }}>
           SELECT A FACTOR TO BEGIN

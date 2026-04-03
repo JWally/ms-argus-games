@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
 import {
   type GameState,
   createGame,
@@ -94,14 +94,7 @@ export default function Ataxx() {
       </div>
 
       {/* Divider */}
-      <div
-        className="my-2 h-px w-full max-w-[400px]"
-        style={{
-          background:
-            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-          boxShadow: '0 0 6px #22c55e44',
-        }}
-      />
+      <GameDivider />
 
       {/* Score bar */}
       <div className="mt-2 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">

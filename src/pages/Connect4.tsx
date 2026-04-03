@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -218,14 +218,7 @@ export default function Connect4() {
       </div>
 
       {/* Divider */}
-      <div
-        className="my-2 h-px w-full max-w-[420px]"
-        style={{
-          background:
-            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-          boxShadow: '0 0 6px #22c55e44',
-        }}
-      />
+      <GameDivider className="my-2 max-w-[420px]" />
 
       {/* Canvas */}
       <canvas

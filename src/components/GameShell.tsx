@@ -18,7 +18,7 @@ export function CrtOverlay() {
 export function GameDivider({ className }: { className?: string }) {
   return (
     <div
-      className={`my-2 h-px w-full max-w-[400px] ${className ?? ''}`}
+      className={`h-px w-full ${className ?? 'my-2 max-w-[400px]'}`}
       style={{
         background:
           'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
 import {
   type GameState,
   type WordList,
@@ -166,14 +166,7 @@ export default function SpellingBee() {
           PHONETIC INTELLIGENCE DRILL
         </p>
 
-        <div
-          className="my-2 mx-auto h-px w-full max-w-md"
-          style={{
-            background:
-              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-            boxShadow: '0 0 6px #22c55e44',
-          }}
-        />
+        <GameDivider className="my-2 mx-auto max-w-md" />
 
         <div className="mx-auto mt-2 w-full max-w-[480px] flex-1 space-y-4">
           {/* Add new list */}

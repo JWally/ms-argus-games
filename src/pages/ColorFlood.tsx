@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
 import {
   COLORS,
   type ColorIndex,
@@ -94,14 +94,7 @@ export default function ColorFlood() {
       </div>
 
       {/* Divider */}
-      <div
-        className="my-2 h-px w-full max-w-[400px]"
-        style={{
-          background:
-            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-          boxShadow: '0 0 6px #22c55e44',
-        }}
-      />
+      <GameDivider />
 
       {/* Size selector */}
       <div className="mt-2 flex gap-2">
