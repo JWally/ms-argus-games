@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import {
   type GameState,
@@ -162,7 +162,11 @@ export default function Multiply() {
         />
 
         <div className="mb-3 w-full max-w-[400px]">
-          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+          <Link
+            to="/"
+            className="text-sm font-mono tracking-widest hover:underline transition-colors"
+            style={{ color: '#22c55e' }}
+          >
             &larr; Back to Arcade
           </Link>
         </div>
@@ -390,19 +394,12 @@ export default function Multiply() {
       <div className="mx-auto mt-10 max-w-[320px] text-center">
         <div
           style={{
-            color:
-              flash === 'correct'
-                ? '#4ade80'
-                : flash === 'wrong'
-                  ? '#f87171'
-                  : '#86efac',
+            color: flash === 'correct' ? '#4ade80' : flash === 'wrong' ? '#f87171' : '#86efac',
             transition: 'color 150ms',
           }}
         >
           <p className="text-6xl font-bold sm:text-7xl">
-            {problem.a}{' '}
-            <span style={{ color: '#4ade80' }}>&times;</span>{' '}
-            {problem.b}
+            {problem.a} <span style={{ color: '#4ade80' }}>&times;</span> {problem.b}
           </p>
           <p className="mt-1 h-5 text-sm font-bold">
             {showStreakPop ? (
@@ -426,15 +423,17 @@ export default function Multiply() {
             placeholder="?"
             autoFocus
             className="w-full px-4 py-2 text-center text-2xl font-bold outline-none transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            style={{
-              background: '#040e07',
-              border: `2px solid ${
-                flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
-              }`,
-              color: '#86efac',
-              borderRadius: '2px',
-              MozAppearance: 'textfield',
-            } as React.CSSProperties}
+            style={
+              {
+                background: '#040e07',
+                border: `2px solid ${
+                  flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
+                }`,
+                color: '#86efac',
+                borderRadius: '2px',
+                MozAppearance: 'textfield',
+              } as CSSProperties
+            }
           />
           <button
             onClick={handleSubmit}
@@ -531,7 +530,11 @@ function MultiplyResults({
       />
 
       <div className="mb-4 w-full max-w-[400px]">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+        <Link
+          to="/"
+          className="text-sm font-mono tracking-widest hover:underline transition-colors"
+          style={{ color: '#22c55e' }}
+        >
           &larr; Back to Arcade
         </Link>
       </div>
@@ -639,8 +642,7 @@ function MultiplyResults({
                   a.answer
                 ) : (
                   <>
-                    {a.userAnswer}{' '}
-                    <span style={{ color: '#166534' }}>({a.answer})</span>
+                    {a.userAnswer} <span style={{ color: '#166534' }}>({a.answer})</span>
                   </>
                 )}
               </span>

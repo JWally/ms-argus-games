@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BALL_COLORS,
@@ -18,19 +18,19 @@ import { launchConfetti } from '../games/confetti';
 
 // ── Layout constants ──────────────────────────────────────────────────
 
-const BALL   = 36;
-const GAP    = 4;
-const PADH   = 6;
-const PADB   = 8;
+const BALL = 36;
+const GAP = 4;
+const PADH = 6;
+const PADB = 8;
 const BORDER = 2;
 
 const TUBE_INNER_W = BALL + PADH * 2;
 const TUBE_OUTER_W = TUBE_INNER_W + BORDER * 2;
-const TUBE_BODY_H  = TUBE_CAPACITY * (BALL + GAP) - GAP + PADB + BORDER;
-const FLOAT_H      = BALL + 14;
+const TUBE_BODY_H = TUBE_CAPACITY * (BALL + GAP) - GAP + PADB + BORDER;
+const FLOAT_H = BALL + 14;
 
 function isComplete(tube: Tube): boolean {
-  return tube.length === TUBE_CAPACITY && tube.every(c => c === tube[0]);
+  return tube.length === TUBE_CAPACITY && tube.every((c) => c === tube[0]);
 }
 
 // ── Ball ─────────────────────────────────────────────────────────────
@@ -40,13 +40,13 @@ function Ball({ colorIndex, animate }: { colorIndex: number; animate?: boolean }
   return (
     <div
       style={{
-        width:           BALL,
-        height:          BALL,
-        borderRadius:    '50%',
-        flexShrink:      0,
+        width: BALL,
+        height: BALL,
+        borderRadius: '50%',
+        flexShrink: 0,
         backgroundColor: hex,
-        boxShadow:       `inset -4px -4px 8px rgba(0,0,0,0.5), inset 3px 3px 7px rgba(255,255,255,0.22), 0 0 6px ${hex}55`,
-        animation:       animate ? 'float-bob 1.5s ease-in-out infinite' : undefined,
+        boxShadow: `inset -4px -4px 8px rgba(0,0,0,0.5), inset 3px 3px 7px rgba(255,255,255,0.22), 0 0 6px ${hex}55`,
+        animation: animate ? 'float-bob 1.5s ease-in-out infinite' : undefined,
       }}
     />
   );
@@ -55,43 +55,48 @@ function Ball({ colorIndex, animate }: { colorIndex: number; animate?: boolean }
 // ── Tube column ───────────────────────────────────────────────────────
 
 function TubeCol({
-  tube, index, isSelected, isShaking, onClick,
+  tube,
+  index,
+  isSelected,
+  isShaking,
+  onClick,
 }: {
-  tube: Tube; index: number; isSelected: boolean; isShaking: boolean;
+  tube: Tube;
+  index: number;
+  isSelected: boolean;
+  isShaking: boolean;
   onClick: (i: number) => void;
 }) {
-  const group     = topGroup(tube);
-  const floating  = isSelected && group ? group : null;
-  const complete  = isComplete(tube);
+  const group = topGroup(tube);
+  const floating = isSelected && group ? group : null;
+  const complete = isComplete(tube);
   const tubeColor = complete ? BALL_COLORS[tube[0]].hex : null;
 
-  const innerBalls = floating
-    ? (tube.slice(0, tube.length - floating.count) as Tube)
-    : tube;
+  const innerBalls = floating ? (tube.slice(0, tube.length - floating.count) as Tube) : tube;
 
   const borderColor = complete
     ? (tubeColor ?? '#22c55e') + 'bb'
     : isSelected
-    ? '#22c55e'
-    : '#0f3018';
+      ? '#22c55e'
+      : '#0f3018';
 
   const boxShadow = complete
     ? `0 0 22px ${tubeColor}55, inset 0 0 12px ${tubeColor}18`
     : isSelected
-    ? '0 0 16px #22c55e55, inset 0 0 8px #0d3a1a'
-    : 'inset 0 0 6px #00000060';
+      ? '0 0 16px #22c55e55, inset 0 0 8px #0d3a1a'
+      : 'inset 0 0 6px #00000060';
 
   const background = complete
     ? `linear-gradient(to bottom, ${tubeColor}18, rgba(3,12,6,0.85))`
     : isSelected
-    ? 'linear-gradient(to bottom, #0a1f14, #030c06cc)'
-    : 'linear-gradient(to bottom, #061510, #030c06cc)';
+      ? 'linear-gradient(to bottom, #0a1f14, #030c06cc)'
+      : 'linear-gradient(to bottom, #061510, #030c06cc)';
 
   return (
     <div
       className="flex flex-col items-center"
       style={{
-        width:     TUBE_OUTER_W,
+        width: TUBE_OUTER_W,
         animation: isShaking ? 'tube-shake 0.4s ease' : undefined,
       }}
     >
@@ -101,11 +106,7 @@ function TubeCol({
         className="flex flex-col items-center justify-end pb-1"
       >
         {floating && (
-          <Ball
-            key={`float-${index}-${floating.color}`}
-            colorIndex={floating.color}
-            animate
-          />
+          <Ball key={`float-${index}-${floating.color}`} colorIndex={floating.color} animate />
         )}
       </div>
 
@@ -114,23 +115,23 @@ function TubeCol({
         onClick={() => onClick(index)}
         className="cursor-pointer"
         style={{
-          width:                  TUBE_OUTER_W,
-          height:                 TUBE_BODY_H,
-          borderWidth:            BORDER,
-          borderTopWidth:         0,
-          borderStyle:            'solid',
+          width: TUBE_OUTER_W,
+          height: TUBE_BODY_H,
+          borderWidth: BORDER,
+          borderTopWidth: 0,
+          borderStyle: 'solid',
           borderColor,
-          borderBottomLeftRadius:  9999,
+          borderBottomLeftRadius: 9999,
           borderBottomRightRadius: 9999,
           boxShadow,
           background,
-          display:        'flex',
-          flexDirection:  'column',
-          alignItems:     'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
           justifyContent: 'flex-end',
-          paddingBottom:  PADB,
-          gap:            GAP,
-          transition:     'border-color 0.25s, box-shadow 0.25s, background 0.25s',
+          paddingBottom: PADB,
+          gap: GAP,
+          transition: 'border-color 0.25s, box-shadow 0.25s, background 0.25s',
         }}
       >
         {[...innerBalls].reverse().map((colorIdx, i) => (
@@ -180,38 +181,38 @@ function MiniTube({
   return (
     <div
       style={{
-        width:                  MINI + MINI_PAD * 2 + 2,
-        height:                 TUBE_CAPACITY * (MINI + MINI_GAP) - MINI_GAP + MINI_PAD + 2,
-        borderWidth:            1.5,
-        borderTopWidth:         0,
-        borderStyle:            'solid',
-        borderColor:            complete ? (tubeColor ?? '#22c55e') + 'cc' : highlight ? '#22c55e' : '#1a4a2a',
-        borderBottomLeftRadius:  9999,
+        width: MINI + MINI_PAD * 2 + 2,
+        height: TUBE_CAPACITY * (MINI + MINI_GAP) - MINI_GAP + MINI_PAD + 2,
+        borderWidth: 1.5,
+        borderTopWidth: 0,
+        borderStyle: 'solid',
+        borderColor: complete ? (tubeColor ?? '#22c55e') + 'cc' : highlight ? '#22c55e' : '#1a4a2a',
+        borderBottomLeftRadius: 9999,
         borderBottomRightRadius: 9999,
-        boxShadow:              complete
+        boxShadow: complete
           ? `0 0 10px ${tubeColor}55`
           : highlight
-          ? '0 0 8px #22c55e44'
-          : undefined,
-        background:             'rgba(6,21,16,0.55)',
-        display:                'flex',
-        flexDirection:          'column',
-        alignItems:             'center',
-        justifyContent:         'flex-end',
-        paddingBottom:          MINI_PAD,
-        gap:                    MINI_GAP,
+            ? '0 0 8px #22c55e44'
+            : undefined,
+        background: 'rgba(6,21,16,0.55)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingBottom: MINI_PAD,
+        gap: MINI_GAP,
       }}
     >
       {[...colors].reverse().map((c, i) => (
         <div
           key={i}
           style={{
-            width:           MINI,
-            height:          MINI,
-            borderRadius:    '50%',
+            width: MINI,
+            height: MINI,
+            borderRadius: '50%',
             backgroundColor: BALL_COLORS[c].hex,
-            boxShadow:       'inset -1px -1px 3px rgba(0,0,0,0.5)',
-            flexShrink:      0,
+            boxShadow: 'inset -1px -1px 3px rgba(0,0,0,0.5)',
+            flexShrink: 0,
           }}
         />
       ))}
@@ -237,7 +238,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
           animation: 'modal-in 0.22s ease',
         }}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <h2
           className="font-display text-center text-xs tracking-[0.3em]"
@@ -248,17 +249,15 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
         >
           CONTAINMENT PROTOCOL
         </h2>
-        <div
-          className="mt-1 text-center text-sm tracking-[0.3em]"
-          style={{ color: '#166534' }}
-        >
+        <div className="mt-1 text-center text-sm tracking-[0.3em]" style={{ color: '#166534' }}>
           OPERATIONAL BRIEFING
         </div>
 
         <div
           className="my-3 h-px"
           style={{
-            background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+            background:
+              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
             boxShadow: '0 0 4px #22c55e44',
           }}
         />
@@ -269,7 +268,9 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
               <div className="flex flex-col items-center gap-1">
                 <div
                   style={{
-                    width: MINI, height: MINI, borderRadius: '50%',
+                    width: MINI,
+                    height: MINI,
+                    borderRadius: '50%',
                     backgroundColor: BALL_COLORS[2].hex,
                     boxShadow: 'inset -1px -1px 3px rgba(0,0,0,0.4)',
                     animation: 'float-bob 1.5s ease-in-out infinite',
@@ -284,7 +285,9 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           <ModalStep n={2} text="Transfer to a vessel with matching compound on top">
             <div className="flex items-end gap-1.5">
               <MiniTube colors={[1, 0]} />
-              <span className="mb-4 text-base" style={{ color: '#166534' }}>→</span>
+              <span className="mb-4 text-base" style={{ color: '#166534' }}>
+                →
+              </span>
               <MiniTube colors={[0, 2, 2]} highlight />
             </div>
           </ModalStep>
@@ -299,10 +302,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           </ModalStep>
         </div>
 
-        <p
-          className="mt-5 text-center text-xs tracking-wider"
-          style={{ color: '#0f4a22' }}
-        >
+        <p className="mt-5 text-center text-xs tracking-wider" style={{ color: '#0f4a22' }}>
           ROLLBACK AVAILABLE AT ANY CHECKPOINT
         </p>
 
@@ -340,7 +340,9 @@ function ModalStep({ n, text, children }: { n: number; text: string; children: R
         {n}
       </span>
       <div className="flex-1">
-        <p className="text-xs leading-snug tracking-wider" style={{ color: '#86efac' }}>{text}</p>
+        <p className="text-xs leading-snug tracking-wider" style={{ color: '#86efac' }}>
+          {text}
+        </p>
         <div className="mt-2 flex items-end gap-2">{children}</div>
       </div>
     </div>
@@ -351,30 +353,30 @@ function ModalStep({ n, text, children }: { n: number; text: string; children: R
 
 const FAKE_BOARDS: Record<DifficultyKey, { name: string; score: number }[]> = {
   easy: [
-    { name: 'APEX-7',    score: 14 },
-    { name: 'FALCON-2',  score: 18 },
-    { name: 'VENOM-4',   score: 21 },
-    { name: 'DELTA-9',   score: 26 },
-    { name: 'GHOST-1',   score: 31 },
-    { name: 'RAZOR-6',   score: 38 },
-    { name: 'BRAVO-5',   score: 47 },
+    { name: 'APEX-7', score: 14 },
+    { name: 'FALCON-2', score: 18 },
+    { name: 'VENOM-4', score: 21 },
+    { name: 'DELTA-9', score: 26 },
+    { name: 'GHOST-1', score: 31 },
+    { name: 'RAZOR-6', score: 38 },
+    { name: 'BRAVO-5', score: 47 },
   ],
   medium: [
-    { name: 'APEX-7',    score: 24 },
-    { name: 'SIGMA-3',   score: 29 },
-    { name: 'COBRA-8',   score: 35 },
-    { name: 'HAWK-2',    score: 43 },
-    { name: 'NOVA-5',    score: 51 },
-    { name: 'REAPER-1',  score: 60 },
-    { name: 'TANGO-4',   score: 74 },
+    { name: 'APEX-7', score: 24 },
+    { name: 'SIGMA-3', score: 29 },
+    { name: 'COBRA-8', score: 35 },
+    { name: 'HAWK-2', score: 43 },
+    { name: 'NOVA-5', score: 51 },
+    { name: 'REAPER-1', score: 60 },
+    { name: 'TANGO-4', score: 74 },
   ],
   hard: [
-    { name: 'TITAN-1',   score: 40 },
-    { name: 'VIPER-6',   score: 49 },
-    { name: 'ECHO-3',    score: 58 },
-    { name: 'STORM-9',   score: 67 },
-    { name: 'ALPHA-7',   score: 79 },
-    { name: 'NEXUS-2',   score: 93 },
+    { name: 'TITAN-1', score: 40 },
+    { name: 'VIPER-6', score: 49 },
+    { name: 'ECHO-3', score: 58 },
+    { name: 'STORM-9', score: 67 },
+    { name: 'ALPHA-7', score: 79 },
+    { name: 'NEXUS-2', score: 93 },
     { name: 'PHANTOM-5', score: 108 },
   ],
 };
@@ -382,7 +384,7 @@ const FAKE_BOARDS: Record<DifficultyKey, { name: string; score: number }[]> = {
 function buildLeaderboard(difficulty: DifficultyKey, userScore: number) {
   const fakes = FAKE_BOARDS[difficulty];
   const rows: { name: string; score: number; isUser: boolean }[] = [
-    ...fakes.map(f => ({ ...f, isUser: false })),
+    ...fakes.map((f) => ({ ...f, isUser: false })),
     { name: 'YOU', score: userScore, isUser: true },
   ];
   rows.sort((a, b) => a.score - b.score);
@@ -392,13 +394,20 @@ function buildLeaderboard(difficulty: DifficultyKey, userScore: number) {
 // ── Win modal ─────────────────────────────────────────────────────────
 
 function WinModal({
-  moves, bestScore, difficulty, isNewRecord, onClose,
+  moves,
+  bestScore,
+  difficulty,
+  isNewRecord,
+  onClose,
 }: {
-  moves: number; bestScore: number | null; difficulty: DifficultyKey;
-  isNewRecord: boolean; onClose: () => void;
+  moves: number;
+  bestScore: number | null;
+  difficulty: DifficultyKey;
+  isNewRecord: boolean;
+  onClose: () => void;
 }) {
   const board = buildLeaderboard(difficulty, moves);
-  const userRank = board.findIndex(r => r.isUser) + 1;
+  const userRank = board.findIndex((r) => r.isUser) + 1;
 
   return (
     <div
@@ -408,7 +417,10 @@ function WinModal({
       {/* Flash burst */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ animation: 'win-burst 0.6s ease-out forwards', background: 'radial-gradient(circle at 50% 40%, #22c55e33 0%, transparent 70%)' }}
+        style={{
+          animation: 'win-burst 0.6s ease-out forwards',
+          background: 'radial-gradient(circle at 50% 40%, #22c55e33 0%, transparent 70%)',
+        }}
       />
 
       <div
@@ -426,7 +438,8 @@ function WinModal({
         <div
           style={{
             height: '3px',
-            background: 'linear-gradient(to right, transparent, #22c55e, #4ade80, #22c55e, transparent)',
+            background:
+              'linear-gradient(to right, transparent, #22c55e, #4ade80, #22c55e, transparent)',
             animation: 'header-pulse 1.5s ease-in-out infinite',
           }}
         />
@@ -478,24 +491,33 @@ function WinModal({
               >
                 {moves}
               </div>
-              <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>OPERATIONS</div>
+              <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                OPERATIONS
+              </div>
             </div>
             {bestScore !== null && !isNewRecord && (
               <div className="text-center">
                 <div className="font-mono text-4xl font-bold" style={{ color: '#166534' }}>
                   {bestScore}
                 </div>
-                <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>PERSONAL BEST</div>
+                <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                  PERSONAL BEST
+                </div>
               </div>
             )}
             <div className="text-center">
               <div
                 className="font-mono text-4xl font-bold"
-                style={{ color: userRank <= 3 ? '#fbbf24' : '#4ade80', textShadow: userRank <= 3 ? '0 0 12px #f59e0b' : undefined }}
+                style={{
+                  color: userRank <= 3 ? '#fbbf24' : '#4ade80',
+                  textShadow: userRank <= 3 ? '0 0 12px #f59e0b' : undefined,
+                }}
               >
                 #{userRank}
               </div>
-              <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>RANK</div>
+              <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                RANK
+              </div>
             </div>
           </div>
 
@@ -503,7 +525,8 @@ function WinModal({
           <div
             className="my-4 h-px"
             style={{
-              background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+              background:
+                'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
               boxShadow: '0 0 4px #22c55e44',
             }}
           />
@@ -526,13 +549,19 @@ function WinModal({
               >
                 <span
                   className="w-5 text-center font-mono text-xs"
-                  style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#166534' }}
+                  style={{
+                    color:
+                      i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : '#166534',
+                  }}
                 >
                   {i + 1}
                 </span>
                 <span
                   className="flex-1 font-mono text-xs tracking-wider"
-                  style={{ color: row.isUser ? '#4ade80' : '#1a6632', fontWeight: row.isUser ? 'bold' : undefined }}
+                  style={{
+                    color: row.isUser ? '#4ade80' : '#1a6632',
+                    fontWeight: row.isUser ? 'bold' : undefined,
+                  }}
                 >
                   {row.isUser ? '▶ YOU' : row.name}
                 </span>
@@ -569,35 +598,40 @@ function WinModal({
 // ── Page ─────────────────────────────────────────────────────────────
 
 const DIFF_LABELS: Record<DifficultyKey, string> = {
-  easy:   'EASY',
+  easy: 'EASY',
   medium: 'MEDIUM',
-  hard:   'HARD',
+  hard: 'HARD',
 };
 
 const TUTORIAL_KEY = 'ball-sort-tutorial-v2';
 
 export default function BallSort() {
   const [difficulty, setDifficulty] = useState<DifficultyKey>('easy');
-  const [game, setGame]             = useState<GameState>(() => createGame('easy'));
-  const [bestScore, setBestScore]   = useState<number | null>(() => getBestScore('easy'));
-  const [showModal, setShowModal]   = useState(() => !localStorage.getItem(TUTORIAL_KEY));
+  const [game, setGame] = useState<GameState>(() => createGame('easy'));
+  const [bestScore, setBestScore] = useState<number | null>(() => getBestScore('easy'));
+  const [showModal, setShowModal] = useState(() => !localStorage.getItem(TUTORIAL_KEY));
   const [showWinModal, setShowWinModal] = useState(false);
-  const [isNewRecord, setIsNewRecord]   = useState(false);
-  const [shakingTube, setShakingTube]   = useState<number | null>(null);
-  const [opsFlash, setOpsFlash]         = useState(false);
+  const [isNewRecord, setIsNewRecord] = useState(false);
+  const [shakingTube, setShakingTube] = useState<number | null>(null);
+  const [opsFlash, setOpsFlash] = useState(false);
 
-  const gameRef    = useRef(game);
+  const gameRef = useRef(game);
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const prevMoves  = useRef(0);
-  gameRef.current  = game;
+  const prevMoves = useRef(0);
+  useLayoutEffect(() => {
+    gameRef.current = game;
+  });
 
   // Flash OPS counter on each increment
   useEffect(() => {
     if (game.moves > prevMoves.current && !game.won) {
-      setOpsFlash(true);
-      const t = setTimeout(() => setOpsFlash(false), 350);
       prevMoves.current = game.moves;
-      return () => clearTimeout(t);
+      const tOn = setTimeout(() => setOpsFlash(true), 0);
+      const tOff = setTimeout(() => setOpsFlash(false), 350);
+      return () => {
+        clearTimeout(tOn);
+        clearTimeout(tOff);
+      };
     }
     prevMoves.current = game.moves;
   }, [game.moves, game.won]);
@@ -647,16 +681,16 @@ export default function BallSort() {
   }, []);
 
   const handleUndo = useCallback(() => {
-    setGame(prev => undoMove(prev));
+    setGame((prev) => undoMove(prev));
   }, []);
 
-  const n   = game.tubes.length;
+  const n = game.tubes.length;
   const mid = Math.ceil(n / 2);
 
   function renderRow(indices: number[]) {
     return (
       <div className="flex gap-3">
-        {indices.map(i => (
+        {indices.map((i) => (
           <TubeCol
             key={i}
             tube={game.tubes[i]}
@@ -710,10 +744,7 @@ export default function BallSort() {
           BALL SORT
         </h1>
         <div className="mt-1 flex items-center justify-center gap-2">
-          <div
-            className="text-xs tracking-[0.35em]"
-            style={{ color: '#166534' }}
-          >
+          <div className="text-xs tracking-[0.35em]" style={{ color: '#166534' }}>
             CHEMICAL CONTAINMENT SYSTEM v1.0
           </div>
           <button
@@ -736,7 +767,8 @@ export default function BallSort() {
       <div
         className="my-2 h-px w-full max-w-md"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />
@@ -764,7 +796,9 @@ export default function BallSort() {
           </span>
           <div className="ml-auto flex items-center gap-3">
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>OPS</span>
+              <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                OPS
+              </span>
               <span
                 className="font-mono text-lg font-bold leading-none"
                 style={{
@@ -781,8 +815,13 @@ export default function BallSort() {
               <>
                 <span style={{ color: '#0f3018', fontFamily: 'monospace' }}>|</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>BEST</span>
-                  <span className="font-mono text-lg font-bold leading-none" style={{ color: '#166534', textShadow: '0 0 6px #22c55e33' }}>
+                  <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                    BEST
+                  </span>
+                  <span
+                    className="font-mono text-lg font-bold leading-none"
+                    style={{ color: '#166534', textShadow: '0 0 6px #22c55e33' }}
+                  >
                     {bestScore}
                   </span>
                 </div>
@@ -795,7 +834,7 @@ export default function BallSort() {
       {/* Difficulty + controls row */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex gap-1.5">
-          {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map(d => (
+          {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map((d) => (
             <button
               key={d}
               onClick={() => restart(d)}
@@ -813,10 +852,7 @@ export default function BallSort() {
           ))}
         </div>
 
-        <div
-          className="h-4 w-px"
-          style={{ background: '#1a4a2a' }}
-        />
+        <div className="h-4 w-px" style={{ background: '#1a4a2a' }} />
 
         <div className="flex gap-1.5">
           <button
@@ -862,12 +898,13 @@ export default function BallSort() {
           className="pointer-events-none absolute inset-x-0 z-10"
           style={{
             height: '2px',
-            background: 'linear-gradient(to right, transparent, #22c55e44 20%, #22c55e88 50%, #22c55e44 80%, transparent)',
+            background:
+              'linear-gradient(to right, transparent, #22c55e44 20%, #22c55e88 50%, #22c55e44 80%, transparent)',
             animation: 'bs-scan 4s linear infinite',
           }}
         />
         <div className="relative flex flex-col items-center gap-2">
-          {renderRow(Array.from({ length: mid },     (_, i) => i))}
+          {renderRow(Array.from({ length: mid }, (_, i) => i))}
           {renderRow(Array.from({ length: n - mid }, (_, i) => i + mid))}
         </div>
       </div>

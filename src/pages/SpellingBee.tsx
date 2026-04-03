@@ -158,7 +158,11 @@ export default function SpellingBee() {
         />
 
         <div className="mb-3 mx-auto w-full max-w-[480px]">
-          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+          <Link
+            to="/"
+            className="text-sm font-mono tracking-widest hover:underline transition-colors"
+            style={{ color: '#22c55e' }}
+          >
             &larr; Back to Arcade
           </Link>
         </div>
@@ -359,7 +363,11 @@ export default function SpellingBee() {
         />
 
         <div className="mb-4 w-full max-w-[480px]">
-          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+          <Link
+            to="/"
+            className="text-sm font-mono tracking-widest hover:underline transition-colors"
+            style={{ color: '#22c55e' }}
+          >
             &larr; Back to Arcade
           </Link>
         </div>
@@ -562,8 +570,7 @@ export default function SpellingBee() {
             border: `2px solid ${
               flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
             }`,
-            color:
-              flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#86efac',
+            color: flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#86efac',
             borderRadius: '2px',
           }}
         >

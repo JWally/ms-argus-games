@@ -72,6 +72,7 @@ export default [
         TouchEvent: 'readonly',
         KeyboardEvent: 'readonly',
         HTMLElement: 'readonly',
+        HTMLButtonElement: 'readonly',
         Event: 'readonly',
         Image: 'readonly',
         Audio: 'readonly',
