@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import {
   type GameState,
   initGame,
@@ -20,6 +21,7 @@ export default function HanoiHilton() {
   const lastPhaseRef = useRef<string>('menu');
 
   const [phase, setPhase] = useState<string>('menu');
+  const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
   const getCanvasSize = useCallback(() => {
     const w = Math.min(window.innerWidth - 16, 440);
@@ -36,6 +38,7 @@ export default function HanoiHilton() {
     stateRef.current = initGame(w, h);
     setPhase('menu');
     lastPhaseRef.current = 'menu';
+    setLb(null);
   }, [getCanvasSize]);
 
   // Game loop
@@ -59,7 +62,19 @@ export default function HanoiHilton() {
         lastPhaseRef.current = s.phase;
         setPhase(s.phase);
 
-        if (s.phase === 'done' && s.moves <= s.par) launchConfetti();
+        if (s.phase === 'done') {
+          if (s.moves <= s.par) launchConfetti();
+          setLb(
+            getLeaderboard(
+              {
+                gameId: `hanoi-${s.numDisks}`,
+                baseScore: Math.round(s.par * 1.5),
+                lowerIsBetter: true,
+              },
+              s.moves
+            )
+          );
+        }
       }
 
       render(ctx, s);
@@ -177,6 +192,7 @@ export default function HanoiHilton() {
           KEYS A / B / C OR 1 / 2 / 3 TO SELECT PEG
         </p>
       )}
+      {phase === 'done' && lb && <Leaderboard result={lb} className="mt-2 w-full max-w-[440px]" />}
     </div>
   );
 }

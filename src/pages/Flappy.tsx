@@ -66,15 +66,13 @@ export default function Flappy() {
       if (s.phase === 'dead' && state.phase !== 'dead') {
         saveHighScore(s.score);
         setHighScore(getHighScore());
-        if (s.score > 0) {
-          const result = getLeaderboard(
-            { gameId: 'flappy', baseScore: 12, lowerIsBetter: false },
-            s.score
-          );
-          setLb(result);
-          if (result.isNewBest || (result.playerRank !== null && result.playerRank <= 5)) {
-            launchConfetti();
-          }
+        const result = getLeaderboard(
+          { gameId: 'flappy', baseScore: 12, lowerIsBetter: false },
+          s.score > 0 ? s.score : undefined
+        );
+        setLb(result);
+        if (result.isNewBest || (result.playerRank !== null && result.playerRank <= 5)) {
+          launchConfetti();
         }
       }
 
@@ -164,7 +162,7 @@ export default function Flappy() {
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="flex-1 touch-none"
+        className="touch-none"
         onClick={handleTap}
         style={{
           maxWidth: '100%',
