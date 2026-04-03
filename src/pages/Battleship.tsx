@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   createGame,
   reshuffleFleet,
@@ -9,15 +9,15 @@ import {
   getShipDefs,
   type Cell,
   type GameState,
-} from '../games/battleship/engine'
+} from '../games/battleship/engine';
 
-const COL_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8']
-const ROW_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-const SHIP_DEFS = getShipDefs()
+const COL_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+const ROW_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+const SHIP_DEFS = getShipDefs();
 
 // ─── cell visual config ─────────────────────────────────────────────────────
 
-type CellVariant = 'empty' | 'ship' | 'hit' | 'miss' | 'sunk' | 'target-hover'
+type CellVariant = 'empty' | 'ship' | 'hit' | 'miss' | 'sunk' | 'target-hover';
 
 const CELL_STYLES: Record<CellVariant, CSSProperties> = {
   empty: {
@@ -50,30 +50,26 @@ const CELL_STYLES: Record<CellVariant, CSSProperties> = {
     boxShadow: '0 0 8px #22c55e66',
     cursor: 'crosshair',
   },
-}
+};
 
-function cellVariant(
-  cell: Cell,
-  isHover: boolean,
-  isEnemy: boolean,
-): CellVariant {
-  if (isHover && isEnemy && cell === 'empty') return 'target-hover'
-  if (cell === 'ship' && isEnemy) return 'empty' // hide enemy ships
-  return cell as CellVariant
+function cellVariant(cell: Cell, isHover: boolean, isEnemy: boolean): CellVariant {
+  if (isHover && isEnemy && cell === 'empty') return 'target-hover';
+  if (cell === 'ship' && isEnemy) return 'empty'; // hide enemy ships
+  return cell as CellVariant;
 }
 
 // ─── grid component ──────────────────────────────────────────────────────────
 
 interface GridProps {
-  grid: Cell[][]
-  isEnemy: boolean
-  label: string
-  hoverKey?: string | null
-  animKey?: string | null
-  onCellClick?: (r: number, c: number) => void
-  onCellHover?: (r: number, c: number) => void
-  onGridLeave?: () => void
-  disabled?: boolean
+  grid: Cell[][];
+  isEnemy: boolean;
+  label: string;
+  hoverKey?: string | null;
+  animKey?: string | null;
+  onCellClick?: (r: number, c: number) => void;
+  onCellHover?: (r: number, c: number) => void;
+  onGridLeave?: () => void;
+  disabled?: boolean;
 }
 
 function BattleGrid({
@@ -118,7 +114,8 @@ function BattleGrid({
           className="pointer-events-none absolute inset-x-0 z-10"
           style={{
             height: '2px',
-            background: 'linear-gradient(to right, transparent, #22c55e44 20%, #22c55e88 50%, #22c55e44 80%, transparent)',
+            background:
+              'linear-gradient(to right, transparent, #22c55e44 20%, #22c55e88 50%, #22c55e44 80%, transparent)',
             animation: 'bs-scan 4s linear infinite',
           }}
         />
@@ -161,10 +158,10 @@ function BattleGrid({
 
               {/* Cells */}
               {grid[r].map((cell, c) => {
-                const key = `${r},${c}`
-                const isHover = hoverKey === key
-                const isAnim = animKey === key
-                const variant = cellVariant(cell, isHover, isEnemy)
+                const key = `${r},${c}`;
+                const isHover = hoverKey === key;
+                const isAnim = animKey === key;
+                const variant = cellVariant(cell, isHover, isEnemy);
                 const style: CSSProperties = {
                   ...CELL_STYLES[variant],
                   aspectRatio: '1',
@@ -180,14 +177,14 @@ function BattleGrid({
                       ? 'bs-hit 0.5s ease-out'
                       : 'bs-miss 0.5s ease-out'
                     : undefined,
-                }
+                };
 
                 // Overlay: hit cross
-                const showCross = cell === 'hit'
+                const showCross = cell === 'hit';
                 // Overlay: miss circle
-                const showCircle = cell === 'miss'
+                const showCircle = cell === 'miss';
                 // Overlay: ship block segments for sunk/ship
-                const showShip = cell === 'ship' || cell === 'sunk'
+                const showShip = cell === 'ship' || cell === 'sunk';
 
                 return (
                   <div
@@ -198,13 +195,36 @@ function BattleGrid({
                   >
                     {showCross && (
                       <svg viewBox="0 0 10 10" className="h-full w-full">
-                        <line x1="2" y1="2" x2="8" y2="8" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" />
-                        <line x1="8" y1="2" x2="2" y2="8" stroke="#dc2626" strokeWidth="1.5" strokeLinecap="round" />
+                        <line
+                          x1="2"
+                          y1="2"
+                          x2="8"
+                          y2="8"
+                          stroke="#dc2626"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                        <line
+                          x1="8"
+                          y1="2"
+                          x2="2"
+                          y2="8"
+                          stroke="#dc2626"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
                       </svg>
                     )}
                     {showCircle && (
                       <svg viewBox="0 0 10 10" className="h-full w-full">
-                        <circle cx="5" cy="5" r="2.5" fill="none" stroke="#1e6a9a" strokeWidth="1" />
+                        <circle
+                          cx="5"
+                          cy="5"
+                          r="2.5"
+                          fill="none"
+                          stroke="#1e6a9a"
+                          strokeWidth="1"
+                        />
                       </svg>
                     )}
                     {showShip && !showCross && (
@@ -219,14 +239,14 @@ function BattleGrid({
                       />
                     )}
                   </div>
-                )
+                );
               })}
             </>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── ship status panel ───────────────────────────────────────────────────────
@@ -235,7 +255,7 @@ function ShipStatus({ ships }: { ships: GameState['playerShips'] }) {
   return (
     <div className="flex flex-col gap-1.5">
       {SHIP_DEFS.map((def) => {
-        const ship = ships.find((s) => s.id === def.id)
+        const ship = ships.find((s) => s.id === def.id);
         return (
           <div key={def.id} className="flex items-center gap-1.5">
             <div
@@ -248,8 +268,8 @@ function ShipStatus({ ships }: { ships: GameState['playerShips'] }) {
             </div>
             <div className="flex gap-[2px]">
               {Array.from({ length: def.size }, (_, i) => {
-                const hit = ship ? i < ship.hitCount : false
-                const sunk = ship?.sunk ?? false
+                const hit = ship ? i < ship.hitCount : false;
+                const sunk = ship?.sunk ?? false;
                 return (
                   <div
                     key={i}
@@ -262,125 +282,113 @@ function ShipStatus({ ships }: { ships: GameState['playerShips'] }) {
                       boxShadow: !sunk && !hit ? '0 0 3px #22c55e44' : undefined,
                     }}
                   />
-                )
+                );
               })}
             </div>
             {ship?.sunk && (
-              <span className="text-sm font-bold" style={{ color: '#7f1d1d', textShadow: '0 0 4px #dc2626' }}>
+              <span
+                className="text-sm font-bold"
+                style={{ color: '#7f1d1d', textShadow: '0 0 4px #dc2626' }}
+              >
                 ✕
               </span>
             )}
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 // ─── main component ──────────────────────────────────────────────────────────
 
 export default function Battleship() {
-  const [game, setGame] = useState<GameState>(() => createGame())
-  const [hoverPos, setHoverPos] = useState<[number, number] | null>(null)
-  const [aiPending, setAiPending] = useState(false)
-  const [animEnemyKey, setAnimEnemyKey] = useState<string | null>(null)
-  const [animPlayerKey, setAnimPlayerKey] = useState<string | null>(null)
-  const [blinkOn, setBlinkOn] = useState(true)
+  const [game, setGame] = useState<GameState>(() => createGame());
+  const [hoverPos, setHoverPos] = useState<[number, number] | null>(null);
+  const [aiPending, setAiPending] = useState(false);
+  const [animEnemyKey, setAnimEnemyKey] = useState<string | null>(null);
+  const [animPlayerKey, setAnimPlayerKey] = useState<string | null>(null);
+  const [blinkOn, setBlinkOn] = useState(true);
 
   // Blinking cursor
   useEffect(() => {
-    const t = setInterval(() => setBlinkOn((v) => !v), 530)
-    return () => clearInterval(t)
-  }, [])
+    const t = setInterval(() => setBlinkOn((v) => !v), 530);
+    return () => clearInterval(t);
+  }, []);
 
   // Clear anim markers
   useEffect(() => {
-    if (!animEnemyKey) return
-    const t = setTimeout(() => setAnimEnemyKey(null), 600)
-    return () => clearTimeout(t)
-  }, [animEnemyKey])
+    if (!animEnemyKey) return;
+    const t = setTimeout(() => setAnimEnemyKey(null), 600);
+    return () => clearTimeout(t);
+  }, [animEnemyKey]);
 
   useEffect(() => {
-    if (!animPlayerKey) return
-    const t = setTimeout(() => setAnimPlayerKey(null), 600)
-    return () => clearTimeout(t)
-  }, [animPlayerKey])
+    if (!animPlayerKey) return;
+    const t = setTimeout(() => setAnimPlayerKey(null), 600);
+    return () => clearTimeout(t);
+  }, [animPlayerKey]);
 
   // Revealed enemy grid on game over
   const displayEnemyGrid = useMemo<Cell[][]>(() => {
-    if (game.phase !== 'won' && game.phase !== 'lost') return game.enemyGrid
-    const g = game.enemyGrid.map((r) => [...r]) as Cell[][]
+    if (game.phase !== 'won' && game.phase !== 'lost') return game.enemyGrid;
+    const g = game.enemyGrid.map((r) => [...r]) as Cell[][];
     game.enemyShips.forEach((ship) => {
       if (!ship.sunk) {
         ship.positions.forEach(([r, c]) => {
-          if (g[r][c] === 'empty') g[r][c] = 'ship'
-        })
+          if (g[r][c] === 'empty') g[r][c] = 'ship';
+        });
       }
-    })
-    return g
-  }, [game.phase, game.enemyGrid, game.enemyShips])
+    });
+    return g;
+  }, [game.phase, game.enemyGrid, game.enemyShips]);
 
   const handleShootClick = useCallback(
     (r: number, c: number) => {
-      if (game.currentTurn !== 'player' || aiPending) return
-      if (game.enemyGrid[r][c] !== 'empty') return
+      if (game.currentTurn !== 'player' || aiPending) return;
+      if (game.enemyGrid[r][c] !== 'empty') return;
 
-      const afterPlayer = playerShoot(game, r, c)
-      setGame(afterPlayer)
-      setAnimEnemyKey(`${r},${c}`)
+      const afterPlayer = playerShoot(game, r, c);
+      setGame(afterPlayer);
+      setAnimEnemyKey(`${r},${c}`);
 
       if (afterPlayer.phase === 'playing') {
-        setAiPending(true)
+        setAiPending(true);
         setTimeout(() => {
           setGame((prev) => {
-            const afterAi = aiShoot(prev)
+            const afterAi = aiShoot(prev);
             if (afterAi.lastAiPos) {
-              setAnimPlayerKey(`${afterAi.lastAiPos[0]},${afterAi.lastAiPos[1]}`)
+              setAnimPlayerKey(`${afterAi.lastAiPos[0]},${afterAi.lastAiPos[1]}`);
             }
-            return afterAi
-          })
-          setAiPending(false)
-        }, 900)
+            return afterAi;
+          });
+          setAiPending(false);
+        }, 900);
       }
     },
-    [game, aiPending],
-  )
+    [game, aiPending]
+  );
 
-  const accuracy =
-    game.totalShots > 0 ? Math.round((game.hits / game.totalShots) * 100) : 0
+  const accuracy = game.totalShots > 0 ? Math.round((game.hits / game.totalShots) * 100) : 0;
 
-  const isOver = game.phase === 'won' || game.phase === 'lost'
-  const isPlaying = game.phase === 'playing'
-  const isStaging = game.phase === 'staging'
+  const isOver = game.phase === 'won' || game.phase === 'lost';
+  const isPlaying = game.phase === 'playing';
+  const isStaging = game.phase === 'staging';
 
-  const hoverKey = hoverPos ? `${hoverPos[0]},${hoverPos[1]}` : null
-  const enemySunkCount = game.enemyShips.filter((s) => s.sunk).length
-  const playerSunkCount = game.playerShips.filter((s) => s.sunk).length
+  const hoverKey = hoverPos ? `${hoverPos[0]},${hoverPos[1]}` : null;
+  const enemySunkCount = game.enemyShips.filter((s) => s.sunk).length;
+  const playerSunkCount = game.playerShips.filter((s) => s.sunk).length;
 
   return (
     <div
       className="flex min-h-screen flex-col items-center px-3 pb-12 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Back link */}
       <div className="mb-3 w-full max-w-2xl">
-        <Link
-          to="/"
-          className="text-sm font-mono tracking-widest hover:underline transition-colors"
-          style={{ color: '#22c55e' }}
-        >
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Title */}
@@ -394,10 +402,7 @@ export default function Battleship() {
         >
           BATTLESHIP
         </h1>
-        <div
-          className="mt-1 text-xs tracking-[0.4em]"
-          style={{ color: '#166534' }}
-        >
+        <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
           NAVAL COMBAT SYSTEM v4.2
         </div>
       </div>
@@ -406,7 +411,8 @@ export default function Battleship() {
       <div
         className="my-2 h-px w-full max-w-2xl"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />
@@ -443,11 +449,7 @@ export default function Battleship() {
           <span
             className="font-mono text-xs tracking-wider"
             style={{
-              color: isOver
-                ? game.phase === 'won'
-                  ? '#4ade80'
-                  : '#dc2626'
-                : '#86efac',
+              color: isOver ? (game.phase === 'won' ? '#4ade80' : '#dc2626') : '#86efac',
               textShadow: isOver
                 ? game.phase === 'won'
                   ? '0 0 6px #22c55e'
@@ -529,9 +531,7 @@ export default function Battleship() {
                 hoverKey={isPlaying && !aiPending ? hoverKey : null}
                 animKey={animEnemyKey}
                 onCellClick={isPlaying && !aiPending ? handleShootClick : undefined}
-                onCellHover={
-                  isPlaying && !aiPending ? (r, c) => setHoverPos([r, c]) : undefined
-                }
+                onCellHover={isPlaying && !aiPending ? (r, c) => setHoverPos([r, c]) : undefined}
                 onGridLeave={() => setHoverPos(null)}
                 disabled={!isPlaying || aiPending}
               />
@@ -586,7 +586,8 @@ export default function Battleship() {
                   game.phase === 'won'
                     ? '0 0 40px #22c55e22, inset 0 0 40px #00000060'
                     : '0 0 40px #dc262622, inset 0 0 40px #00000060',
-                animation: game.phase === 'won' ? 'bs-victory 0.8s ease-out' : 'bs-defeat 0.7s ease-out',
+                animation:
+                  game.phase === 'won' ? 'bs-victory 0.8s ease-out' : 'bs-defeat 0.7s ease-out',
               }}
             >
               <div
@@ -605,9 +606,7 @@ export default function Battleship() {
                 className="mt-1 text-xs tracking-[0.3em]"
                 style={{ color: game.phase === 'won' ? '#166534' : '#7f1d1d' }}
               >
-                {game.phase === 'won'
-                  ? 'ENEMY FLEET ELIMINATED'
-                  : 'FRIENDLY FLEET ANNIHILATED'}
+                {game.phase === 'won' ? 'ENEMY FLEET ELIMINATED' : 'FRIENDLY FLEET ANNIHILATED'}
               </div>
 
               <div className="mt-4 flex justify-center gap-6">
@@ -639,11 +638,11 @@ export default function Battleship() {
 
               <button
                 onClick={() => {
-                  setGame(createGame())
-                  setHoverPos(null)
-                  setAiPending(false)
-                  setAnimEnemyKey(null)
-                  setAnimPlayerKey(null)
+                  setGame(createGame());
+                  setHoverPos(null);
+                  setAiPending(false);
+                  setAnimEnemyKey(null);
+                  setAnimPlayerKey(null);
                 }}
                 className="mt-6 rounded px-8 py-2.5 text-xs font-bold tracking-[0.2em] transition-all hover:scale-105"
                 style={{
@@ -702,5 +701,5 @@ export default function Battleship() {
         }
       `}</style>
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   type WordList,
@@ -147,24 +147,10 @@ export default function SpellingBee() {
         className="flex min-h-[100dvh] flex-col px-4 pb-6 pt-4"
         style={{ background: '#030c06', color: '#4ade80' }}
       >
-        {/* CRT scanlines */}
-        <div
-          className="pointer-events-none fixed inset-0 z-50"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-            opacity: 0.5,
-          }}
-        />
+        <CrtOverlay />
 
         <div className="mb-3 mx-auto w-full max-w-[480px]">
-          <Link
-            to="/"
-            className="text-sm font-mono tracking-widest hover:underline transition-colors"
-            style={{ color: '#22c55e' }}
-          >
-            &larr; Back to Arcade
-          </Link>
+          <BackLink />
         </div>
 
         <h1
@@ -352,24 +338,10 @@ export default function SpellingBee() {
         className="flex min-h-[100dvh] flex-col items-center overflow-auto px-4 pb-6 pt-4"
         style={{ background: '#030c06', color: '#4ade80' }}
       >
-        {/* CRT scanlines */}
-        <div
-          className="pointer-events-none fixed inset-0 z-50"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-            opacity: 0.5,
-          }}
-        />
+        <CrtOverlay />
 
         <div className="mb-4 w-full max-w-[480px]">
-          <Link
-            to="/"
-            className="text-sm font-mono tracking-widest hover:underline transition-colors"
-            style={{ color: '#22c55e' }}
-          >
-            &larr; Back to Arcade
-          </Link>
+          <BackLink />
         </div>
 
         <div className="text-center">
@@ -487,15 +459,7 @@ export default function SpellingBee() {
       className={`flex h-[100dvh] flex-col overflow-hidden px-2 pt-2 ${flashBorderAnim}`}
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Header: progress + timer */}
       <div className="mx-auto flex w-full max-w-[480px] items-center justify-between px-2">

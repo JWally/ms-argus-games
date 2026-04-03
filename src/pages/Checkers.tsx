@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -61,8 +61,14 @@ export default function Checkers() {
 
       const prevPhase = lastPhaseRef.current;
       const prevTurn = lastTurnRef.current;
-      if (s.phase !== prevPhase) { lastPhaseRef.current = s.phase; setPhase(s.phase); }
-      if (s.turn !== prevTurn) { lastTurnRef.current = s.turn; setTurn(s.turn); }
+      if (s.phase !== prevPhase) {
+        lastPhaseRef.current = s.phase;
+        setPhase(s.phase);
+      }
+      if (s.turn !== prevTurn) {
+        lastTurnRef.current = s.turn;
+        setTurn(s.turn);
+      }
 
       if (s.phase === 'done' && prevPhase !== 'done' && s.winner === 'player') {
         launchConfetti();
@@ -147,21 +153,11 @@ export default function Checkers() {
       className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Header row */}
       <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
         <div className="font-mono text-xs">
           {phase === 'playing' && turn === 'player' && (
             <span style={{ color: '#4ade80' }}>YOUR TURN</span>
@@ -192,7 +188,8 @@ export default function Checkers() {
       <div
         className="my-2 h-px w-full max-w-[420px]"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />

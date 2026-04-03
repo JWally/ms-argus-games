@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { CrtOverlay } from '../components/GameShell';
 import {
   createGame,
   placeStone,
@@ -55,7 +56,13 @@ const KEYFRAMES = `
 
 // ── Leaderboard config ────────────────────────────────────────────────
 
-const LB_CONFIG = { gameId: 'go-9x9', baseScore: 28, lowerIsBetter: false, count: 10, spread: 0.55 };
+const LB_CONFIG = {
+  gameId: 'go-9x9',
+  baseScore: 28,
+  lowerIsBetter: false,
+  count: 10,
+  spread: 0.55,
+};
 
 // ── Rules Modal ───────────────────────────────────────────────────────
 
@@ -74,10 +81,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           padding: '1.5rem',
         }}
       >
-        <div
-          className="mb-1 font-mono text-xs tracking-[0.4em]"
-          style={{ color: '#166534' }}
-        >
+        <div className="mb-1 font-mono text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
           CLASSIFIED BRIEFING
         </div>
         <h2
@@ -90,7 +94,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
         <ol className="mb-4 space-y-2.5">
           {[
             'Place your red stone on any intersection on your turn.',
-            'Surround all of an enemy stone\'s adjacent empty points to capture it — captured stones leave the board.',
+            "Surround all of an enemy stone's adjacent empty points to capture it — captured stones leave the board.",
             'Empty intersections surrounded only by your stones score as your territory.',
             'PASS when satisfied. Two consecutive passes ends the game.',
             'KO: you cannot immediately re-capture a single stone.',
@@ -128,11 +132,11 @@ function RulesModal({ onClose }: { onClose: () => void }) {
             border: '1px solid #22c55e',
             color: '#4ade80',
           }}
-          onMouseEnter={e => {
+          onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.background = '#0f3a1e';
             (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px #22c55e44';
           }}
-          onMouseLeave={e => {
+          onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.background = '#0a2a14';
             (e.currentTarget as HTMLElement).style.boxShadow = 'none';
           }}
@@ -181,7 +185,8 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
             left: 0,
             right: 0,
             height: '20%',
-            background: 'linear-gradient(to bottom, transparent, rgba(34,197,94,0.04), transparent)',
+            background:
+              'linear-gradient(to bottom, transparent, rgba(34,197,94,0.04), transparent)',
             animation: 'go-scan 5s linear infinite',
             pointerEvents: 'none',
             zIndex: 1,
@@ -255,24 +260,30 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
         >
           {/* Grid lines */}
           {Array.from({ length: SIZE }, (_, i) => (
-            <div key={`h${i}`} style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: i * cellSize,
-              height: 1,
-              background: '#1a4a28',
-            }} />
+            <div
+              key={`h${i}`}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: i * cellSize,
+                height: 1,
+                background: '#1a4a28',
+              }}
+            />
           ))}
           {Array.from({ length: SIZE }, (_, i) => (
-            <div key={`v${i}`} style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: i * cellSize,
-              width: 1,
-              background: '#1a4a28',
-            }} />
+            <div
+              key={`v${i}`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: i * cellSize,
+                width: 1,
+                background: '#1a4a28',
+              }}
+            />
           ))}
 
           {/* Star points */}
@@ -322,39 +333,44 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
               >
                 {/* Territory overlay (game end) */}
                 {stone === 0 && terr !== 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 6,
-                    borderRadius: '50%',
-                    background: terr === 1
-                      ? 'rgba(220,38,38,0.25)'
-                      : 'rgba(226,232,240,0.18)',
-                    border: terr === 1
-                      ? '1px solid rgba(220,38,38,0.4)'
-                      : '1px solid rgba(226,232,240,0.3)',
-                  }} />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 6,
+                      borderRadius: '50%',
+                      background: terr === 1 ? 'rgba(220,38,38,0.25)' : 'rgba(226,232,240,0.18)',
+                      border:
+                        terr === 1
+                          ? '1px solid rgba(220,38,38,0.4)'
+                          : '1px solid rgba(226,232,240,0.3)',
+                    }}
+                  />
                 )}
 
                 {/* Ko marker */}
                 {isKo && stone === 0 && !isHovering && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: 10,
-                    borderRadius: '50%',
-                    border: '1px solid #f59e0b',
-                    opacity: 0.6,
-                  }} />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 10,
+                      borderRadius: '50%',
+                      border: '1px solid #f59e0b',
+                      opacity: 0.6,
+                    }}
+                  />
                 )}
 
                 {/* Ghost stone */}
                 {isHovering && canPlace && !stone && (
-                  <div style={{
-                    width: stonePx - 6,
-                    height: stonePx - 6,
-                    borderRadius: '50%',
-                    background: 'rgba(220,38,38,0.35)',
-                    border: '1px solid rgba(220,38,38,0.5)',
-                  }} />
+                  <div
+                    style={{
+                      width: stonePx - 6,
+                      height: stonePx - 6,
+                      borderRadius: '50%',
+                      background: 'rgba(220,38,38,0.35)',
+                      border: '1px solid rgba(220,38,38,0.5)',
+                    }}
+                  />
                 )}
 
                 {/* Actual stone */}
@@ -367,30 +383,39 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
                       animation: isLast ? 'go-place 0.2s ease-out' : undefined,
                       ...(stone === 1
                         ? {
-                            background: 'radial-gradient(circle at 35% 35%, #f87171, #dc2626 60%, #991b1b)',
-                            boxShadow: '0 0 8px #dc2626, 0 0 20px #dc262650, inset 0 1px 2px rgba(255,255,255,0.2)',
+                            background:
+                              'radial-gradient(circle at 35% 35%, #f87171, #dc2626 60%, #991b1b)',
+                            boxShadow:
+                              '0 0 8px #dc2626, 0 0 20px #dc262650, inset 0 1px 2px rgba(255,255,255,0.2)',
                           }
                         : {
-                            background: 'radial-gradient(circle at 35% 35%, #f1f5f9, #e2e8f0 60%, #94a3b8)',
-                            boxShadow: '0 0 6px #94a3b880, 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.5)',
+                            background:
+                              'radial-gradient(circle at 35% 35%, #f1f5f9, #e2e8f0 60%, #94a3b8)',
+                            boxShadow:
+                              '0 0 6px #94a3b880, 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.5)',
                           }),
                     }}
                   >
                     {/* Last move dot */}
                     {isLast && (
-                      <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <div style={{
-                          width: 5,
-                          height: 5,
-                          borderRadius: '50%',
-                          background: stone === 1 ? 'rgba(255,255,255,0.6)' : 'rgba(220,38,38,0.7)',
-                        }} />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: '50%',
+                            background:
+                              stone === 1 ? 'rgba(255,255,255,0.6)' : 'rgba(220,38,38,0.7)',
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -416,13 +441,15 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
   const lb = useMemo(() => getLeaderboard(LB_CONFIG, Math.round(playerScore)), [playerScore]);
 
   const resultLabel = resigned
-    ? resigned === 1 ? 'RESIGNED' : 'ENEMY RESIGNED'
-    : playerWon ? 'VICTORY' : 'DEFEAT';
+    ? resigned === 1
+      ? 'RESIGNED'
+      : 'ENEMY RESIGNED'
+    : playerWon
+      ? 'VICTORY'
+      : 'DEFEAT';
 
   const resultColor = playerWon ? '#4ade80' : '#dc2626';
-  const resultShadow = playerWon
-    ? '0 0 20px #22c55e88'
-    : '0 0 20px #dc262688';
+  const resultShadow = playerWon ? '0 0 20px #22c55e88' : '0 0 20px #dc262688';
 
   return (
     <div
@@ -526,7 +553,9 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
                 padding: '1px 4px',
               }}
             >
-              <span>{String(i + 1).padStart(2, ' ')}. {entry.name}</span>
+              <span>
+                {String(i + 1).padStart(2, ' ')}. {entry.name}
+              </span>
               <span>{entry.score}</span>
             </div>
           ))}
@@ -541,10 +570,10 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
           border: '1px solid #22c55e',
           color: '#4ade80',
         }}
-        onMouseEnter={e => {
+        onMouseEnter={(e) => {
           (e.currentTarget as HTMLElement).style.background = '#0f3a1e';
         }}
-        onMouseLeave={e => {
+        onMouseLeave={(e) => {
           (e.currentTarget as HTMLElement).style.background = '#0a2a14';
         }}
       >
@@ -565,26 +594,29 @@ export default function Go() {
 
   // Blink cursor
   useEffect(() => {
-    const t = setInterval(() => setBlinkOn(v => !v), 530);
+    const t = setInterval(() => setBlinkOn((v) => !v), 530);
     return () => clearInterval(t);
   }, []);
 
-  const handlePlace = useCallback((i: number) => {
-    if (aiThinking || game.phase !== 'playing' || game.turn !== 1) return;
-    const next = placeStone(game, i);
-    if (next === game) return; // invalid move
-    setGame(next);
+  const handlePlace = useCallback(
+    (i: number) => {
+      if (aiThinking || game.phase !== 'playing' || game.turn !== 1) return;
+      const next = placeStone(game, i);
+      if (next === game) return; // invalid move
+      setGame(next);
 
-    if (next.phase === 'done') return;
+      if (next.phase === 'done') return;
 
-    setAiThinking(true);
-    setTimeout(() => {
-      const aiMove = pickMove(next);
-      const afterAi = aiMove === -1 ? passTurn(next) : placeStone(next, aiMove);
-      setGame(afterAi);
-      setAiThinking(false);
-    }, 350);
-  }, [game, aiThinking]);
+      setAiThinking(true);
+      setTimeout(() => {
+        const aiMove = pickMove(next);
+        const afterAi = aiMove === -1 ? passTurn(next) : placeStone(next, aiMove);
+        setGame(afterAi);
+        setAiThinking(false);
+      }, 350);
+    },
+    [game, aiThinking]
+  );
 
   const handlePass = useCallback(() => {
     if (aiThinking || game.phase !== 'playing' || game.turn !== 1) return;
@@ -643,15 +675,7 @@ export default function Go() {
 
       {showRules && <RulesModal onClose={() => setShowRules(false)} />}
 
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-40"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       <div
         className="flex min-h-[100dvh] flex-col"
@@ -685,7 +709,8 @@ export default function Go() {
           <div
             className="mx-auto mt-3 h-px w-48"
             style={{
-              background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+              background:
+                'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
               boxShadow: '0 0 6px #22c55e44',
             }}
           />
@@ -730,13 +755,18 @@ export default function Go() {
             }}
           >
             <div className="flex items-center gap-2">
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: '#dc2626',
-                boxShadow: '0 0 5px #dc2626',
-              }} />
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: '#dc2626',
+                  boxShadow: '0 0 5px #dc2626',
+                }}
+              />
               <span className="text-xs font-bold" style={{ color: '#f87171' }}>
-                RED {game.phase === 'done' && game.score
+                RED{' '}
+                {game.phase === 'done' && game.score
                   ? game.score.playerTotal.toFixed(1)
                   : estimate.player}
               </span>
@@ -744,21 +774,26 @@ export default function Go() {
                 ({game.captured[0]} cap)
               </span>
             </div>
-            <div className="text-xs" style={{ color: '#0f3018' }}>VS</div>
+            <div className="text-xs" style={{ color: '#0f3018' }}>
+              VS
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: '#166534' }}>
                 ({game.captured[1]} cap)
               </span>
               <span className="text-xs font-bold" style={{ color: '#e2e8f0' }}>
-                {game.phase === 'done' && game.score
-                  ? game.score.aiTotal.toFixed(1)
-                  : estimate.ai} WHITE
+                {game.phase === 'done' && game.score ? game.score.aiTotal.toFixed(1) : estimate.ai}{' '}
+                WHITE
               </span>
-              <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                background: '#e2e8f0',
-                boxShadow: '0 0 4px #94a3b880',
-              }} />
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: '#e2e8f0',
+                  boxShadow: '0 0 4px #94a3b880',
+                }}
+              />
             </div>
           </div>
         </div>
@@ -785,10 +820,11 @@ export default function Go() {
                   border: '1px solid #1a6632',
                   color: '#4ade80',
                 }}
-                onMouseEnter={e => {
-                  if (!boardDisabled) (e.currentTarget as HTMLElement).style.borderColor = '#22c55e';
+                onMouseEnter={(e) => {
+                  if (!boardDisabled)
+                    (e.currentTarget as HTMLElement).style.borderColor = '#22c55e';
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = '#1a6632';
                 }}
               >
@@ -802,10 +838,10 @@ export default function Go() {
                   border: '1px solid #7f1d1d',
                   color: '#f87171',
                 }}
-                onMouseEnter={e => {
+                onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = '#dc2626';
                 }}
-                onMouseLeave={e => {
+                onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = '#7f1d1d';
                 }}
               >
@@ -815,9 +851,7 @@ export default function Go() {
           )}
 
           {/* Game over */}
-          {game.phase === 'done' && (
-            <GameOverPanel game={game} onNewGame={handleNewGame} />
-          )}
+          {game.phase === 'done' && <GameOverPanel game={game} onNewGame={handleNewGame} />}
         </main>
 
         {/* Footer */}
@@ -834,8 +868,8 @@ export default function Go() {
             rel="noopener noreferrer"
           >
             ARGUS BIO
-          </a>
-          {' '}· AUTHORIZED ACCESS ONLY
+          </a>{' '}
+          · AUTHORIZED ACCESS ONLY
         </footer>
       </div>
     </>

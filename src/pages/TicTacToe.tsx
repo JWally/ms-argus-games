@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -160,24 +160,18 @@ export default function TicTacToe() {
       className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Header row */}
       <div className="mb-2 flex w-full max-w-[380px] items-center justify-between px-1">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
         <div className="font-mono text-xs">
-          {phase === 'playing' && turn === 1 && <span style={{ color: '#ef4444' }}>YOUR TURN (X)</span>}
-          {phase === 'playing' && turn === 2 && <span style={{ color: '#facc15' }}>AI CALCULATING...</span>}
+          {phase === 'playing' && turn === 1 && (
+            <span style={{ color: '#ef4444' }}>YOUR TURN (X)</span>
+          )}
+          {phase === 'playing' && turn === 2 && (
+            <span style={{ color: '#facc15' }}>AI CALCULATING...</span>
+          )}
         </div>
       </div>
 
@@ -185,7 +179,10 @@ export default function TicTacToe() {
       <div className="mb-1 text-center">
         <h1
           className="font-display text-lg tracking-[0.3em]"
-          style={{ color: '#4ade80', textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33' }}
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
         >
           TIC-TAC-TOE
         </h1>
@@ -198,7 +195,8 @@ export default function TicTacToe() {
       <div
         className="my-2 h-px w-full max-w-[380px]"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />

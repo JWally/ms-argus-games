@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   createGame,
@@ -70,21 +70,11 @@ export default function Ataxx() {
       className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Back link */}
       <div className="mb-4 w-full max-w-[400px]">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Title */}
@@ -107,7 +97,8 @@ export default function Ataxx() {
       <div
         className="my-2 h-px w-full max-w-[400px]"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />
@@ -285,7 +276,11 @@ export default function Ataxx() {
                   : { color: '#f59e0b', textShadow: '0 0 20px #f59e0b, 0 0 60px #f59e0b66' }
             }
           >
-            {game.winner === 'blue' ? 'MISSION COMPLETE' : game.winner === 'red' ? 'MISSION FAILED' : 'STALEMATE'}
+            {game.winner === 'blue'
+              ? 'MISSION COMPLETE'
+              : game.winner === 'red'
+                ? 'MISSION FAILED'
+                : 'STALEMATE'}
           </p>
           <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
             {game.blueCount} - {game.redCount}

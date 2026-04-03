@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   BALL_COLORS,
   DIFFICULTIES,
@@ -709,27 +709,13 @@ export default function BallSort() {
       className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* Global CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {showModal && <HowToPlay onClose={closeModal} />}
 
       {/* Nav */}
       <div className="mb-3 w-full max-w-md">
-        <Link
-          to="/"
-          className="text-sm font-mono tracking-widest hover:underline transition-colors"
-          style={{ color: '#22c55e' }}
-        >
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Title */}

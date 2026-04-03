@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   COLORS,
   type ColorIndex,
@@ -70,21 +70,11 @@ export default function ColorFlood() {
       className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Back link */}
       <div className="mb-4 w-full max-w-[400px]">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Title */}
@@ -107,7 +97,8 @@ export default function ColorFlood() {
       <div
         className="my-2 h-px w-full max-w-[400px]"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />
@@ -145,7 +136,9 @@ export default function ColorFlood() {
       <div className="mt-4 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">
         <span style={{ color: '#86efac' }}>
           OPS:{' '}
-          <span style={{ color: game.moves > game.par ? '#dc2626' : '#4ade80', fontWeight: 'bold' }}>
+          <span
+            style={{ color: game.moves > game.par ? '#dc2626' : '#4ade80', fontWeight: 'bold' }}
+          >
             {game.moves}
           </span>{' '}
           <span style={{ color: '#166534' }}>/ {game.par}</span>

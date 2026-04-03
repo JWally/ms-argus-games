@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type Direction,
   type GameState,
@@ -17,9 +17,9 @@ import {
 // ── Size presets ──────────────────────────────────────────────────────────
 
 const SIZE_OPTIONS = [
-  { label: 'SMALL',  size: 8  },
+  { label: 'SMALL', size: 8 },
   { label: 'MEDIUM', size: 12 },
-  { label: 'LARGE',  size: 16 },
+  { label: 'LARGE', size: 16 },
 ] as const;
 
 function defaultSize(): number {
@@ -102,11 +102,12 @@ function DPadBtn({
 
 function Stars({ count }: { count: 1 | 2 | 3 }) {
   const filled = '★';
-  const empty  = '☆';
+  const empty = '☆';
   const colors = { 3: '#fbbf24', 2: '#86efac', 1: '#4ade80' } as const;
   return (
     <span style={{ color: colors[count], fontSize: '1.5rem', letterSpacing: '0.1em' }}>
-      {filled.repeat(count)}{empty.repeat(3 - count)}
+      {filled.repeat(count)}
+      {empty.repeat(3 - count)}
     </span>
   );
 }
@@ -115,21 +116,21 @@ function Stars({ count }: { count: 1 | 2 | 3 }) {
 
 export default function Amaze() {
   const [boardSize, setBoardSize] = useState(defaultSize);
-  const [game, setGame]           = useState<GameState>(() => createGame(defaultSize()));
+  const [game, setGame] = useState<GameState>(() => createGame(defaultSize()));
   const [bestScore, setBestScore] = useState<number | null>(() => getBestScore(defaultSize()));
-  const [now, setNow]             = useState(Date.now);
+  const [now, setNow] = useState(Date.now);
 
   // Modals
   const [showBriefing, setShowBriefing] = useState(true);
   const [showComplete, setShowComplete] = useState(false);
-  const [showLost,     setShowLost]     = useState(false);
+  const [showLost, setShowLost] = useState(false);
 
   // Ghost runner
-  const [ghostGame,       setGhostGame]       = useState<GameState | null>(null);
-  const [ghostStep,       setGhostStep]       = useState(0);
-  const [ghostMoveCount,  setGhostMoveCount]  = useState(0);
-  const [isGhostRunning,  setIsGhostRunning]  = useState(false);
-  const [ghostDone,       setGhostDone]       = useState(false);
+  const [ghostGame, setGhostGame] = useState<GameState | null>(null);
+  const [ghostStep, setGhostStep] = useState(0);
+  const [ghostMoveCount, setGhostMoveCount] = useState(0);
+  const [isGhostRunning, setIsGhostRunning] = useState(false);
+  const [ghostDone, setGhostDone] = useState(false);
   const ghostMovesRef = useRef<Direction[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -139,11 +140,11 @@ export default function Amaze() {
   // Writing refs during render is intentional here — keeps the RAF loop
   // in sync with the latest state without re-subscribing on every render.
   const activeGameRef = useRef<GameState>(game);
-  const isGhostRef    = useRef(false);
+  const isGhostRef = useRef(false);
   // eslint-disable-next-line react-hooks/refs
   activeGameRef.current = isGhostRunning && ghostGame ? ghostGame : game;
   // eslint-disable-next-line react-hooks/refs
-  isGhostRef.current    = isGhostRunning;
+  isGhostRef.current = isGhostRunning;
 
   // ── Continuous RAF loop ───────────────────────────────────────────────────
   useEffect(() => {
@@ -170,7 +171,7 @@ export default function Amaze() {
     if (game.won || game.lost) return;
     const id = setInterval(() => {
       const t = Date.now();
-      setGame(prev => {
+      setGame((prev) => {
         if (prev.won || prev.lost) return prev;
         if (isFinite(prev.deadline) && t >= prev.deadline) {
           return { ...prev, lost: true, lostReason: 'time' };
@@ -213,7 +214,7 @@ export default function Amaze() {
     setShowBriefing(false);
     const t = Date.now();
     setNow(t);
-    setGame(prev => ({ ...prev, deadline: t + prev.timeLimit * 1000 }));
+    setGame((prev) => ({ ...prev, deadline: t + prev.timeLimit * 1000 }));
   }, []);
 
   // ── Restart ───────────────────────────────────────────────────────────────
@@ -240,7 +241,7 @@ export default function Amaze() {
 
   // ── Retry same maze after loss ────────────────────────────────────────────
   const retryGame = useCallback(() => {
-    setGame(prev => resetGame(prev)); // resets patrol/deadline/painted, keeps mines
+    setGame((prev) => resetGame(prev)); // resets patrol/deadline/painted, keeps mines
     setShowLost(false);
     setNow(Date.now());
     setGhostGame(null);
@@ -268,12 +269,24 @@ export default function Amaze() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const map: Record<string, Direction> = {
-        ArrowUp: 'n', ArrowDown: 's', ArrowLeft: 'w', ArrowRight: 'e',
-        w: 'n', s: 's', a: 'w', d: 'e',
-        W: 'n', S: 's', A: 'w', D: 'e',
+        ArrowUp: 'n',
+        ArrowDown: 's',
+        ArrowLeft: 'w',
+        ArrowRight: 'e',
+        w: 'n',
+        s: 's',
+        a: 'w',
+        d: 'e',
+        W: 'n',
+        S: 's',
+        A: 'w',
+        D: 'e',
       };
       const dir = map[e.key];
-      if (dir) { e.preventDefault(); move(dir); }
+      if (dir) {
+        e.preventDefault();
+        move(dir);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -283,19 +296,23 @@ export default function Amaze() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    let sx = 0, sy = 0;
-    const onStart = (e: TouchEvent) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; };
-    const onEnd   = (e: TouchEvent) => {
+    let sx = 0,
+      sy = 0;
+    const onStart = (e: TouchEvent) => {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+    };
+    const onEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - sx;
       const dy = e.changedTouches[0].clientY - sy;
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'e' : 'w') : dy > 0 ? 's' : 'n');
     };
     canvas.addEventListener('touchstart', onStart, { passive: true });
-    canvas.addEventListener('touchend',   onEnd,   { passive: true });
+    canvas.addEventListener('touchend', onEnd, { passive: true });
     return () => {
       canvas.removeEventListener('touchstart', onStart);
-      canvas.removeEventListener('touchend',   onEnd);
+      canvas.removeEventListener('touchend', onEnd);
     };
   }, [move]);
 
@@ -314,24 +331,27 @@ export default function Amaze() {
 
   // ── Derived stats ─────────────────────────────────────────────────────────
   const activeGame = isGhostRunning && ghostGame ? ghostGame : game;
-  const total      = game.size * game.size;
-  const cleared    = activeGame.paintedCount;
+  const total = game.size * game.size;
+  const cleared = activeGame.paintedCount;
 
   // Timer
-  const timeLeft  = isFinite(game.deadline)
+  const timeLeft = isFinite(game.deadline)
     ? Math.max(0, Math.ceil((game.deadline - now) / 1000))
     : game.timeLimit;
-  const timerPct   = timeLeft / game.timeLimit;
-  const timerColor = !isFinite(game.deadline) ? '#166534'
-    : timerPct > 0.4 ? '#4ade80'
-    : timerPct > 0.2 ? '#fbbf24'
-    : '#ef4444';
-  const timerStr  = `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`;
+  const timerPct = timeLeft / game.timeLimit;
+  const timerColor = !isFinite(game.deadline)
+    ? '#166534'
+    : timerPct > 0.4
+      ? '#4ade80'
+      : timerPct > 0.2
+        ? '#fbbf24'
+        : '#ef4444';
+  const timerStr = `${Math.floor(timeLeft / 60)}:${String(timeLeft % 60).padStart(2, '0')}`;
 
   // Moves remaining colour
-  const movesLeft  = game.moveLimit - game.moves;
-  const movePct    = movesLeft / game.moveLimit;
-  const moveColor  = movePct > 0.5 ? '#4ade80' : movePct > 0.2 ? '#fbbf24' : '#ef4444';
+  const movesLeft = game.moveLimit - game.moves;
+  const movePct = movesLeft / game.moveLimit;
+  const moveColor = movePct > 0.5 ? '#4ade80' : movePct > 0.2 ? '#fbbf24' : '#ef4444';
   const limitColor = movePct > 0.5 ? '#166534' : movePct > 0.2 ? '#78350f' : '#7f1d1d';
 
   return (
@@ -339,25 +359,11 @@ export default function Amaze() {
       className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-40"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Back link */}
       <div className="mb-4 w-full max-w-[400px]">
-        <Link
-          to="/"
-          className="text-sm font-mono tracking-widest transition-colors hover:underline"
-          style={{ color: '#22c55e' }}
-        >
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Title */}
@@ -420,11 +426,12 @@ export default function Amaze() {
         {isGhostRunning ? (
           <>
             <span style={{ color: '#93c5fd' }}>
-              GHOST:{' '}
-              <span style={{ color: '#bfdbfe', fontWeight: 'bold' }}>{ghostStep}</span>
+              GHOST: <span style={{ color: '#bfdbfe', fontWeight: 'bold' }}>{ghostStep}</span>
               <span style={{ color: '#1e40af' }}>/{ghostMoveCount}</span>
             </span>
-            <span style={{ color: '#1e3a5f' }}>{cleared}/{total} CLEARED</span>
+            <span style={{ color: '#1e3a5f' }}>
+              {cleared}/{total} CLEARED
+            </span>
           </>
         ) : (
           <>
@@ -433,7 +440,9 @@ export default function Amaze() {
               <span style={{ color: limitColor }}>/{game.moveLimit}</span>
             </span>
             <span style={{ color: timerColor, fontWeight: 'bold' }}>{timerStr}</span>
-            <span style={{ color: '#166534' }}>{cleared}/{total} CLR</span>
+            <span style={{ color: '#166534' }}>
+              {cleared}/{total} CLR
+            </span>
           </>
         )}
       </div>
@@ -454,7 +463,10 @@ export default function Amaze() {
 
       {/* Par + best score */}
       {!isGhostRunning && !game.won && !game.lost && (
-        <div className="mt-1 flex w-full max-w-[400px] justify-between font-mono text-xs" style={{ color: '#0f3a1c' }}>
+        <div
+          className="mt-1 flex w-full max-w-[400px] justify-between font-mono text-xs"
+          style={{ color: '#0f3a1c' }}
+        >
           <span>PAR: {game.par}</span>
           {bestScore !== null && <span>BEST: {bestScore}</span>}
         </div>
@@ -474,10 +486,7 @@ export default function Amaze() {
         <div className="mt-4 w-full max-w-[400px] text-center">
           <p className="font-mono text-sm" style={{ color: '#93c5fd' }}>
             GHOST CLEARED IN{' '}
-            <span style={{ color: '#bfdbfe', fontWeight: 'bold' }}>
-              {ghostMoveCount}
-            </span>{' '}
-            MOVES
+            <span style={{ color: '#bfdbfe', fontWeight: 'bold' }}>{ghostMoveCount}</span> MOVES
           </p>
           <button
             onClick={() => restart()}
@@ -524,18 +533,21 @@ export default function Amaze() {
               MISSION BRIEFING
             </div>
             <ModalDivider />
-            <div className="mt-2 space-y-3 font-mono text-xs" style={{ color: '#86efac', lineHeight: '1.9' }}>
+            <div
+              className="mt-2 space-y-3 font-mono text-xs"
+              style={{ color: '#86efac', lineHeight: '1.9' }}
+            >
               <BriefingRow n={1}>
-                Slide to sweep corridors. You stop at junctions and walls.
-                Every cell must be cleared.
+                Slide to sweep corridors. You stop at junctions and walls. Every cell must be
+                cleared.
               </BriefingRow>
               <BriefingRow n={2} accent="#f97316">
-                <span style={{ color: '#f97316' }}>MINES (×)</span> detonate on contact.
-                Plan your route.
+                <span style={{ color: '#f97316' }}>MINES (×)</span> detonate on contact. Plan your
+                route.
               </BriefingRow>
               <BriefingRow n={3} accent="#fb923c">
-                <span style={{ color: '#fb923c' }}>PATROL</span> advances each move.
-                Don&apos;t let it reach you.
+                <span style={{ color: '#fb923c' }}>PATROL</span> advances each move. Don&apos;t let
+                it reach you.
               </BriefingRow>
               <BriefingRow n={4}>
                 Cleared cells{' '}
@@ -604,9 +616,7 @@ export default function Amaze() {
             </p>
             <p className="mt-1 font-mono text-xs" style={{ color: '#166534' }}>
               PAR: {game.par}
-              {bestScore !== null && (
-                <span style={{ color: '#0f3a1c' }}> · BEST: {bestScore}</span>
-              )}
+              {bestScore !== null && <span style={{ color: '#0f3a1c' }}> · BEST: {bestScore}</span>}
             </p>
 
             <div className="mt-5 flex gap-3">
@@ -662,10 +672,10 @@ export default function Amaze() {
               MISSION FAILED
             </div>
             <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#7f1d1d' }}>
-              {game.lostReason === 'mine'   && 'IED DETONATED'}
+              {game.lostReason === 'mine' && 'IED DETONATED'}
               {game.lostReason === 'patrol' && 'INTERCEPTED BY PATROL'}
-              {game.lostReason === 'limit'  && 'MOVE LIMIT EXCEEDED'}
-              {game.lostReason === 'time'   && 'TIME EXPIRED'}
+              {game.lostReason === 'limit' && 'MOVE LIMIT EXCEEDED'}
+              {game.lostReason === 'time' && 'TIME EXPIRED'}
             </div>
 
             <ModalDivider />
@@ -726,15 +736,7 @@ export default function Amaze() {
   );
 }
 
-function BriefingRow({
-  n,
-  children,
-  accent,
-}: {
-  n: number;
-  children: ReactNode;
-  accent?: string;
-}) {
+function BriefingRow({ n, children, accent }: { n: number; children: ReactNode; accent?: string }) {
   return (
     <div className="flex items-start gap-3">
       <span

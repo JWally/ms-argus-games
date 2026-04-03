@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   type Card,
@@ -421,8 +421,7 @@ function HandDisplay({
       <div className="flex justify-center gap-2 sm:gap-3">
         {shown.map((card, i) => {
           const isFaceDown =
-            (holeDown && i === 1) ||
-            (hitFlipIdx !== undefined && i === hitFlipIdx);
+            (holeDown && i === 1) || (hitFlipIdx !== undefined && i === hitFlipIdx);
 
           return (
             <CardView
@@ -674,25 +673,12 @@ export default function CardCounter() {
         />
       )}
 
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
-      <div
-        className="flex h-[100dvh] flex-col"
-        style={{ background: '#030c06', color: '#4ade80' }}
-      >
+      <div className="flex h-[100dvh] flex-col" style={{ background: '#030c06', color: '#4ade80' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-3">
-          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-            {'\u2190'} Back to Arcade
-          </Link>
+          <BackLink />
           <div className="text-center">
             <h1
               className="font-display text-base tracking-[0.3em] sm:text-lg"
@@ -899,11 +885,7 @@ export default function CardCounter() {
                   className="font-bold"
                   style={{
                     color:
-                      odds.bustPct > 50
-                        ? '#f87171'
-                        : odds.bustPct > 30
-                          ? '#f59e0b'
-                          : '#4ade80',
+                      odds.bustPct > 50 ? '#f87171' : odds.bustPct > 30 ? '#f59e0b' : '#4ade80',
                   }}
                 >
                   {odds.bustPct}%
@@ -930,11 +912,7 @@ export default function CardCounter() {
                   className="font-bold"
                   style={{
                     color:
-                      odds.playerEdge > 0
-                        ? '#4ade80'
-                        : odds.playerEdge < 0
-                          ? '#f87171'
-                          : '#86efac',
+                      odds.playerEdge > 0 ? '#4ade80' : odds.playerEdge < 0 ? '#f87171' : '#86efac',
                   }}
                 >
                   {odds.playerEdge > 0 ? '+' : ''}
@@ -981,13 +959,15 @@ export default function CardCounter() {
                   placeholder="?"
                   autoFocus
                   className="w-20 px-3 py-2.5 text-center text-xl font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  style={{
-                    background: '#040e07',
-                    border: '1px solid #1a6632',
-                    color: '#86efac',
-                    borderRadius: '2px',
-                    MozAppearance: 'textfield',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      background: '#040e07',
+                      border: '1px solid #1a6632',
+                      color: '#86efac',
+                      borderRadius: '2px',
+                      MozAppearance: 'textfield',
+                    } as React.CSSProperties
+                  }
                   onFocus={(e) => (e.currentTarget.style.borderColor = '#22c55e')}
                   onBlur={(e) => (e.currentTarget.style.borderColor = '#1a6632')}
                   onKeyDown={(e) => {
@@ -1151,7 +1131,10 @@ export default function CardCounter() {
             )}
 
           {/* Stats bar */}
-          <div className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs" style={{ color: '#166534' }}>
+          <div
+            className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs"
+            style={{ color: '#166534' }}
+          >
             <span>Hands: {game.handsPlayed}</span>
             <span>Bet: {game.bet > 0 ? `$${game.bet}` : '\u2014'}</span>
             {game.countChecks > 0 && (

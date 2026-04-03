@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -19,13 +19,13 @@ import {
 import { launchConfetti } from '../games/confetti';
 
 export default function Wayfinder() {
-  const canvasRef       = useRef<HTMLCanvasElement>(null);
-  const stateRef        = useRef<GameState | null>(null);
-  const rafRef          = useRef<number>(0);
-  const lastPhaseRef    = useRef<string>('ready');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stateRef = useRef<GameState | null>(null);
+  const rafRef = useRef<number>(0);
+  const lastPhaseRef = useRef<string>('ready');
   const briefingSeenRef = useRef<boolean>(false); // only type once per session
 
-  const [phase, setPhase]         = useState<string>('ready');
+  const [phase, setPhase] = useState<string>('ready');
   const [numCities, setNumCities] = useState(8);
 
   const getCanvasSize = useCallback(() => {
@@ -34,32 +34,42 @@ export default function Wayfinder() {
     return { w: Math.max(w, 300), h: Math.max(h, 340) };
   }, []);
 
-  const resetGame = useCallback((n?: number, keepPhase?: 'routing') => {
-    const { w, h } = getCanvasSize();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width  = w;
-    canvas.height = h;
-    const cities  = n ?? numCities;
-    const instant = briefingSeenRef.current;
-    if (keepPhase === 'routing') {
-      stateRef.current = newGame(stateRef.current ?? initGame(w, h, cities, instant), cities, instant);
-    } else {
-      stateRef.current = initGame(w, h, cities, instant);
-    }
-    const newPhase = keepPhase ?? 'ready';
-    setPhase(newPhase);
-    lastPhaseRef.current = newPhase;
-  }, [getCanvasSize, numCities]);
+  const resetGame = useCallback(
+    (n?: number, keepPhase?: 'routing') => {
+      const { w, h } = getCanvasSize();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      canvas.width = w;
+      canvas.height = h;
+      const cities = n ?? numCities;
+      const instant = briefingSeenRef.current;
+      if (keepPhase === 'routing') {
+        stateRef.current = newGame(
+          stateRef.current ?? initGame(w, h, cities, instant),
+          cities,
+          instant
+        );
+      } else {
+        stateRef.current = initGame(w, h, cities, instant);
+      }
+      const newPhase = keepPhase ?? 'ready';
+      setPhase(newPhase);
+      lastPhaseRef.current = newPhase;
+    },
+    [getCanvasSize, numCities]
+  );
 
   // Game loop
   useEffect(() => {
     resetGame();
 
     const loop = () => {
-      const state  = stateRef.current;
+      const state = stateRef.current;
       const canvas = canvasRef.current;
-      if (!state || !canvas) { rafRef.current = requestAnimationFrame(loop); return; }
+      if (!state || !canvas) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
@@ -89,12 +99,12 @@ export default function Wayfinder() {
 
   const handleClick = useCallback((e: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current;
-    const state  = stateRef.current;
+    const state = stateRef.current;
     if (!canvas || !state) return;
 
     const rect = canvas.getBoundingClientRect();
-    const px   = ((e.clientX - rect.left)  / rect.width)  * canvas.width;
-    const py   = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    const px = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    const py = ((e.clientY - rect.top) / rect.height) * canvas.height;
 
     if (state.phase === 'ready') {
       stateRef.current = startRouting(state);
@@ -116,11 +126,11 @@ export default function Wayfinder() {
 
   const handlePointerMove = useCallback((e: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current;
-    const state  = stateRef.current;
+    const state = stateRef.current;
     if (!canvas || !state || state.phase !== 'routing') return;
     const rect = canvas.getBoundingClientRect();
-    const px   = ((e.clientX - rect.left)  / rect.width)  * canvas.width;
-    const py   = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    const px = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    const py = ((e.clientY - rect.top) / rect.height) * canvas.height;
     stateRef.current = setHoverCity(state, px, py);
   }, []);
 
@@ -130,18 +140,20 @@ export default function Wayfinder() {
   }, []);
 
   const handleUndo = useCallback(() => {
-    if (stateRef.current?.phase === 'routing')
-      stateRef.current = undoMove(stateRef.current);
+    if (stateRef.current?.phase === 'routing') stateRef.current = undoMove(stateRef.current);
   }, []);
 
-  const handleCityCount = useCallback((delta: number) => {
-    const next = Math.max(MIN_CITIES, Math.min(MAX_CITIES, numCities + delta));
-    if (next === numCities) return;
-    setNumCities(next);
-    // Stay in routing if already playing, otherwise reset to ready
-    const curPhase = stateRef.current?.phase;
-    resetGame(next, curPhase === 'routing' ? 'routing' : undefined);
-  }, [numCities, resetGame]);
+  const handleCityCount = useCallback(
+    (delta: number) => {
+      const next = Math.max(MIN_CITIES, Math.min(MAX_CITIES, numCities + delta));
+      if (next === numCities) return;
+      setNumCities(next);
+      // Stay in routing if already playing, otherwise reset to ready
+      const curPhase = stateRef.current?.phase;
+      resetGame(next, curPhase === 'routing' ? 'routing' : undefined);
+    },
+    [numCities, resetGame]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -174,21 +186,11 @@ export default function Wayfinder() {
       className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Header row */}
       <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1">
-        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
         {phase === 'routing' && (
           <button
             onClick={handleUndo}
@@ -204,7 +206,10 @@ export default function Wayfinder() {
       <div className="mb-1 text-center">
         <h1
           className="font-display text-lg tracking-[0.3em]"
-          style={{ color: '#4ade80', textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33' }}
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
         >
           WAYFINDER
         </h1>
@@ -219,7 +224,12 @@ export default function Wayfinder() {
           onClick={() => handleCityCount(-1)}
           disabled={numCities <= MIN_CITIES}
           className="flex h-7 w-7 items-center justify-center font-mono text-sm font-bold transition-colors disabled:opacity-25"
-          style={{ border: '1px solid #1a6632', color: '#22c55e', background: '#040e07', borderRadius: '2px' }}
+          style={{
+            border: '1px solid #1a6632',
+            color: '#22c55e',
+            background: '#040e07',
+            borderRadius: '2px',
+          }}
         >
           −
         </button>
@@ -235,7 +245,12 @@ export default function Wayfinder() {
           onClick={() => handleCityCount(+1)}
           disabled={numCities >= MAX_CITIES}
           className="flex h-7 w-7 items-center justify-center font-mono text-sm font-bold transition-colors disabled:opacity-25"
-          style={{ border: '1px solid #1a6632', color: '#22c55e', background: '#040e07', borderRadius: '2px' }}
+          style={{
+            border: '1px solid #1a6632',
+            color: '#22c55e',
+            background: '#040e07',
+            borderRadius: '2px',
+          }}
         >
           +
         </button>
@@ -245,7 +260,8 @@ export default function Wayfinder() {
       <div
         className="my-1 h-px w-full max-w-[420px]"
         style={{
-          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          background:
+            'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
           boxShadow: '0 0 6px #22c55e44',
         }}
       />

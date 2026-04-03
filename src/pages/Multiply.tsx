@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   type GameState,
   startRound,
@@ -151,24 +151,10 @@ export default function Multiply() {
         className="flex h-[100dvh] flex-col items-center px-4 pb-6 pt-4"
         style={{ background: '#030c06', color: '#4ade80' }}
       >
-        {/* CRT scanlines */}
-        <div
-          className="pointer-events-none fixed inset-0 z-50"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-            opacity: 0.5,
-          }}
-        />
+        <CrtOverlay />
 
         <div className="mb-3 w-full max-w-[400px]">
-          <Link
-            to="/"
-            className="text-sm font-mono tracking-widest hover:underline transition-colors"
-            style={{ color: '#22c55e' }}
-          >
-            &larr; Back to Arcade
-          </Link>
+          <BackLink />
         </div>
 
         <h1
@@ -300,15 +286,7 @@ export default function Multiply() {
       }`}
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Freeze overlay */}
       {game.freezeActive && (
@@ -505,24 +483,10 @@ function MultiplyResults({
       className="flex h-[100dvh] flex-col items-center overflow-auto px-4 pb-6 pt-4"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       <div className="mb-4 w-full max-w-[400px]">
-        <Link
-          to="/"
-          className="text-sm font-mono tracking-widest hover:underline transition-colors"
-          style={{ color: '#22c55e' }}
-        >
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
       </div>
 
       {/* Score summary */}

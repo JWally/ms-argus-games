@@ -7,7 +7,7 @@ import {
   type MutableRefObject,
   type ReactElement,
 } from 'react';
-import { Link } from 'react-router-dom';
+import { BackLink, CrtOverlay } from '../components/GameShell';
 import {
   CHOICES,
   TOTAL_ROUNDS,
@@ -1007,25 +1007,11 @@ export default function RockPaperScissors() {
     >
       {showModal && <HowToPlay onClose={closeModal} />}
 
-      {/* Scanlines */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-          opacity: 0.5,
-        }}
-      />
+      <CrtOverlay />
 
       {/* Back link */}
       <div className="mb-3 w-full max-w-lg flex items-center justify-between">
-        <Link
-          to="/"
-          className="text-sm font-mono tracking-widest hover:underline transition-colors"
-          style={{ color: '#22c55e' }}
-        >
-          &larr; Back to Arcade
-        </Link>
+        <BackLink />
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowModal(true)}
