@@ -496,41 +496,22 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
     ctx.clearRect(0, 0, W, H);
     let lastT = 0;
 
-    function draw(t: number) {
-      if (t - lastT < 50) {
-        frameRef.current = requestAnimationFrame(draw);
-        return;
-      }
-      lastT = t;
+    // ── Helpers (close over ctx / W / H / fs / cols / dropsRef) ────────────
 
-      const {
-        phase,
-        outcome,
-        humanChoice,
-        aiChoice,
-        lockedAiChoice,
-        suggestion,
-        winStreak,
-        mode,
-        peeking,
-        peekStartTime,
-      } = stateRef.current;
-
+    function computeColors(
+      phase: Phase,
+      outcome: Outcome | null,
+      winStreak: number,
+      peeking: boolean
+    ) {
       const isWin = outcome === 'win';
       const isLose = outcome === 'lose';
       const streaking = isWin && winStreak >= 2;
       const isLocked = phase === 'locked';
-
-      // Green palette to match Battleship theme
-      const headClr = isLose
-        ? '#fca5a5'
-        : streaking
-          ? '#fde68a'
-          : isWin
-            ? '#86efac'
-            : peeking
-              ? '#fca5a5'
-              : '#4ade80';
+      const slow = phase === 'result' || isLocked;
+      // Green palette — shifts red on lose/peek, gold on streak
+      const headClr =
+        isLose || peeking ? '#fca5a5' : streaking ? '#fde68a' : isWin ? '#86efac' : '#4ade80';
       const bodyClr1 = isLose
         ? '#ef4444'
         : streaking
@@ -549,13 +530,29 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
             : peeking
               ? '#b91c1c'
               : '#14532d';
-      const speed = phase === 'result' || isLocked ? 0.4 : 0.72;
+      return {
+        isWin,
+        isLose,
+        streaking,
+        isLocked,
+        headClr,
+        bodyClr1,
+        bodyClr2,
+        speed: slow ? 0.4 : 0.72,
+        slow,
+      };
+    }
 
-      // Use green-tinted fade to match #030c06 background
-      ctx.fillStyle = `rgba(3,12,6,${phase === 'result' || isLocked ? 0.12 : 0.18})`;
+    function drawRain(
+      headClr: string,
+      bodyClr1: string,
+      bodyClr2: string,
+      speed: number,
+      slow: boolean
+    ) {
+      ctx.fillStyle = `rgba(3,12,6,${slow ? 0.12 : 0.18})`;
       ctx.fillRect(0, 0, W, H);
       ctx.font = `${fs}px 'Courier New', monospace`;
-
       const drops = dropsRef.current;
       for (let i = 0; i < cols; i++) {
         const y = Math.floor(drops[i]) * fs;
@@ -572,188 +569,243 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         if (y > H + fs && Math.random() > 0.96) drops[i] = -Math.random() * 18;
       }
       ctx.globalAlpha = 1;
+    }
 
-      // ── CYBORG IDLE overlay — show suggestion before opponent throws ─────────
-      if (phase === 'idle' && mode === 'coach' && suggestion) {
-        ctx.save();
-        ctx.textAlign = 'center';
+    function drawIdle(phase: Phase, mode: Mode, suggestion: Choice | null) {
+      if (phase !== 'idle' || mode !== 'coach' || !suggestion) return;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillStyle = '#22d3ee';
+      ctx.shadowColor = '#22d3ee';
+      ctx.shadowBlur = 8;
+      ctx.fillText('\u25b6  PLAY THIS  \u25c4', W / 2, 28);
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 22;
+      drawChoiceIcon(ctx, suggestion, { cx: W / 2, cy: H / 2 - 12 }, 48, '#4ade80');
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 17px monospace';
+      ctx.fillStyle = '#4ade80';
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 12;
+      ctx.fillText(LABEL[suggestion], W / 2, H / 2 + 56);
+      ctx.shadowBlur = 0;
+      ctx.font = '9px monospace';
+      ctx.fillStyle = '#1a5a2a';
+      ctx.fillText('then enter opponent\u2019s throw below', W / 2, H / 2 + 76);
+      ctx.restore();
+    }
+
+    function drawLocked(
+      isLocked: boolean,
+      peeking: boolean,
+      lockedAiChoice: Choice | null,
+      peekStartTime: number
+    ) {
+      if (!isLocked) return;
+      ctx.save();
+      ctx.textAlign = 'center';
+      if (peeking && lockedAiChoice) {
+        const progress = Math.max(0, 1 - (Date.now() - peekStartTime) / PEEK_MS);
         ctx.font = 'bold 10px monospace';
-        ctx.fillStyle = '#22d3ee';
-        ctx.shadowColor = '#22d3ee';
+        ctx.fillStyle = '#f87171';
+        ctx.shadowColor = '#ef4444';
         ctx.shadowBlur = 8;
-        ctx.fillText('▶  PLAY THIS  ◀', W / 2, 28);
+        ctx.fillText('// ACCESSING SEALED DATA //', W / 2, 26);
+        ctx.shadowBlur = 20;
+        drawChoiceIcon(ctx, lockedAiChoice, { cx: W / 2, cy: H / 2 - 8 }, 38, '#f87171');
         ctx.shadowBlur = 0;
-        ctx.shadowColor = '#22c55e';
-        ctx.shadowBlur = 22;
-        drawChoiceIcon(ctx, suggestion, { cx: W / 2, cy: H / 2 - 12 }, 48, '#4ade80');
+        ctx.font = 'bold 13px monospace';
+        ctx.fillStyle = '#f87171';
+        ctx.shadowColor = '#f87171';
+        ctx.shadowBlur = 10;
+        ctx.fillText(LABEL[lockedAiChoice], W / 2, H / 2 + 52);
         ctx.shadowBlur = 0;
-        ctx.font = 'bold 17px monospace';
+        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#1f0a0a';
+        ctx.fillRect(24, H - 14, W - 48, 3);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 5;
+        ctx.fillRect(24, H - 14, (W - 48) * progress, 3);
+        ctx.shadowBlur = 0;
+      } else {
+        const scanY = ((Date.now() % 2400) / 2400) * H;
+        ctx.globalAlpha = 0.06;
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(0, scanY - 10, W, 20);
+        ctx.globalAlpha = 1;
+        drawLockIcon(ctx, W / 2, H / 2 - 22, 32, '#4ade80');
+        ctx.font = 'bold 11px monospace';
         ctx.fillStyle = '#4ade80';
         ctx.shadowColor = '#22c55e';
-        ctx.shadowBlur = 12;
-        ctx.fillText(LABEL[suggestion], W / 2, H / 2 + 56);
+        ctx.shadowBlur = 10;
+        ctx.fillText('SYSTEM HAS COMMITTED', W / 2, H / 2 + 34);
         ctx.shadowBlur = 0;
         ctx.font = '9px monospace';
-        ctx.fillStyle = '#1a5a2a';
-        ctx.fillText("then enter opponent's throw below", W / 2, H / 2 + 76);
-        ctx.restore();
+        ctx.fillStyle = '#1a4a2a';
+        ctx.fillText('select your move below', W / 2, H / 2 + 52);
       }
+      ctx.restore();
+    }
 
-      // ── LOCKED overlay ──────────────────────────────────────────────────────
-      if (isLocked) {
-        ctx.save();
-        ctx.textAlign = 'center';
-        if (peeking && lockedAiChoice) {
-          const progress = Math.max(0, 1 - (Date.now() - peekStartTime) / PEEK_MS);
-          ctx.font = 'bold 10px monospace';
-          ctx.fillStyle = '#f87171';
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 8;
-          ctx.fillText('// ACCESSING SEALED DATA //', W / 2, 26);
-          ctx.shadowBlur = 20;
-          drawChoiceIcon(ctx, lockedAiChoice, { cx: W / 2, cy: H / 2 - 8 }, 38, '#f87171');
-          ctx.shadowBlur = 0;
-          ctx.font = 'bold 13px monospace';
-          ctx.fillStyle = '#f87171';
-          ctx.shadowColor = '#f87171';
-          ctx.shadowBlur = 10;
-          ctx.fillText(LABEL[lockedAiChoice], W / 2, H / 2 + 52);
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = 0.25;
-          ctx.fillStyle = '#1f0a0a';
-          ctx.fillRect(24, H - 14, W - 48, 3);
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = '#ef4444';
-          ctx.shadowColor = '#ef4444';
-          ctx.shadowBlur = 5;
-          ctx.fillRect(24, H - 14, (W - 48) * progress, 3);
-          ctx.shadowBlur = 0;
-          ctx.restore();
-        } else {
-          const scanY = ((Date.now() % 2400) / 2400) * H;
-          ctx.globalAlpha = 0.06;
-          ctx.fillStyle = '#4ade80';
-          ctx.fillRect(0, scanY - 10, W, 20);
-          ctx.globalAlpha = 1;
-          drawLockIcon(ctx, W / 2, H / 2 - 22, 32, '#4ade80');
-          ctx.font = 'bold 11px monospace';
-          ctx.fillStyle = '#4ade80';
-          ctx.shadowColor = '#22c55e';
-          ctx.shadowBlur = 10;
-          ctx.fillText('SYSTEM HAS COMMITTED', W / 2, H / 2 + 34);
-          ctx.shadowBlur = 0;
-          ctx.font = '9px monospace';
-          ctx.fillStyle = '#1a4a2a';
-          ctx.fillText('select your move below', W / 2, H / 2 + 52);
-          ctx.restore();
-        }
+    function drawResultVsAi(opts: {
+      phase: Phase;
+      mode: Mode;
+      outcome: Outcome | null;
+      humanChoice: Choice | null;
+      aiChoice: Choice | null;
+      streaking: boolean;
+      isWin: boolean;
+      isLose: boolean;
+      winStreak: number;
+    }) {
+      const { phase, mode, outcome, humanChoice, aiChoice, streaking, isWin, isLose, winStreak } =
+        opts;
+      if (phase !== 'result' || mode !== 'vs-ai' || !outcome) return;
+      const txtClr = streaking ? '#fcd34d' : isWin ? '#4ade80' : isLose ? '#f87171' : '#9ca3af';
+      const big = isWin ? 'PLAYER WINS' : isLose ? 'SYSTEM WINS' : 'DRAW';
+      ctx.save();
+      ctx.textAlign = 'center';
+      if (streaking) {
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#fcd34d';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = 0.9;
+        ctx.fillText(`\u25c6  ${winStreak}x STREAK`, W / 2, 24);
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
       }
+      ctx.font = `bold ${isWin || isLose ? 26 : 34}px monospace`;
+      ctx.fillStyle = txtClr;
+      ctx.shadowColor = txtClr;
+      ctx.shadowBlur = 22;
+      ctx.fillText(big, W / 2, 72);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(24, 84);
+      ctx.lineTo(376, 84);
+      ctx.stroke();
+      if (humanChoice && aiChoice) {
+        ctx.shadowBlur = 14;
+        drawChoiceIcon(
+          ctx,
+          humanChoice,
+          { cx: W / 2 - 62, cy: H / 2 + 30 },
+          26,
+          isWin ? txtClr : '#374151'
+        );
+        drawChoiceIcon(
+          ctx,
+          aiChoice,
+          { cx: W / 2 + 62, cy: H / 2 + 30 },
+          26,
+          isLose ? txtClr : '#374151'
+        );
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#1a3a2a';
+        ctx.fillText('VS', W / 2, H / 2 + 34);
+        ctx.font = '8px monospace';
+        ctx.fillStyle = '#1a3a2a';
+        ctx.fillText('PLAYER', W / 2 - 62, H / 2 + 64);
+        ctx.fillText('SYSTEM', W / 2 + 62, H / 2 + 64);
+      }
+      ctx.restore();
+    }
 
-      // ── RESULT overlay ──────────────────────────────────────────────────────
-      if (phase === 'result') {
-        if (mode === 'vs-ai' && outcome) {
-          const txtClr = streaking ? '#fcd34d' : isWin ? '#4ade80' : isLose ? '#f87171' : '#9ca3af';
-          const big = isWin ? 'PLAYER WINS' : isLose ? 'SYSTEM WINS' : 'DRAW';
-          ctx.save();
-          ctx.textAlign = 'center';
-          if (streaking) {
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = '#fcd34d';
-            ctx.shadowColor = '#f59e0b';
-            ctx.shadowBlur = 10;
-            ctx.globalAlpha = 0.9;
-            ctx.fillText(`◆  ${winStreak}x STREAK`, W / 2, 24);
-            ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
-          }
-          ctx.font = `bold ${isWin || isLose ? 26 : 34}px monospace`;
-          ctx.fillStyle = txtClr;
-          ctx.shadowColor = txtClr;
-          ctx.shadowBlur = 22;
-          ctx.fillText(big, W / 2, 72);
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(24, 84);
-          ctx.lineTo(376, 84);
-          ctx.stroke();
-          if (humanChoice && aiChoice) {
-            ctx.shadowBlur = 14;
-            drawChoiceIcon(
-              ctx,
-              humanChoice,
-              { cx: W / 2 - 62, cy: H / 2 + 30 },
-              26,
-              isWin ? txtClr : '#374151'
-            );
-            drawChoiceIcon(
-              ctx,
-              aiChoice,
-              { cx: W / 2 + 62, cy: H / 2 + 30 },
-              26,
-              isLose ? txtClr : '#374151'
-            );
-            ctx.shadowBlur = 0;
-            ctx.font = 'bold 9px monospace';
-            ctx.fillStyle = '#1a3a2a';
-            ctx.fillText('VS', W / 2, H / 2 + 34);
-            ctx.font = '8px monospace';
-            ctx.fillStyle = '#1a3a2a';
-            ctx.fillText('PLAYER', W / 2 - 62, H / 2 + 64);
-            ctx.fillText('SYSTEM', W / 2 + 62, H / 2 + 64);
-          }
-          ctx.restore();
-        }
-        if (mode === 'coach' && suggestion) {
-          // Result: show outcome + CYBORG (suggestion) vs HUMAN (opponent throw)
-          const coachOutcome = humanChoice
-            ? suggestion === humanChoice
-              ? 'tie'
-              : (CHOICES.indexOf(suggestion) + 1) % 3 === CHOICES.indexOf(humanChoice)
-                ? 'win'
-                : 'lose'
-            : null;
-          const resClr =
-            coachOutcome === 'win' ? '#4ade80' : coachOutcome === 'lose' ? '#f87171' : '#9ca3af';
-          ctx.save();
-          ctx.textAlign = 'center';
-          ctx.font = `bold 24px monospace`;
-          ctx.fillStyle = resClr;
-          ctx.shadowColor = resClr;
-          ctx.shadowBlur = 20;
-          ctx.fillText(
-            coachOutcome === 'win'
-              ? 'CYBORG WINS'
-              : coachOutcome === 'lose'
-                ? 'HUMAN WINS'
-                : 'DRAW',
-            W / 2,
-            60
-          );
-          ctx.shadowBlur = 0;
-          ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(24, 72);
-          ctx.lineTo(376, 72);
-          ctx.stroke();
-          ctx.shadowBlur = 14;
-          drawChoiceIcon(ctx, suggestion, { cx: W / 2 - 62, cy: H / 2 + 24 }, 28, '#4ade80');
-          if (humanChoice)
-            drawChoiceIcon(ctx, humanChoice, { cx: W / 2 + 62, cy: H / 2 + 24 }, 28, '#f87171');
-          ctx.shadowBlur = 0;
-          ctx.font = 'bold 9px monospace';
-          ctx.fillStyle = '#1a3a2a';
-          ctx.fillText('VS', W / 2, H / 2 + 28);
-          ctx.font = '8px monospace';
-          ctx.fillStyle = '#1a5a2a';
-          ctx.fillText('CYBORG', W / 2 - 62, H / 2 + 58);
-          ctx.fillStyle = '#5a1a1a';
-          ctx.fillText('HUMAN', W / 2 + 62, H / 2 + 58);
-          ctx.restore();
-        }
+    function drawResultCoach(
+      phase: Phase,
+      mode: Mode,
+      suggestion: Choice | null,
+      humanChoice: Choice | null
+    ) {
+      if (phase !== 'result' || mode !== 'coach' || !suggestion) return;
+      const coachOutcome = humanChoice
+        ? suggestion === humanChoice
+          ? 'tie'
+          : (CHOICES.indexOf(suggestion) + 1) % 3 === CHOICES.indexOf(humanChoice)
+            ? 'win'
+            : 'lose'
+        : null;
+      const resClr =
+        coachOutcome === 'win' ? '#4ade80' : coachOutcome === 'lose' ? '#f87171' : '#9ca3af';
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 24px monospace';
+      ctx.fillStyle = resClr;
+      ctx.shadowColor = resClr;
+      ctx.shadowBlur = 20;
+      ctx.fillText(
+        coachOutcome === 'win' ? 'CYBORG WINS' : coachOutcome === 'lose' ? 'HUMAN WINS' : 'DRAW',
+        W / 2,
+        60
+      );
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(24, 72);
+      ctx.lineTo(376, 72);
+      ctx.stroke();
+      ctx.shadowBlur = 14;
+      drawChoiceIcon(ctx, suggestion, { cx: W / 2 - 62, cy: H / 2 + 24 }, 28, '#4ade80');
+      if (humanChoice)
+        drawChoiceIcon(ctx, humanChoice, { cx: W / 2 + 62, cy: H / 2 + 24 }, 28, '#f87171');
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = '#1a3a2a';
+      ctx.fillText('VS', W / 2, H / 2 + 28);
+      ctx.font = '8px monospace';
+      ctx.fillStyle = '#1a5a2a';
+      ctx.fillText('CYBORG', W / 2 - 62, H / 2 + 58);
+      ctx.fillStyle = '#5a1a1a';
+      ctx.fillText('HUMAN', W / 2 + 62, H / 2 + 58);
+      ctx.restore();
+    }
+
+    // ── Main render loop ────────────────────────────────────────────────────
+
+    function draw(t: number) {
+      if (t - lastT < 50) {
+        frameRef.current = requestAnimationFrame(draw);
+        return;
       }
+      lastT = t;
+      const {
+        phase,
+        outcome,
+        humanChoice,
+        aiChoice,
+        lockedAiChoice,
+        suggestion,
+        winStreak,
+        mode,
+        peeking,
+        peekStartTime,
+      } = stateRef.current;
+      const { isWin, isLose, streaking, isLocked, headClr, bodyClr1, bodyClr2, speed, slow } =
+        computeColors(phase, outcome, winStreak, peeking);
+      drawRain(headClr, bodyClr1, bodyClr2, speed, slow);
+      drawIdle(phase, mode, suggestion);
+      drawLocked(isLocked, peeking, lockedAiChoice, peekStartTime);
+      drawResultVsAi({
+        phase,
+        mode,
+        outcome,
+        humanChoice,
+        aiChoice,
+        streaking,
+        isWin,
+        isLose,
+        winStreak,
+      });
+      drawResultCoach(phase, mode, suggestion, humanChoice);
       frameRef.current = requestAnimationFrame(draw);
     }
 
