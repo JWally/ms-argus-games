@@ -153,9 +153,9 @@ export function playerShoot(state: GameState, row: number, col: number): GameSta
     if (hitShip.hitCount === hitShip.size) {
       hitShip.sunk = true;
       result = 'sunk';
-      hitShip.positions.forEach(([r, c]) => {
+      for (const [r, c] of hitShip.positions) {
         newEnemyGrid[r][c] = 'sunk';
-      });
+      }
       message = `${hitShip.name.toUpperCase()} DESTROYED`;
     } else {
       result = 'hit';
@@ -279,9 +279,9 @@ export function aiShoot(state: GameState): GameState {
     if (hitShip.hitCount === hitShip.size) {
       hitShip.sunk = true;
       result = 'sunk';
-      hitShip.positions.forEach(([r, c]) => {
+      for (const [r, c] of hitShip.positions) {
         newPlayerGrid[r][c] = 'sunk';
-      });
+      }
       message = `ENEMY SUNK YOUR ${hitShip.name.toUpperCase()}`;
       aiMode = 'hunt';
       aiHits = [];

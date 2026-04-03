@@ -14,6 +14,9 @@ import {
   saveBestScore,
 } from '../games/amaze/engine';
 
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+const GLOW_GREEN = '0 0 10px #22c55e44';
+
 // ── Size presets ──────────────────────────────────────────────────────────
 
 const SIZE_OPTIONS = [
@@ -396,9 +399,9 @@ export default function Amaze() {
               boardSize === opt.size
                 ? {
                     background: '#040e07',
-                    border: '1px solid #22c55e',
+                    border: BORDER_GREEN_BRIGHT,
                     color: '#4ade80',
-                    boxShadow: '0 0 10px #22c55e44',
+                    boxShadow: GLOW_GREEN,
                     borderRadius: '2px',
                   }
                 : {
@@ -486,9 +489,9 @@ export default function Amaze() {
             className="mt-3 w-full py-2.5 text-sm font-bold tracking-widest transition-all hover:scale-105"
             style={{
               background: '#040e07',
-              border: '1px solid #22c55e',
+              border: BORDER_GREEN_BRIGHT,
               color: '#4ade80',
-              boxShadow: '0 0 10px #22c55e44',
+              boxShadow: GLOW_GREEN,
               borderRadius: '2px',
             }}
           >
@@ -558,9 +561,9 @@ export default function Amaze() {
               className="mt-4 w-full py-2.5 text-sm font-bold tracking-[0.2em] transition-all hover:scale-105"
               style={{
                 background: '#040e07',
-                border: '1px solid #22c55e',
+                border: BORDER_GREEN_BRIGHT,
                 color: '#4ade80',
-                boxShadow: '0 0 10px #22c55e44',
+                boxShadow: GLOW_GREEN,
                 borderRadius: '2px',
               }}
             >
@@ -630,9 +633,9 @@ export default function Amaze() {
                 className="flex-1 py-2.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105"
                 style={{
                   background: '#040e07',
-                  border: '1px solid #22c55e',
+                  border: BORDER_GREEN_BRIGHT,
                   color: '#4ade80',
-                  boxShadow: '0 0 10px #22c55e44',
+                  boxShadow: GLOW_GREEN,
                   borderRadius: '2px',
                 }}
               >
@@ -698,9 +701,9 @@ export default function Amaze() {
                 className="flex-1 py-2.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105"
                 style={{
                   background: '#040e07',
-                  border: '1px solid #22c55e',
+                  border: BORDER_GREEN_BRIGHT,
                   color: '#4ade80',
-                  boxShadow: '0 0 10px #22c55e44',
+                  boxShadow: GLOW_GREEN,
                   borderRadius: '2px',
                 }}
               >

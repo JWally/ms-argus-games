@@ -18,6 +18,9 @@ import { launchConfetti } from '../games/confetti';
 
 // ── Layout constants ──────────────────────────────────────────────────
 
+const BORDER_GREEN_DIM = '1px solid #1a6632';
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+
 const BALL = 36;
 const GAP = 4;
 const PADH = 6;
@@ -233,7 +236,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
         className="w-full max-w-sm p-6 shadow-2xl"
         style={{
           background: '#040e07',
-          border: '1px solid #1a6632',
+          border: BORDER_GREEN_DIM,
           borderRadius: '2px',
           boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
           animation: 'modal-in 0.22s ease',
@@ -311,7 +314,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           className="mt-4 w-full py-2.5 text-sm font-bold tracking-[0.2em] transition-all hover:scale-105"
           style={{
             background: '#040e07',
-            border: '1px solid #22c55e',
+            border: BORDER_GREEN_BRIGHT,
             color: '#4ade80',
             boxShadow: '0 0 10px #22c55e44',
             borderRadius: '2px',
@@ -331,7 +334,7 @@ function ModalStep({ n, text, children }: { n: number; text: string; children: R
         className="flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold"
         style={{
           background: '#0a2a14',
-          border: '1px solid #1a6632',
+          border: BORDER_GREEN_DIM,
           borderRadius: '2px',
           color: '#4ade80',
           fontFamily: 'monospace',
@@ -427,7 +430,7 @@ function WinModal({
         className="relative w-full max-w-sm overflow-y-auto"
         style={{
           background: '#040e07',
-          border: '1px solid #1a6632',
+          border: BORDER_GREEN_DIM,
           borderRadius: '2px',
           boxShadow: '0 0 60px #22c55e33, 0 0 120px #22c55e11, inset 0 0 40px #00000060',
           animation: 'modal-in 0.3s ease',
@@ -468,7 +471,7 @@ function WinModal({
               className="mt-4 mx-auto flex w-fit items-center gap-2 px-4 py-1.5"
               style={{
                 background: '#0a2a14',
-                border: '1px solid #22c55e',
+                border: BORDER_GREEN_BRIGHT,
                 borderRadius: '2px',
                 boxShadow: '0 0 16px #22c55e55',
                 animation: 'record-pop 0.5s 0.2s cubic-bezier(0.34,1.56,0.64,1) both',
@@ -542,7 +545,7 @@ function WinModal({
                 className="flex items-center gap-2 px-2 py-1"
                 style={{
                   background: row.isUser ? '#0a2a14' : i % 2 === 0 ? '#030c06' : '#040e07',
-                  border: row.isUser ? '1px solid #1a6632' : '1px solid transparent',
+                  border: row.isUser ? BORDER_GREEN_DIM : '1px solid transparent',
                   borderRadius: '2px',
                   boxShadow: row.isUser ? '0 0 8px #22c55e22' : undefined,
                 }}
@@ -581,7 +584,7 @@ function WinModal({
             className="mt-5 w-full py-3 text-xs font-bold tracking-[0.25em] transition-all hover:scale-105"
             style={{
               background: 'linear-gradient(to right, #0a2a14, #0f3a1c, #0a2a14)',
-              border: '1px solid #22c55e',
+              border: BORDER_GREEN_BRIGHT,
               color: '#4ade80',
               boxShadow: '0 0 16px #22c55e44',
               borderRadius: '2px',
@@ -739,7 +742,7 @@ export default function BallSort() {
             className="flex h-5 w-5 items-center justify-center text-xs font-bold transition-all hover:scale-105"
             style={{
               background: '#040e07',
-              border: '1px solid #1a6632',
+              border: BORDER_GREEN_DIM,
               color: '#166534',
               borderRadius: '2px',
             }}

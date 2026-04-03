@@ -17,12 +17,16 @@ const SHIP_DEFS = getShipDefs();
 
 // ─── cell visual config ─────────────────────────────────────────────────────
 
+const BORDER_DARK = '1px solid #0f2a18';
+const BORDER_GREEN = '1px solid #22c55e';
+const GLOW_GREEN = '0 0 6px #22c55e';
+
 type CellVariant = 'empty' | 'ship' | 'hit' | 'miss' | 'sunk' | 'target-hover';
 
 const CELL_STYLES: Record<CellVariant, CSSProperties> = {
   empty: {
     background: '#061510',
-    border: '1px solid #0f2a18',
+    border: BORDER_DARK,
   },
   ship: {
     background: '#0a2a14',
@@ -46,7 +50,7 @@ const CELL_STYLES: Record<CellVariant, CSSProperties> = {
   },
   'target-hover': {
     background: '#0a1f14',
-    border: '1px solid #22c55e',
+    border: BORDER_GREEN,
     boxShadow: '0 0 8px #22c55e66',
     cursor: 'crosshair',
   },
@@ -432,11 +436,11 @@ export default function Battleship() {
                   : '#22c55e',
               boxShadow: isOver
                 ? game.phase === 'won'
-                  ? '0 0 6px #22c55e'
+                  ? GLOW_GREEN
                   : '0 0 6px #dc2626'
                 : aiPending
                   ? '0 0 6px #f59e0b'
-                  : '0 0 6px #22c55e',
+                  : GLOW_GREEN,
             }}
           />
           <span
@@ -445,7 +449,7 @@ export default function Battleship() {
               color: isOver ? (game.phase === 'won' ? '#4ade80' : '#dc2626') : '#86efac',
               textShadow: isOver
                 ? game.phase === 'won'
-                  ? '0 0 6px #22c55e'
+                  ? GLOW_GREEN
                   : '0 0 6px #dc2626'
                 : undefined,
             }}
@@ -486,7 +490,7 @@ export default function Battleship() {
                 className="rounded px-4 py-2 text-sm font-bold tracking-widest transition-all hover:scale-105"
                 style={{
                   background: '#040e07',
-                  border: '1px solid #22c55e',
+                  border: BORDER_GREEN,
                   color: '#4ade80',
                   boxShadow: '0 0 10px #22c55e44',
                 }}
@@ -531,7 +535,7 @@ export default function Battleship() {
               {/* Enemy ship status */}
               <div
                 className="w-full max-w-[290px] rounded p-2"
-                style={{ background: '#040e07', border: '1px solid #0f2a18' }}
+                style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div
                   className="mb-1.5 text-xs font-bold tracking-[0.2em]"
@@ -555,7 +559,7 @@ export default function Battleship() {
               {/* Friendly ship status */}
               <div
                 className="w-full max-w-[290px] rounded p-2"
-                style={{ background: '#040e07', border: '1px solid #0f2a18' }}
+                style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div
                   className="mb-1.5 text-xs font-bold tracking-[0.2em]"
@@ -640,7 +644,7 @@ export default function Battleship() {
                 className="mt-6 rounded px-8 py-2.5 text-xs font-bold tracking-[0.2em] transition-all hover:scale-105"
                 style={{
                   background: '#040e07',
-                  border: '1px solid #22c55e',
+                  border: BORDER_GREEN,
                   color: '#4ade80',
                   boxShadow: '0 0 12px #22c55e44',
                 }}
