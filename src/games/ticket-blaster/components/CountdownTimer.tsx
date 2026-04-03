@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { CONTEST_END } from '../constants';
 
-const DEADLINE = new Date('2026-03-26T23:59:59Z').getTime();
+const DEADLINE = CONTEST_END.getTime();
 
 interface TimeLeft {
   days: number;

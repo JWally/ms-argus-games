@@ -10,7 +10,7 @@ import {
 } from '../games/ataxx/engine';
 
 const CELL_COLORS = {
-  empty: '#1e1e3a',
+  empty: '#061510',
   blue: '#3b82f6',
   red: '#ef4444',
 } as const;
@@ -66,36 +66,78 @@ export default function Ataxx() {
   const cellSize = `calc((min(100vw - 32px, 400px) - ${(game.size - 1) * 3}px) / ${game.size})`;
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-arcade-bg px-4 pb-12 pt-4">
-      {/* Nav */}
+    <div
+      className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      {/* CRT Scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Back link */}
       <div className="mb-4 w-full max-w-[400px]">
-        <Link to="/" className="text-sm text-arcade-accent hover:underline">
+        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
           &larr; Back to Arcade
         </Link>
       </div>
 
       {/* Title */}
-      <h1 className="font-display text-xl text-arcade-accent sm:text-2xl">ATAXX</h1>
+      <div className="mb-1 text-center">
+        <h1
+          className="font-display text-lg tracking-[0.3em]"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
+          ATAXX
+        </h1>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          TERRITORIAL EXPANSION PROTOCOL
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-2 h-px w-full max-w-[400px]"
+        style={{
+          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          boxShadow: '0 0 6px #22c55e44',
+        }}
+      />
 
       {/* Score bar */}
-      <div className="mt-4 flex w-full max-w-[400px] items-center justify-between text-sm">
-        <span className="font-bold text-blue-400">You: {game.blueCount}</span>
-        <span className="text-gray-400">
+      <div className="mt-2 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">
+        <span style={{ color: '#4ade80' }}>YOU: {game.blueCount}</span>
+        <span style={{ color: '#86efac' }}>
           {game.gameOver
             ? game.winner === 'blue'
-              ? 'You win!'
+              ? 'MISSION COMPLETE'
               : game.winner === 'red'
-                ? 'CPU wins'
-                : 'Tie game'
+                ? 'MISSION FAILED'
+                : 'STALEMATE'
             : game.turn === 'blue'
-              ? 'Your turn'
-              : 'CPU thinking...'}
+              ? 'YOUR TURN'
+              : 'CPU CALCULATING...'}
         </span>
-        <span className="font-bold text-red-400">CPU: {game.redCount}</span>
+        <span style={{ color: '#f87171' }}>CPU: {game.redCount}</span>
       </div>
 
       {/* Score bar visual */}
-      <div className="mt-2 flex h-3 w-full max-w-[400px] overflow-hidden rounded-full bg-arcade-card">
+      <div
+        className="mt-2 flex h-3 w-full max-w-[400px] overflow-hidden"
+        style={{
+          background: '#040e07',
+          border: '1px solid #0f2a18',
+          borderRadius: '2px',
+        }}
+      >
         <div
           className="h-full bg-blue-500 transition-all duration-300"
           style={{
@@ -148,8 +190,8 @@ export default function Ataxx() {
               border = '#fff';
               scale = 1.08;
             } else if (isValidMove) {
-              bg = isClone ? 'rgba(139,92,246,0.35)' : 'rgba(139,92,246,0.18)';
-              border = '#8b5cf6';
+              bg = isClone ? 'rgba(34,197,94,0.25)' : 'rgba(34,197,94,0.12)';
+              border = '#22c55e';
               cursor = 'pointer';
             } else if (cell === 'blue' && game.turn === 'blue' && !game.gameOver) {
               cursor = 'pointer';
@@ -167,7 +209,7 @@ export default function Ataxx() {
             } else if (isSource) {
               // Dim ring showing where piece came from (jump)
               border = 'rgba(239,68,68,0.4)';
-              bg = '#1e1e3a';
+              bg = '#061510';
             }
 
             return (
@@ -193,38 +235,104 @@ export default function Ataxx() {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex gap-4 text-xs text-gray-500">
-        <span>1 square = clone</span>
-        <span>2 squares = jump</span>
+      <div className="mt-4 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        1 SQUARE = CLONE · 2 SQUARES = JUMP
       </div>
 
       {/* Record */}
       {(record.wins > 0 || record.losses > 0) && !game.gameOver && (
-        <p className="mt-3 text-xs text-gray-500">
-          Record: {record.wins}W - {record.losses}L
+        <p className="mt-3 font-mono text-xs" style={{ color: '#166534' }}>
+          RECORD: {record.wins}W - {record.losses}L
         </p>
       )}
 
       {/* Game over */}
       {game.gameOver && (
-        <div className="mt-6 w-full max-w-[400px] rounded-xl border border-arcade-accent/40 bg-arcade-card p-6 text-center">
-          <p className="font-display text-sm text-arcade-accent">
-            {game.winner === 'blue' ? 'YOU WIN!' : game.winner === 'red' ? 'YOU LOSE' : 'TIE GAME'}
+        <div
+          className="mt-6 w-full max-w-[400px] p-6 text-center"
+          style={
+            game.winner === 'blue'
+              ? {
+                  background: '#030f06',
+                  border: '1px solid #1a6632',
+                  borderRadius: '4px',
+                  boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
+                  animation: 'bs-victory 0.8s ease-out',
+                }
+              : game.winner === 'red'
+                ? {
+                    background: '#0c0303',
+                    border: '1px solid #7f1d1d',
+                    borderRadius: '4px',
+                    boxShadow: '0 0 40px #dc262622, inset 0 0 40px #00000060',
+                    animation: 'bs-defeat 0.7s ease-out',
+                  }
+                : {
+                    background: '#0d0a02',
+                    border: '1px solid #78350f',
+                    borderRadius: '4px',
+                    boxShadow: '0 0 40px #f59e0b22, inset 0 0 40px #00000060',
+                  }
+          }
+        >
+          <p
+            className="font-display text-2xl tracking-widest"
+            style={
+              game.winner === 'blue'
+                ? { color: '#4ade80', textShadow: '0 0 20px #22c55e, 0 0 60px #22c55e66' }
+                : game.winner === 'red'
+                  ? { color: '#dc2626', textShadow: '0 0 20px #dc2626, 0 0 60px #dc262666' }
+                  : { color: '#f59e0b', textShadow: '0 0 20px #f59e0b, 0 0 60px #f59e0b66' }
+            }
+          >
+            {game.winner === 'blue' ? 'MISSION COMPLETE' : game.winner === 'red' ? 'MISSION FAILED' : 'STALEMATE'}
           </p>
-          <p className="mt-3 text-lg text-white">
+          <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
             {game.blueCount} - {game.redCount}
           </p>
-          <p className="mt-1 text-sm text-gray-400">
-            Record: {record.wins}W - {record.losses}L
+          <p className="mt-1 font-mono text-xs" style={{ color: '#166534' }}>
+            RECORD: {record.wins}W - {record.losses}L
           </p>
           <button
             onClick={restart}
-            className="mt-5 rounded-lg bg-arcade-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-arcade-accent-hover"
+            className="mt-5 px-6 py-2.5 text-sm font-bold tracking-widest transition-all hover:scale-105"
+            style={{
+              background: '#040e07',
+              border: '1px solid #22c55e',
+              color: '#4ade80',
+              boxShadow: '0 0 10px #22c55e44',
+              borderRadius: '2px',
+            }}
           >
-            Play Again
+            NEW ENGAGEMENT
           </button>
         </div>
       )}
+
+      <style>{`
+        @keyframes ataxx-land {
+          0%   { transform: scale(0.6); }
+          60%  { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+        @keyframes ataxx-flip {
+          0%   { transform: rotateY(0deg); }
+          50%  { transform: rotateY(90deg); }
+          100% { transform: rotateY(0deg); }
+        }
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
+          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%   { transform: translate(0,0) rotate(0deg); }
+          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
+          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
+          100% { transform: translate(0,0) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }

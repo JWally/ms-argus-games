@@ -126,48 +126,100 @@ export default function Breakout() {
   // ── Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-arcade-bg px-2 pb-8 pt-4">
-      {/* Nav */}
-      <div className="mb-3 w-full max-w-[400px] px-2">
-        <Link to="/" className="text-sm text-arcade-accent hover:underline">
+    <div
+      className="flex h-[100dvh] flex-col items-center px-2 pb-8 pt-4"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      {/* CRT Scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Header row */}
+      <div className="mb-3 flex w-full max-w-[400px] items-center justify-between px-1">
+        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
           &larr; Back to Arcade
         </Link>
-      </div>
-
-      {/* Title + stats */}
-      <div className="mb-3 flex w-full max-w-[400px] items-center justify-between px-2">
-        <h1 className="font-display text-base text-arcade-accent sm:text-lg">BREAKOUT</h1>
-        <div className="flex gap-3 text-xs text-gray-400">
-          <span>Level {level}</span>
-          <span>
-            Score: <span className="text-white">{score}</span>
-          </span>
-          {highScore > 0 && <span>Best: {highScore}</span>}
+        <div className="flex gap-3 font-mono text-xs" style={{ color: '#86efac' }}>
+          <span>LVL <span style={{ color: '#4ade80' }}>{level}</span></span>
+          <span>SCORE <span style={{ color: '#4ade80' }}>{score}</span></span>
+          {highScore > 0 && <span style={{ color: '#166534' }}>BEST {highScore}</span>}
         </div>
       </div>
+
+      {/* Title */}
+      <div className="mb-1 text-center">
+        <h1
+          className="font-display text-lg tracking-[0.3em]"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
+          BREAKOUT
+        </h1>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          BRICK DEMOLITION SYSTEM
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-2 h-px w-full max-w-[400px]"
+        style={{
+          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          boxShadow: '0 0 6px #22c55e44',
+        }}
+      />
 
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="touch-none rounded border border-arcade-border"
+        className="touch-none"
         onPointerMove={handlePointerMove}
         onClick={handleTap}
-        style={{ maxWidth: '100%' }}
+        style={{
+          maxWidth: '100%',
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+        }}
       />
 
       {/* Status messages */}
-      <div className="mt-3 text-center text-sm text-gray-400">
-        {phase === 'ready' && 'Tap to launch'}
-        {phase === 'dead' && 'Tap to continue'}
-        {phase === 'game-over' && 'Game over — tap to restart'}
+      <div className="mt-3 text-center font-mono text-sm" style={{ color: '#4ade80' }}>
+        {phase === 'ready' && 'TAP TO LAUNCH'}
+        {phase === 'dead' && 'TAP TO CONTINUE'}
+        {phase === 'game-over' && (
+          <span style={{ color: '#dc2626' }}>MISSION FAILED — TAP TO RETRY</span>
+        )}
         {phase === 'playing' && lives > 0 && (
-          <span className="flex items-center justify-center gap-1">
+          <span className="flex items-center justify-center gap-1" style={{ color: '#dc2626' }}>
             {Array.from({ length: lives }, (_, i) => (
-              <span key={i} className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span key={i}>■</span>
             ))}
           </span>
         )}
       </div>
+
+      <style>{`
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
+          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%   { transform: translate(0,0) rotate(0deg); }
+          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
+          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
+          100% { transform: translate(0,0) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }

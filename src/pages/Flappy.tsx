@@ -123,32 +123,90 @@ export default function Flappy() {
   }, [startGame]);
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center bg-arcade-bg px-2 pb-3 pt-4">
-      {/* Nav + stats */}
+    <div
+      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      {/* CRT Scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Header row */}
       <div className="mb-2 flex w-full max-w-[400px] items-center justify-between px-1">
-        <Link to="/" className="text-sm text-arcade-accent hover:underline">
-          &larr; Arcade
+        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+          &larr; Back to Arcade
         </Link>
-        <div className="flex gap-3 text-xs text-gray-400">
-          <span>
-            Score: <span className="text-white">{score}</span>
-          </span>
-          {highScore > 0 && <span>Best: {highScore}</span>}
+        <div className="flex gap-3 font-mono text-xs" style={{ color: '#86efac' }}>
+          <span>SCORE <span style={{ color: '#4ade80' }}>{score}</span></span>
+          {highScore > 0 && <span style={{ color: '#166534' }}>BEST {highScore}</span>}
         </div>
       </div>
+
+      {/* Title */}
+      <div className="mb-1 text-center">
+        <h1
+          className="font-display text-lg tracking-[0.3em]"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
+          FLAPPY BIRD
+        </h1>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          AERIAL EVASION PROTOCOL
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-2 h-px w-full max-w-[400px]"
+        style={{
+          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          boxShadow: '0 0 6px #22c55e44',
+        }}
+      />
 
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="flex-1 touch-none rounded border border-arcade-border"
+        className="flex-1 touch-none"
         onClick={handleTap}
-        style={{ maxWidth: '100%', maxHeight: 'calc(100dvh - 80px)' }}
+        style={{
+          maxWidth: '100%',
+          maxHeight: 'calc(100dvh - 140px)',
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+        }}
       />
 
       {/* Hint */}
       {phase === 'ready' && (
-        <p className="mt-2 text-xs text-gray-500">Tap or press space to flap</p>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+          TAP OR SPACE TO FLAP
+        </p>
       )}
+
+      <style>{`
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
+          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%   { transform: translate(0,0) rotate(0deg); }
+          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
+          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
+          100% { transform: translate(0,0) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }

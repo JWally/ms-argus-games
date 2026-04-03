@@ -10,11 +10,18 @@ const ColorFlood = lazy(() => import('./pages/ColorFlood'));
 const Connect4 = lazy(() => import('./pages/Connect4'));
 const Flappy = lazy(() => import('./pages/Flappy'));
 const Multiply = lazy(() => import('./pages/Multiply'));
-const RiverRat = lazy(() => import('./pages/RiverRat'));
 const PegSolitaire = lazy(() => import('./pages/PegSolitaire'));
 const TicketBlaster = lazy(() => import('./pages/TicketBlaster'));
 const SpellingBee = lazy(() => import('./pages/SpellingBee'));
 const CardCounter = lazy(() => import('./pages/CardCounter'));
+const RockPaperScissors = lazy(() => import('./pages/RockPaperScissors'))
+const Battleship = lazy(() => import('./pages/Battleship'));
+const BallSort = lazy(() => import('./pages/BallSort'));
+const Go = lazy(() => import('./pages/Go'));
+const TicTacToe = lazy(() => import('./pages/TicTacToe'));
+const HanoiHilton = lazy(() => import('./pages/HanoiHilton'));
+const Wayfinder = lazy(() => import('./pages/Wayfinder'));
+const Amaze = lazy(() => import('./pages/Amaze'));
 
 function Gated({ children }: { children: ReactNode }) {
   return <CaptchaGate>{children}</CaptchaGate>;
@@ -90,14 +97,6 @@ export default function App() {
           }
         />
         <Route
-          path="/river-rat"
-          element={
-            <Gated>
-              <RiverRat />
-            </Gated>
-          }
-        />
-        <Route
           path="/spelling-bee"
           element={
             <Gated>
@@ -113,7 +112,78 @@ export default function App() {
             </Gated>
           }
         />
-        <Route path="/ticket-blaster" element={<TicketBlaster />} />
+        <Route
+          path="/rps"
+          element={
+            <Gated>
+              <RockPaperScissors />
+            </Gated>
+          }
+        />
+        <Route
+          path="/battleship"
+          element={
+            <Gated>
+              <Battleship />
+            </Gated>
+          }
+        />
+        <Route
+          path="/ball-sort"
+          element={
+            <Gated>
+              <BallSort />
+            </Gated>
+          }
+        />
+        <Route
+          path="/go"
+          element={
+            <Gated>
+              <Go />
+            </Gated>
+          }
+        />
+        <Route
+          path="/tic-tac-toe"
+          element={
+            <Gated>
+              <TicTacToe />
+            </Gated>
+          }
+        />
+        <Route
+          path="/hanoi-hilton"
+          element={
+            <Gated>
+              <HanoiHilton />
+            </Gated>
+          }
+        />
+        <Route
+          path="/wayfinder"
+          element={
+            <Gated>
+              <Wayfinder />
+            </Gated>
+          }
+        />
+        <Route
+          path="/amaze"
+          element={
+            <Gated>
+              <Amaze />
+            </Gated>
+          }
+        />
+        <Route
+          path="/ticket-blaster"
+          element={
+            <Gated>
+              <TicketBlaster />
+            </Gated>
+          }
+        />
       </Routes>
     </Suspense>
   );

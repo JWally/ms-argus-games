@@ -18,6 +18,8 @@ export default function Connect4() {
   const stateRef = useRef<GameState | null>(null);
   const rafRef = useRef<number>(0);
   const aiTimerRef = useRef<number>(0);
+  const lastPhaseRef = useRef<string>('ready');
+  const lastTurnRef = useRef<1 | 2>(1);
 
   const [phase, setPhase] = useState<string>('ready');
   const [turn, setTurn] = useState<1 | 2>(1);
@@ -58,11 +60,13 @@ export default function Connect4() {
       const s = tick(state, 1);
       stateRef.current = s;
 
-      if (s.phase !== state.phase) setPhase(s.phase);
-      if (s.turn !== state.turn) setTurn(s.turn);
+      const prevPhase = lastPhaseRef.current;
+      const prevTurn = lastTurnRef.current;
+      if (s.phase !== prevPhase) { lastPhaseRef.current = s.phase; setPhase(s.phase); }
+      if (s.turn !== prevTurn) { lastTurnRef.current = s.turn; setTurn(s.turn); }
 
       // Detect player win
-      if (s.phase === 'done' && state.phase !== 'done' && s.winner === 1) {
+      if (s.phase === 'done' && prevPhase !== 'done' && s.winner === 1) {
         launchConfetti();
       }
 
@@ -174,33 +178,94 @@ export default function Connect4() {
   }, [resetGame]);
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center bg-arcade-bg px-2 pb-3 pt-4">
-      {/* Nav */}
+    <div
+      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      {/* CRT Scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Header row */}
       <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1">
-        <Link to="/" className="text-sm text-arcade-accent hover:underline">
-          &larr; Arcade
+        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+          &larr; Back to Arcade
         </Link>
-        <div className="text-xs text-gray-400">
-          {phase === 'playing' && turn === 1 && <span className="text-red-400">Your turn</span>}
+        <div className="font-mono text-xs">
+          {phase === 'playing' && turn === 1 && (
+            <span style={{ color: '#4ade80' }}>YOUR TURN</span>
+          )}
           {phase === 'playing' && turn === 2 && (
-            <span className="text-yellow-400">AI thinking...</span>
+            <span style={{ color: '#f59e0b' }}>AI CALCULATING...</span>
           )}
         </div>
       </div>
 
+      {/* Title */}
+      <div className="mb-1 text-center">
+        <h1
+          className="font-display text-lg tracking-[0.3em]"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
+          CONNECT 4
+        </h1>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          FOUR-IN-LINE DOMINANCE PROTOCOL
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-2 h-px w-full max-w-[420px]"
+        style={{
+          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          boxShadow: '0 0 6px #22c55e44',
+        }}
+      />
+
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="touch-none rounded border border-arcade-border"
+        className="touch-none"
         onClick={handleClick}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
+        style={{
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+        }}
       />
 
       {/* Hint */}
       {phase === 'ready' && (
-        <p className="mt-2 text-xs text-gray-500">Tap to start — drop discs, connect 4 to win</p>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+          TAP TO BEGIN — DROP DISCS, CONNECT 4 TO WIN
+        </p>
       )}
+
+      <style>{`
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
+          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%   { transform: translate(0,0) rotate(0deg); }
+          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
+          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
+          100% { transform: translate(0,0) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }

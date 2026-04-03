@@ -5,6 +5,7 @@ import { submitPurchase } from '../games/ticket-blaster/api';
 import { getFieldError } from '../games/ticket-blaster/validation';
 import { FIELDS, SECTIONS, HONEYPOT_NAMES, type Field } from '../games/ticket-blaster/fields';
 import { CountdownTimer } from '../games/ticket-blaster/components/CountdownTimer';
+import { CONTEST_END_LABEL } from '../games/ticket-blaster/constants';
 import type { LeaderboardEntry } from '../games/ticket-blaster/types';
 import { launchConfetti } from '../games/confetti';
 import { useSigintGuard } from '../hooks/useSigintGuard';
@@ -274,7 +275,7 @@ function SuccessPage({
             <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
               <div>
                 <p className="text-gray-400">Date</p>
-                <p className="font-medium text-gray-900">Mar 26, 2026</p>
+                <p className="font-medium text-gray-900">{CONTEST_END_LABEL}</p>
               </div>
               <div>
                 <p className="text-gray-400">Time</p>
@@ -598,7 +599,7 @@ export default function TicketBlaster() {
         </p>
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">Taylor Swift</h1>
         <p className="mt-3 text-sm text-gray-300">
-          March 26, 2026 &middot; MetLife Stadium &middot; East Rutherford, NJ
+          {CONTEST_END_LABEL} &middot; MetLife Stadium &middot; East Rutherford, NJ
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-1 text-xs font-semibold shadow-lg shadow-indigo-500/20">
@@ -752,7 +753,7 @@ export default function TicketBlaster() {
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-6">
             <h3 className="text-sm font-semibold text-gray-900">Challenge Rules</h3>
             <p className="mt-1 text-xs text-gray-500">
-              Build a bot to buy tickets faster than everyone else. Most tickets by March 26, 2026
+              Build a bot to buy tickets faster than everyone else. Most tickets by {CONTEST_END_LABEL}
               wins.
             </p>
             <ul className="mt-3 space-y-1 text-xs text-gray-500">
@@ -776,7 +777,7 @@ export default function TicketBlaster() {
       </main>
 
       <footer className="border-t border-gray-200 px-4 py-5 text-center text-[10px] text-gray-400">
-        No actual Taylor Swift tickets are involved. Contest ends March 26, 2026.
+        No actual Taylor Swift tickets are involved. Contest ends {CONTEST_END_LABEL}.
       </footer>
     </div>
   );

@@ -32,7 +32,7 @@ const CHIP_COLORS: Record<number, string> = {
 const DEAL_MS = 320;
 const DEALER_MS = 280;
 const FLIP_MS = 450;
-const RESULT_PAUSE = 800; // pause after last card before showing result
+const RESULT_PAUSE = 800;
 
 // ── Animation helpers ──────────────────────────────────────────────────
 function useTimers() {
@@ -71,6 +71,16 @@ const STYLES = `
 @keyframes softPulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50%      { opacity: 1; transform: scale(1.04); }
+}
+@keyframes bs-victory {
+  0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+  15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+@keyframes bs-defeat {
+  0%,100% { transform: translate(0,0); }
+  20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
+  50%  { transform: translate(6px,-1px) rotate(1deg); }
 }
 `;
 
@@ -174,18 +184,43 @@ function ResultOverlay({
         />
       )}
       <div
-        className={`relative z-10 mx-4 w-full max-w-[320px] rounded-2xl border-2 p-6 text-center shadow-2xl ${
+        className="relative z-10 mx-4 w-full max-w-[320px] p-6 text-center shadow-2xl"
+        style={
           isWin
-            ? 'border-yellow-400/60 bg-gradient-to-b from-green-900 to-green-950'
+            ? {
+                background: '#030f06',
+                border: '1px solid #1a6632',
+                borderRadius: '4px',
+                boxShadow: '0 0 40px #22c55e22',
+                animation: 'bs-victory 0.8s ease-out',
+              }
             : result === 'lose'
-              ? 'border-red-500/40 bg-gradient-to-b from-red-950 to-gray-950'
-              : 'border-gray-500/40 bg-gradient-to-b from-gray-900 to-gray-950'
-        }`}
-        style={{ animation: 'resultSlideIn 0.35s ease-out' }}
+              ? {
+                  background: '#0c0303',
+                  border: '1px solid #7f1d1d',
+                  borderRadius: '4px',
+                  boxShadow: '0 0 40px #dc262622',
+                  animation: 'bs-defeat 0.7s ease-out',
+                }
+              : {
+                  background: '#040e07',
+                  border: '1px solid #1a6632',
+                  borderRadius: '4px',
+                  animation: 'resultSlideIn 0.35s ease-out',
+                }
+        }
         onClick={(e) => e.stopPropagation()}
       >
         <h2
-          className={`font-display text-2xl ${isWin ? 'text-yellow-400' : result === 'lose' ? 'text-red-400' : 'text-gray-400'}`}
+          className="font-display text-2xl"
+          style={{
+            color: isWin ? '#4ade80' : result === 'lose' ? '#f87171' : '#86efac',
+            textShadow: isWin
+              ? '0 0 10px #22c55e, 0 0 30px #22c55e66'
+              : result === 'lose'
+                ? '0 0 10px #dc2626'
+                : undefined,
+          }}
         >
           {result === 'blackjack'
             ? 'BLACKJACK!'
@@ -197,28 +232,28 @@ function ResultOverlay({
         </h2>
 
         <div className="mt-4 space-y-1 text-sm">
-          <div className="flex justify-between text-green-300/60">
+          <div className="flex justify-between" style={{ color: '#166534' }}>
             <span>Previous balance</span>
             <span>${prevBankroll.toLocaleString()}</span>
           </div>
           {isWin ? (
-            <div className="flex justify-between font-bold text-yellow-400">
+            <div className="flex justify-between font-bold" style={{ color: '#f59e0b' }}>
               <span>Winnings</span>
               <span>+${winnings.toLocaleString()}</span>
             </div>
           ) : result === 'lose' ? (
-            <div className="flex justify-between font-bold text-red-400">
+            <div className="flex justify-between font-bold" style={{ color: '#f87171' }}>
               <span>Lost</span>
               <span>-${bet.toLocaleString()}</span>
             </div>
           ) : (
-            <div className="flex justify-between text-gray-400">
+            <div className="flex justify-between" style={{ color: '#86efac' }}>
               <span>Bet returned</span>
               <span>${bet.toLocaleString()}</span>
             </div>
           )}
-          <div className="border-t border-white/10 pt-1" />
-          <div className="flex justify-between text-base font-bold text-white">
+          <div style={{ borderTop: '1px solid #1a6632', paddingTop: '4px' }} />
+          <div className="flex justify-between text-base font-bold" style={{ color: '#4ade80' }}>
             <span>New balance</span>
             <span>${newBankroll.toLocaleString()}</span>
           </div>
@@ -226,9 +261,23 @@ function ResultOverlay({
 
         <button
           onClick={onDismiss}
-          className={`mt-5 w-full rounded-xl py-3 text-sm font-bold active:scale-95 ${
-            isWin ? 'bg-yellow-500 text-green-900' : 'bg-white/10 text-white'
-          }`}
+          className="mt-5 w-full py-3 text-sm font-bold transition-all hover:scale-105 active:scale-95"
+          style={
+            isWin
+              ? {
+                  background: '#040e07',
+                  border: '1px solid #22c55e',
+                  color: '#4ade80',
+                  boxShadow: '0 0 10px #22c55e44',
+                  borderRadius: '2px',
+                }
+              : {
+                  background: '#040e07',
+                  border: '1px solid #1a6632',
+                  color: '#86efac',
+                  borderRadius: '2px',
+                }
+          }
         >
           Continue
         </button>
@@ -305,7 +354,7 @@ function CardView({
           </div>
           {/* Hi-Lo badge */}
           <span
-            className={`absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold shadow-md ${
+            className={`absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold shadow-md ${
               hilo === 1
                 ? 'bg-green-500 text-white'
                 : hilo === -1
@@ -339,27 +388,31 @@ function HandDisplay({
   visibleCount: number;
   holeDown?: boolean;
   flyIn?: boolean;
-  hitFlipIdx?: number; // index of card currently flipping from hit
+  hitFlipIdx?: number;
 }) {
   const shown = cards.slice(0, visibleCount);
 
   return (
     <div className="text-center">
       <div className="mb-2 flex items-center justify-center gap-2">
-        <span className="text-sm font-semibold uppercase tracking-wider text-green-200/70 sm:text-base">
+        <span
+          className="text-sm font-semibold uppercase tracking-wider sm:text-base"
+          style={{ color: '#86efac' }}
+        >
           {label}
         </span>
         {value > 0 && (
           <span
-            className={`rounded-full px-2.5 py-0.5 text-sm font-bold sm:text-base ${
+            className="rounded-full px-2.5 py-0.5 text-sm font-bold sm:text-base"
+            style={
               value > 21
-                ? 'bg-red-600 text-white'
+                ? { background: '#7f1d1d', color: '#fca5a5' }
                 : value === 21
-                  ? 'bg-yellow-500 text-black'
+                  ? { background: '#f59e0b', color: '#1a0a00' }
                   : active
-                    ? 'bg-white/90 text-green-900'
-                    : 'bg-black/40 text-white'
-            }`}
+                    ? { background: '#0a2a14', color: '#4ade80', border: '1px solid #22c55e' }
+                    : { background: 'rgba(0,0,0,0.4)', color: '#86efac' }
+            }
           >
             {value}
           </span>
@@ -368,8 +421,8 @@ function HandDisplay({
       <div className="flex justify-center gap-2 sm:gap-3">
         {shown.map((card, i) => {
           const isFaceDown =
-            (holeDown && i === 1) || // dealer hole card
-            (hitFlipIdx !== undefined && i === hitFlipIdx); // hit card flipping
+            (holeDown && i === 1) ||
+            (hitFlipIdx !== undefined && i === hitFlipIdx);
 
           return (
             <CardView
@@ -438,7 +491,6 @@ export default function CardCounter() {
     setFlyInDealer(true);
     setHitFlipIdx(undefined);
 
-    // Deal sequence: P1, D1, P2, D2
     setVisPlayer(0);
     setVisDealer(0);
     add(() => setVisPlayer(1), DEAL_MS);
@@ -449,7 +501,6 @@ export default function CardCounter() {
       setAnimLock(false);
       setFlyInPlayer(false);
       setFlyInDealer(false);
-      // Immediate blackjack?
       if (next.phase === 'result' || next.phase === 'count-check') {
         setHoleDown(false);
         if (next.result === 'win' || next.result === 'blackjack') {
@@ -473,16 +524,13 @@ export default function CardCounter() {
     setHitFlipIdx(newIdx);
     setAnimLock(true);
 
-    // Card flies in face-down, then flips
     add(() => {
-      setHitFlipIdx(undefined); // flip to face-up
+      setHitFlipIdx(undefined);
     }, 450);
 
     add(() => {
       setAnimLock(false);
-      // Check for bust
       if (next.phase === 'result' || next.phase === 'count-check') {
-        // Player busted — pause then show result
         add(() => {
           if (next.result === 'lose') {
             setShowResultOverlay(true);
@@ -500,10 +548,8 @@ export default function CardCounter() {
     setAnimLock(true);
     setFlyInDealer(true);
 
-    // 1. Flip hole card
     add(() => setHoleDown(false), 300);
 
-    // 2. Reveal additional dealer cards one by one (faster)
     const totalDealerCards = resolved.dealerHand.length;
     const extraCards = totalDealerCards - 2;
     const revealStart = 300 + FLIP_MS + 100;
@@ -512,14 +558,12 @@ export default function CardCounter() {
       add(() => setVisDealer(3 + i), revealStart + i * DEALER_MS);
     }
 
-    // 3. Last card settles
     const lastCardDelay = revealStart + Math.max(0, extraCards) * DEALER_MS + 300;
     add(() => {
       setVisDealer(totalDealerCards);
       setFlyInDealer(false);
     }, lastCardDelay);
 
-    // 4. Pause, then show result
     add(() => {
       setAnimLock(false);
       if (resolved.result === 'win' || resolved.result === 'blackjack') {
@@ -539,10 +583,8 @@ export default function CardCounter() {
     setHitFlipIdx(newIdx);
     setAnimLock(true);
 
-    // Card flies in face-down, then flips
     add(() => setHitFlipIdx(undefined), 450);
 
-    // Then dealer reveal
     add(() => {
       setHoleDown(false);
       setFlyInDealer(true);
@@ -632,51 +674,99 @@ export default function CardCounter() {
         />
       )}
 
+      {/* CRT scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
       <div
         className="flex h-[100dvh] flex-col"
-        style={{ background: 'linear-gradient(160deg, #1a5c2a 0%, #0d3d1a 40%, #0a2e14 100%)' }}
+        style={{ background: '#030c06', color: '#4ade80' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-3">
-          <Link to="/" className="text-sm text-green-300/70 hover:text-green-200 hover:underline">
-            {'\u2190'} Back
+          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
+            {'\u2190'} Back to Arcade
           </Link>
-          <h1 className="font-display text-base text-yellow-400/90 sm:text-lg">CARD COUNTER</h1>
-          <div className="text-right text-sm text-green-300/50">{remaining} left</div>
+          <div className="text-center">
+            <h1
+              className="font-display text-base tracking-[0.3em] sm:text-lg"
+              style={{
+                color: '#4ade80',
+                textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+              }}
+            >
+              CARD COUNTER
+            </h1>
+            <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+              BLACKJACK INTELLIGENCE TRAINER
+            </div>
+          </div>
+          <div className="text-right text-sm" style={{ color: '#166534' }}>
+            {remaining} left
+          </div>
         </div>
+
+        {/* Glowing divider */}
+        <div
+          className="mx-4 mt-2 h-px"
+          style={{
+            background:
+              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+            boxShadow: '0 0 6px #22c55e44',
+          }}
+        />
 
         {/* Info bar */}
         <div className="mt-2 flex items-center justify-between px-4">
           <button
             onClick={handleToggleCount}
-            className="rounded-lg bg-black/30 px-2.5 py-1 text-xs font-semibold text-green-300/60 active:scale-95"
+            className="px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              color: '#166534',
+              borderRadius: '2px',
+            }}
           >
             {game.showCount ? 'Hide Count' : 'Show Count'}
           </button>
 
           {game.showCount ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-green-300/50">Count:</span>
+              <span className="text-xs" style={{ color: '#166534' }}>
+                Count:
+              </span>
               <span
-                className={`rounded px-2 py-0.5 text-base font-bold ${
+                className="rounded px-2 py-0.5 text-base font-bold"
+                style={
                   game.runningCount > 0
-                    ? 'bg-green-400/20 text-green-300'
+                    ? { background: '#0a2a14', color: '#4ade80' }
                     : game.runningCount < 0
-                      ? 'bg-red-400/20 text-red-300'
-                      : 'bg-black/30 text-green-300/50'
-                }`}
+                      ? { background: '#1c0607', color: '#f87171' }
+                      : { background: '#040e07', color: '#166534' }
+                }
               >
                 {game.runningCount > 0 ? '+' : ''}
                 {game.runningCount}
               </span>
             </div>
           ) : (
-            <span className="text-xs italic text-green-300/30">Track it yourself!</span>
+            <span className="text-xs italic" style={{ color: '#166534' }}>
+              Track it yourself!
+            </span>
           )}
 
           <div className="flex items-center gap-1 text-right">
-            <span className="text-xs text-green-300/50">Bank:</span>
-            <span className="text-base font-bold text-yellow-400">
+            <span className="text-xs" style={{ color: '#166534' }}>
+              Bank:
+            </span>
+            <span className="text-base font-bold" style={{ color: '#f59e0b' }}>
               ${game.bankroll.toLocaleString()}
             </span>
           </div>
@@ -684,7 +774,15 @@ export default function CardCounter() {
 
         {/* Count betting advice */}
         {game.showCount && game.phase === 'betting' && (
-          <div className="mx-4 mt-1 rounded-lg bg-black/20 px-3 py-1 text-center text-xs text-green-300/50">
+          <div
+            className="mx-4 mt-1 px-3 py-1 text-center text-xs"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              borderRadius: '2px',
+              color: '#166534',
+            }}
+          >
             {countAdvice(game.runningCount)}
           </div>
         )}
@@ -694,10 +792,14 @@ export default function CardCounter() {
           {/* Place bet prompt */}
           {game.phase === 'betting' && game.playerHand.length === 0 && !game.message && (
             <p
-              className="text-center font-display text-xl text-lime-400 sm:text-2xl"
-              style={{ animation: 'softPulse 2.5s ease-in-out infinite' }}
+              className="font-display text-xl tracking-[0.2em] sm:text-2xl text-center"
+              style={{
+                color: '#4ade80',
+                textShadow: '0 0 10px #22c55e66',
+                animation: 'softPulse 2.5s ease-in-out infinite',
+              }}
             >
-              Place Bet to Play!
+              PLACE BET TO PLAY
             </p>
           )}
 
@@ -716,14 +818,27 @@ export default function CardCounter() {
 
           {/* Bet chip */}
           {game.bet > 0 && game.phase !== 'betting' && (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-dashed border-yellow-400/50 bg-black/40 sm:h-14 sm:w-14">
-              <span className="text-xs font-bold text-yellow-400">${game.bet}</span>
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-dashed sm:h-14 sm:w-14"
+              style={{ borderColor: '#f59e0b88', background: 'rgba(0,0,0,0.4)' }}
+            >
+              <span className="text-xs font-bold" style={{ color: '#f59e0b' }}>
+                ${game.bet}
+              </span>
             </div>
           )}
 
-          {/* Message (non-overlay, for reshuffled etc.) */}
+          {/* Message (non-overlay) */}
           {game.message && !showResultOverlay && game.phase === 'betting' && (
-            <div className="rounded-lg bg-black/40 px-4 py-2 text-center text-sm text-green-200">
+            <div
+              className="px-4 py-2 text-center text-sm"
+              style={{
+                background: '#040e07',
+                border: '1px solid #1a6632',
+                borderRadius: '2px',
+                color: '#86efac',
+              }}
+            >
               {game.message}
             </div>
           )}
@@ -731,13 +846,29 @@ export default function CardCounter() {
           {/* Result badge (inline, when overlay dismissed) */}
           {game.phase === 'result' && !showResultOverlay && game.result && (
             <div
-              className={`rounded-lg px-5 py-2 text-center text-base font-bold shadow-lg ${
+              className="px-5 py-2 text-center text-base font-bold"
+              style={
                 game.result === 'win' || game.result === 'blackjack'
-                  ? 'bg-yellow-500 text-green-900'
+                  ? {
+                      background: '#0a2a14',
+                      border: '1px solid #22c55e',
+                      color: '#4ade80',
+                      borderRadius: '2px',
+                    }
                   : game.result === 'lose'
-                    ? 'bg-red-700/80 text-white'
-                    : 'bg-black/50 text-gray-300'
-              }`}
+                    ? {
+                        background: '#1c0607',
+                        border: '1px solid #7f1d1d',
+                        color: '#f87171',
+                        borderRadius: '2px',
+                      }
+                    : {
+                        background: '#040e07',
+                        border: '1px solid #1a6632',
+                        color: '#86efac',
+                        borderRadius: '2px',
+                      }
+              }
             >
               {game.message}
             </div>
@@ -758,27 +889,53 @@ export default function CardCounter() {
 
           {/* Live odds bar */}
           {game.phase === 'playing' && !animLock && (
-            <div className="flex w-full max-w-[400px] justify-center gap-3 text-[11px] sm:gap-4 sm:text-xs">
-              <div className="rounded-lg bg-black/40 px-2.5 py-1.5">
-                <span className="text-green-300/50">Bust risk </span>
+            <div className="flex w-full max-w-[400px] justify-center gap-3 text-sm sm:gap-4 sm:text-xs">
+              <div
+                className="px-2.5 py-1.5"
+                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+              >
+                <span style={{ color: '#166534' }}>Bust risk </span>
                 <span
-                  className={`font-bold ${odds.bustPct > 50 ? 'text-red-400' : odds.bustPct > 30 ? 'text-yellow-400' : 'text-green-400'}`}
+                  className="font-bold"
+                  style={{
+                    color:
+                      odds.bustPct > 50
+                        ? '#f87171'
+                        : odds.bustPct > 30
+                          ? '#f59e0b'
+                          : '#4ade80',
+                  }}
                 >
                   {odds.bustPct}%
                 </span>
               </div>
-              <div className="rounded-lg bg-black/40 px-2.5 py-1.5">
-                <span className="text-green-300/50">Dealer bust </span>
+              <div
+                className="px-2.5 py-1.5"
+                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+              >
+                <span style={{ color: '#166534' }}>Dealer bust </span>
                 <span
-                  className={`font-bold ${odds.dealerBustPct > 35 ? 'text-green-400' : 'text-yellow-400'}`}
+                  className="font-bold"
+                  style={{ color: odds.dealerBustPct > 35 ? '#4ade80' : '#f59e0b' }}
                 >
                   {odds.dealerBustPct}%
                 </span>
               </div>
-              <div className="rounded-lg bg-black/40 px-2.5 py-1.5">
-                <span className="text-green-300/50">Edge </span>
+              <div
+                className="px-2.5 py-1.5"
+                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+              >
+                <span style={{ color: '#166534' }}>Edge </span>
                 <span
-                  className={`font-bold ${odds.playerEdge > 0 ? 'text-green-400' : odds.playerEdge < 0 ? 'text-red-400' : 'text-gray-400'}`}
+                  className="font-bold"
+                  style={{
+                    color:
+                      odds.playerEdge > 0
+                        ? '#4ade80'
+                        : odds.playerEdge < 0
+                          ? '#f87171'
+                          : '#86efac',
+                  }}
                 >
                   {odds.playerEdge > 0 ? '+' : ''}
                   {odds.playerEdge}%
@@ -789,15 +946,30 @@ export default function CardCounter() {
 
           {/* Advice panel */}
           {showAdvice && advice && (
-            <div className="w-full max-w-[380px] rounded-xl border border-yellow-400/30 bg-black/50 px-4 py-2.5 text-center text-sm text-yellow-300/90">
+            <div
+              className="w-full max-w-[380px] px-4 py-2.5 text-center text-sm"
+              style={{
+                background: '#040e07',
+                border: '1px solid #1a6632',
+                color: '#86efac',
+                borderRadius: '2px',
+              }}
+            >
               {'\u{1F4A1}'} {advice}
             </div>
           )}
 
           {/* Count check quiz */}
           {game.phase === 'count-check' && !animLock && (
-            <div className="w-full max-w-[340px] rounded-xl border border-yellow-400/40 bg-black/60 p-5 text-center">
-              <p className="text-base font-semibold text-yellow-400">
+            <div
+              className="w-full max-w-[340px] p-5 text-center"
+              style={{
+                background: '#040e07',
+                border: '1px solid #1a6632',
+                borderRadius: '2px',
+              }}
+            >
+              <p className="text-base font-semibold" style={{ color: '#4ade80' }}>
                 What&rsquo;s the running count?
               </p>
               <div className="mt-3 flex items-center justify-center gap-2">
@@ -808,8 +980,16 @@ export default function CardCounter() {
                   onChange={(e) => setCountInput(e.target.value)}
                   placeholder="?"
                   autoFocus
-                  className="w-20 rounded-lg border border-green-700 bg-green-950 px-3 py-2.5 text-center text-xl font-bold text-white outline-none focus:border-yellow-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  style={{ MozAppearance: 'textfield' } as React.CSSProperties}
+                  className="w-20 px-3 py-2.5 text-center text-xl font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #1a6632',
+                    color: '#86efac',
+                    borderRadius: '2px',
+                    MozAppearance: 'textfield',
+                  } as React.CSSProperties}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = '#22c55e')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = '#1a6632')}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleCountSubmit();
                   }}
@@ -817,7 +997,14 @@ export default function CardCounter() {
                 <button
                   onClick={handleCountSubmit}
                   disabled={countInput === ''}
-                  className="rounded-lg bg-yellow-500 px-5 py-2.5 text-base font-bold text-green-900 active:scale-95 disabled:opacity-30"
+                  className="px-5 py-2.5 text-base font-bold transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #22c55e',
+                    color: '#4ade80',
+                    boxShadow: '0 0 10px #22c55e44',
+                    borderRadius: '2px',
+                  }}
                 >
                   Check
                 </button>
@@ -828,11 +1015,12 @@ export default function CardCounter() {
           {/* Count check feedback */}
           {game.phase === 'result' && game.lastCountAnswer !== null && !showResultOverlay && (
             <div
-              className={`rounded-lg px-4 py-2 text-center text-sm ${
+              className="px-4 py-2 text-center text-sm"
+              style={
                 game.lastCountAnswer === game.runningCount
-                  ? 'bg-green-600/40 text-green-300'
-                  : 'bg-red-700/40 text-red-300'
-              }`}
+                  ? { background: '#0a2a14', color: '#4ade80', borderRadius: '2px' }
+                  : { background: '#1c0607', color: '#f87171', borderRadius: '2px' }
+              }
             >
               {game.lastCountAnswer === game.runningCount
                 ? 'Count correct!'
@@ -846,7 +1034,9 @@ export default function CardCounter() {
           {/* Betting phase */}
           {game.phase === 'betting' && (
             <div className="mx-auto max-w-[420px]">
-              <p className="mb-3 text-center text-sm text-green-300/50">Place your bet</p>
+              <p className="mb-3 text-center text-sm" style={{ color: '#166534' }}>
+                Place your bet
+              </p>
               <div className="flex justify-center gap-4 sm:gap-5">
                 {BET_AMOUNTS.map((amount) => (
                   <button
@@ -874,27 +1064,52 @@ export default function CardCounter() {
               <div className="flex gap-2.5">
                 <button
                   onClick={handleHit}
-                  className="flex-1 rounded-xl bg-green-700 py-3.5 text-base font-bold text-white shadow-lg active:scale-95"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #22c55e',
+                    color: '#4ade80',
+                    boxShadow: '0 0 10px #22c55e44',
+                    borderRadius: '2px',
+                  }}
                 >
                   Hit
                 </button>
                 <button
                   onClick={handleStand}
-                  className="flex-1 rounded-xl bg-red-700 py-3.5 text-base font-bold text-white shadow-lg active:scale-95"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  style={{
+                    background: '#1c0607',
+                    border: '1px solid #7f1d1d',
+                    color: '#f87171',
+                    borderRadius: '2px',
+                  }}
                 >
                   Stand
                 </button>
                 <button
                   onClick={handleDouble}
                   disabled={game.playerHand.length !== 2 || game.bet > game.bankroll}
-                  className="flex-1 rounded-xl bg-yellow-600 py-3.5 text-base font-bold text-white shadow-lg active:scale-95 disabled:opacity-30"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #f59e0b',
+                    color: '#f59e0b',
+                    borderRadius: '2px',
+                  }}
                 >
                   Double
                 </button>
               </div>
               <button
                 onClick={() => setShowAdvice((v) => !v)}
-                className="mt-2 w-full rounded-lg bg-black/30 py-2 text-xs font-semibold text-yellow-400/70 active:scale-95"
+                className="mt-2 w-full py-2 text-xs font-semibold transition-all hover:scale-[1.01] active:scale-95"
+                style={{
+                  background: '#040e07',
+                  border: '1px solid #1a6632',
+                  color: '#166534',
+                  borderRadius: '2px',
+                }}
               >
                 {showAdvice ? 'Hide Advice' : '\u{1F4A1} Advice'}
               </button>
@@ -909,13 +1124,26 @@ export default function CardCounter() {
               <div className="mx-auto flex max-w-[420px] flex-col gap-2">
                 <button
                   onClick={handleNext}
-                  className="w-full rounded-xl bg-yellow-500 py-3.5 text-base font-bold text-green-900 shadow-lg active:scale-95"
+                  className="w-full py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #22c55e',
+                    color: '#4ade80',
+                    boxShadow: '0 0 10px #22c55e44',
+                    borderRadius: '2px',
+                  }}
                 >
                   {game.bankroll <= 0 ? 'New Game' : 'Next Hand'}
                 </button>
                 <button
                   onClick={handleNewGame}
-                  className="w-full rounded-xl bg-black/30 py-2 text-sm font-semibold text-green-300/50 active:scale-95"
+                  className="w-full py-2 text-sm font-semibold transition-all hover:scale-[1.01] active:scale-95"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #1a4a2a',
+                    color: '#166534',
+                    borderRadius: '2px',
+                  }}
                 >
                   Reset
                 </button>
@@ -923,7 +1151,7 @@ export default function CardCounter() {
             )}
 
           {/* Stats bar */}
-          <div className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs text-green-300/30">
+          <div className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs" style={{ color: '#166534' }}>
             <span>Hands: {game.handsPlayed}</span>
             <span>Bet: {game.bet > 0 ? `$${game.bet}` : '\u2014'}</span>
             {game.countChecks > 0 && (

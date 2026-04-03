@@ -62,10 +62,6 @@ export default function SpellingBee() {
     if (game.phase !== 'done') celebratedRef.current = false;
   }, [game]);
 
-  // Auto-speak is intentionally NOT used here — browsers block
-  // speechSynthesis until a user gesture has occurred. The user
-  // clicks the speaker button instead.
-
   const handleAddList = useCallback(() => {
     const words = parseWords(newListWords);
     if (words.length === 0 || newListName.trim() === '') return;
@@ -147,46 +143,106 @@ export default function SpellingBee() {
     const activeId = getActiveListId();
 
     return (
-      <div className="flex min-h-[100dvh] flex-col bg-arcade-bg px-4 pb-6 pt-4">
-        <div className="mb-3 w-full max-w-[480px] mx-auto">
-          <Link to="/" className="text-sm text-arcade-accent hover:underline">
+      <div
+        className="flex min-h-[100dvh] flex-col px-4 pb-6 pt-4"
+        style={{ background: '#030c06', color: '#4ade80' }}
+      >
+        {/* CRT scanlines */}
+        <div
+          className="pointer-events-none fixed inset-0 z-50"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+            opacity: 0.5,
+          }}
+        />
+
+        <div className="mb-3 mx-auto w-full max-w-[480px]">
+          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
             &larr; Back to Arcade
           </Link>
         </div>
 
-        <h1 className="font-display text-lg text-arcade-accent text-center sm:text-2xl">
+        <h1
+          className="font-display text-lg tracking-[0.3em] text-center"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
           SPELLING BEE
         </h1>
-        <p className="mt-1 text-xs text-gray-400 text-center">
-          Add a word list, then test your spelling
+        <p className="mt-1 text-xs tracking-[0.3em] text-center" style={{ color: '#166534' }}>
+          PHONETIC INTELLIGENCE DRILL
         </p>
 
-        <div className="mx-auto mt-4 w-full max-w-[480px] flex-1 space-y-4">
+        <div
+          className="my-2 mx-auto h-px w-full max-w-md"
+          style={{
+            background:
+              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+            boxShadow: '0 0 6px #22c55e44',
+          }}
+        />
+
+        <div className="mx-auto mt-2 w-full max-w-[480px] flex-1 space-y-4">
           {/* Add new list */}
-          <div className="rounded-xl border border-arcade-border bg-arcade-card p-4">
-            <h2 className="text-sm font-semibold text-white mb-2">New Word List</h2>
+          <div
+            className="p-4"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              borderRadius: '2px',
+            }}
+          >
+            <h2 className="text-sm font-semibold mb-2" style={{ color: '#86efac' }}>
+              NEW WORD LIST
+            </h2>
             <input
               type="text"
               value={newListName}
               onChange={(e) => setNewListName(e.target.value)}
               placeholder="List name (e.g. Week 12)"
-              className="w-full rounded-lg border border-arcade-border bg-arcade-bg px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-arcade-accent"
+              className="w-full px-3 py-2 text-sm outline-none"
+              style={{
+                background: '#040e07',
+                border: '1px solid #1a6632',
+                color: '#86efac',
+                borderRadius: '2px',
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#22c55e')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#1a6632')}
             />
             <textarea
               value={newListWords}
               onChange={(e) => setNewListWords(e.target.value)}
               placeholder="Paste words here — one per line or comma-separated"
               rows={4}
-              className="mt-2 w-full rounded-lg border border-arcade-border bg-arcade-bg px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-arcade-accent resize-none"
+              className="mt-2 w-full px-3 py-2 text-sm outline-none resize-none"
+              style={{
+                background: '#040e07',
+                border: '1px solid #1a6632',
+                color: '#86efac',
+                borderRadius: '2px',
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#22c55e')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = '#1a6632')}
             />
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs" style={{ color: '#166534' }}>
                 {parseWords(newListWords).length} words detected
               </span>
               <button
                 onClick={handleAddList}
                 disabled={parseWords(newListWords).length === 0 || newListName.trim() === ''}
-                className="rounded-lg bg-arcade-accent px-4 py-1.5 text-sm font-semibold text-white transition-all hover:bg-arcade-accent-hover active:scale-95 disabled:opacity-30"
+                className="px-4 py-1.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                style={{
+                  background: '#040e07',
+                  border: '1px solid #22c55e',
+                  color: '#4ade80',
+                  boxShadow: '0 0 10px #22c55e44',
+                  borderRadius: '2px',
+                }}
               >
                 Save List
               </button>
@@ -196,27 +252,49 @@ export default function SpellingBee() {
           {/* Saved lists */}
           {lists.length > 0 && (
             <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-400">Your Lists</h2>
+              <h2 className="text-sm font-semibold" style={{ color: '#86efac' }}>
+                YOUR LISTS
+              </h2>
               {lists.map((list) => (
                 <div
                   key={list.id}
-                  className={`flex items-center gap-3 rounded-xl border bg-arcade-card p-3 transition-all ${
-                    list.id === activeId ? 'border-arcade-accent/50' : 'border-arcade-border'
-                  }`}
+                  className="flex items-center gap-3 p-3 transition-all"
+                  style={{
+                    background: '#040e07',
+                    border: `1px solid ${list.id === activeId ? '#22c55e' : '#1a6632'}`,
+                    borderRadius: '2px',
+                  }}
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-white truncate">{list.name}</h3>
-                    <p className="text-xs text-gray-500">{list.words.length} words</p>
+                    <h3 className="text-sm font-semibold truncate" style={{ color: '#86efac' }}>
+                      {list.name}
+                    </h3>
+                    <p className="text-xs" style={{ color: '#166534' }}>
+                      {list.words.length} words
+                    </p>
                   </div>
                   <button
                     onClick={() => handleStart(list)}
-                    className="shrink-0 rounded-lg bg-arcade-accent px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-arcade-accent-hover active:scale-95"
+                    className="shrink-0 px-3 py-1.5 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: '#040e07',
+                      border: '1px solid #22c55e',
+                      color: '#4ade80',
+                      boxShadow: '0 0 10px #22c55e44',
+                      borderRadius: '2px',
+                    }}
                   >
-                    Start
+                    START
                   </button>
                   <button
                     onClick={() => handleDeleteList(list.id)}
-                    className="shrink-0 rounded-lg bg-red-950/50 px-2 py-1.5 text-xs text-red-400 transition-all hover:bg-red-900/50 active:scale-95"
+                    className="shrink-0 px-2 py-1.5 text-xs transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: '#1c0607',
+                      border: '1px solid #7f1d1d',
+                      color: '#f87171',
+                      borderRadius: '2px',
+                    }}
                   >
                     &times;
                   </button>
@@ -226,11 +304,33 @@ export default function SpellingBee() {
           )}
 
           {lists.length === 0 && (
-            <p className="text-center text-sm text-gray-600 mt-8">
+            <p className="text-center text-sm mt-8" style={{ color: '#166534' }}>
               No word lists yet — add one above to get started!
             </p>
           )}
         </div>
+
+        <style>{`
+          @keyframes bs-victory {
+            0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+            15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+          }
+          @keyframes bs-defeat {
+            0%,100% { transform: translate(0,0); }
+            20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
+            50%  { transform: translate(6px,-1px) rotate(1deg); }
+          }
+          @keyframes multiply-correct {
+            0%   { box-shadow: inset 0 0 0 2px #22c55e; }
+            100% { box-shadow: inset 0 0 0 0px #22c55e00; }
+          }
+          @keyframes multiply-wrong {
+            0%,20%,60% { transform: translateX(-4px); }
+            40%,80%    { transform: translateX(4px); }
+            100%       { transform: translateX(0); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -244,21 +344,42 @@ export default function SpellingBee() {
     const t = totalTime(game);
 
     return (
-      <div className="flex min-h-[100dvh] flex-col items-center overflow-auto bg-arcade-bg px-4 pb-6 pt-4">
+      <div
+        className="flex min-h-[100dvh] flex-col items-center overflow-auto px-4 pb-6 pt-4"
+        style={{ background: '#030c06', color: '#4ade80' }}
+      >
+        {/* CRT scanlines */}
+        <div
+          className="pointer-events-none fixed inset-0 z-50"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+            opacity: 0.5,
+          }}
+        />
+
         <div className="mb-4 w-full max-w-[480px]">
-          <Link to="/" className="text-sm text-arcade-accent hover:underline">
+          <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
             &larr; Back to Arcade
           </Link>
         </div>
 
         <div className="text-center">
-          <p className="font-display text-lg text-arcade-accent sm:text-2xl">
-            {perfect ? 'PERFECT!' : correct >= total * 0.8 ? 'GREAT JOB!' : 'KEEP PRACTICING!'}
+          <p
+            className="font-display text-lg tracking-[0.3em]"
+            style={{
+              color: '#4ade80',
+              textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+            }}
+          >
+            {perfect ? 'PERFECT!' : correct >= total * 0.8 ? 'WELL DONE!' : 'KEEP TRAINING!'}
           </p>
-          <p className="mt-3 text-4xl font-bold text-white">
+          <p className="mt-3 text-4xl font-bold" style={{ color: '#4ade80' }}>
             {correct}/{total}
           </p>
-          <p className="mt-1 text-sm text-gray-400">{formatTime(t)}</p>
+          <p className="mt-1 text-sm" style={{ color: '#166534' }}>
+            {formatTime(t)}
+          </p>
         </div>
 
         {/* Word breakdown */}
@@ -266,9 +387,12 @@ export default function SpellingBee() {
           {game.answered.map((a, i) => (
             <div
               key={i}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
-                a.correct ? 'bg-green-950/30 text-green-300' : 'bg-red-950/30 text-red-300'
-              }`}
+              className="flex items-center justify-between px-3 py-2 text-sm"
+              style={
+                a.correct
+                  ? { background: '#0a2a14', color: '#4ade80', borderRadius: '2px' }
+                  : { background: '#1c0607', color: '#f87171', borderRadius: '2px' }
+              }
             >
               <span className="flex-1">
                 {a.correct ? (
@@ -276,11 +400,13 @@ export default function SpellingBee() {
                 ) : (
                   <>
                     <span className="line-through opacity-60">{a.userAnswer || '(skipped)'}</span>{' '}
-                    <span className="text-white font-medium">{a.word}</span>
+                    <span style={{ color: '#86efac', fontWeight: 500 }}>{a.word}</span>
                   </>
                 )}
               </span>
-              <span className="text-xs text-gray-500 ml-2">{formatTime(a.timeMs)}</span>
+              <span className="text-xs ml-2" style={{ color: '#166534' }}>
+                {formatTime(a.timeMs)}
+              </span>
             </div>
           ))}
         </div>
@@ -291,17 +417,43 @@ export default function SpellingBee() {
               const list = lists.find((l) => l.id === game.listId);
               if (list) handleStart(list);
             }}
-            className="rounded-lg bg-arcade-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-arcade-accent-hover"
+            className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+            style={{
+              background: '#040e07',
+              border: '1px solid #22c55e',
+              color: '#4ade80',
+              boxShadow: '0 0 10px #22c55e44',
+              borderRadius: '2px',
+            }}
           >
-            Again
+            AGAIN
           </button>
           <button
             onClick={() => setGame((prev) => ({ ...prev, phase: 'setup' }))}
-            className="rounded-lg bg-arcade-card px-5 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:text-white"
+            className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a4a2a',
+              color: '#166534',
+              borderRadius: '2px',
+            }}
           >
-            Lists
+            LISTS
           </button>
         </div>
+
+        <style>{`
+          @keyframes bs-victory {
+            0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+            15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+          }
+          @keyframes bs-defeat {
+            0%,100% { transform: translate(0,0); }
+            20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
+            50%  { transform: translate(6px,-1px) rotate(1deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -315,7 +467,7 @@ export default function SpellingBee() {
   const ROW2 = 'JKLMNOPQR'.split('');
   const ROW3 = 'STUVWXYZ'.split('');
 
-  const flashBorder =
+  const flashBorderAnim =
     flash === 'correct'
       ? 'animate-[multiply-correct_0.4s_ease-out]'
       : flash === 'wrong'
@@ -324,32 +476,47 @@ export default function SpellingBee() {
 
   return (
     <div
-      className={`flex h-[100dvh] flex-col overflow-hidden bg-arcade-bg px-2 pt-2 ${flashBorder}`}
+      className={`flex h-[100dvh] flex-col overflow-hidden px-2 pt-2 ${flashBorderAnim}`}
+      style={{ background: '#030c06', color: '#4ade80' }}
     >
+      {/* CRT scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
       {/* Header: progress + timer */}
       <div className="mx-auto flex w-full max-w-[480px] items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs" style={{ color: '#166534' }}>
             {progress}/{total}
           </span>
           <div className="flex gap-0.5">
             {game.words.map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 w-1.5 rounded-full ${
-                  i < game.current
-                    ? game.answered[i]?.correct
-                      ? 'bg-green-500'
-                      : 'bg-red-500'
-                    : i === game.current
-                      ? 'bg-white'
-                      : 'bg-gray-700'
-                }`}
+                className="h-1.5 w-1.5 rounded-full"
+                style={{
+                  background:
+                    i < game.current
+                      ? game.answered[i]?.correct
+                        ? '#22c55e'
+                        : '#dc2626'
+                      : i === game.current
+                        ? '#86efac'
+                        : '#0f2a18',
+                }}
               />
             ))}
           </div>
         </div>
-        <span className="font-mono text-sm text-gray-400">{formatTime(elapsed)}</span>
+        <span className="font-mono text-sm" style={{ color: '#86efac' }}>
+          {formatTime(elapsed)}
+        </span>
       </div>
 
       {/* Top area: speaker + display */}
@@ -357,34 +524,53 @@ export default function SpellingBee() {
         {/* Speak button */}
         <button
           onClick={() => speakWord(game.words[game.current])}
-          className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-arcade-accent/50 bg-arcade-accent/10 text-4xl transition-all hover:border-arcade-accent hover:bg-arcade-accent/20 active:scale-95"
+          className="flex h-20 w-20 items-center justify-center rounded-full text-4xl transition-all hover:scale-105 active:scale-95"
+          style={{
+            border: '2px solid #22c55e',
+            background: '#040e07',
+            color: '#4ade80',
+            boxShadow: '0 0 10px #22c55e44',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px #22c55e88';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 10px #22c55e44';
+          }}
         >
           {'🔊'}
         </button>
 
-        <p className="mt-2 text-xs text-gray-500">Tap to hear</p>
+        <p className="mt-2 text-xs tracking-[0.2em]" style={{ color: '#166534' }}>
+          TAP TO HEAR
+        </p>
 
         {/* Feedback line */}
-        <p className="mt-1 h-5 text-sm font-bold">
+        <p className="mt-1 h-5 text-sm font-bold tracking-[0.1em]">
           {flash === 'correct' ? (
-            <span className="text-green-400">Correct!</span>
+            <span style={{ color: '#22c55e' }}>CORRECT!</span>
           ) : flash === 'wrong' && showAnswer ? (
-            <span className="text-red-400">{showAnswer}</span>
+            <span style={{ color: '#dc2626' }}>{showAnswer}</span>
           ) : null}
         </p>
 
         {/* Display-only input (no native keyboard) */}
         <div
-          className={`mt-2 w-full max-w-[360px] rounded-xl border-2 bg-arcade-card px-4 py-2.5 text-center text-xl font-bold transition-colors min-h-[48px] ${
-            flash === 'correct'
-              ? 'border-green-500 text-green-400'
-              : flash === 'wrong'
-                ? 'border-red-500 text-red-400'
-                : 'border-arcade-border text-white'
-          }`}
+          className="mt-2 w-full max-w-[360px] px-4 py-2.5 text-center text-xl font-bold transition-colors min-h-[48px]"
+          style={{
+            background: '#040e07',
+            border: `2px solid ${
+              flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
+            }`,
+            color:
+              flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#86efac',
+            borderRadius: '2px',
+          }}
         >
-          {input || <span className="text-gray-600">...</span>}
-          <span className="animate-pulse text-arcade-accent">|</span>
+          {input || <span style={{ color: '#166534' }}>...</span>}
+          <span style={{ color: '#4ade80' }} className="animate-pulse">
+            |
+          </span>
         </div>
       </div>
 
@@ -401,7 +587,21 @@ export default function SpellingBee() {
                     e.preventDefault();
                     handleKey(letter.toLowerCase());
                   }}
-                  className="flex h-11 w-[10%] max-w-[40px] items-center justify-center rounded-lg bg-arcade-card text-sm font-bold text-white transition-colors active:bg-arcade-accent active:scale-95 select-none"
+                  className="flex h-11 w-[10%] max-w-[40px] items-center justify-center text-sm font-bold transition-colors select-none"
+                  style={{
+                    background: '#040e07',
+                    border: '1px solid #1a6632',
+                    color: '#86efac',
+                    borderRadius: '2px',
+                  }}
+                  onPointerEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = '#0a2a14';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
+                  }}
+                  onPointerLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
+                  }}
                 >
                   {letter}
                 </button>
@@ -417,7 +617,23 @@ export default function SpellingBee() {
               e.preventDefault();
               handleBackspace();
             }}
-            className="flex h-11 w-[15%] max-w-[60px] items-center justify-center rounded-lg bg-arcade-card text-lg text-gray-400 active:bg-red-900 active:text-red-300 active:scale-95 select-none"
+            className="flex h-11 w-[15%] max-w-[60px] items-center justify-center text-lg select-none transition-colors"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              color: '#86efac',
+              borderRadius: '2px',
+            }}
+            onPointerEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#1c0607';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#7f1d1d';
+              (e.currentTarget as HTMLButtonElement).style.color = '#f87171';
+            }}
+            onPointerLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
+              (e.currentTarget as HTMLButtonElement).style.color = '#86efac';
+            }}
           >
             {'⌫'}
           </button>
@@ -426,7 +642,21 @@ export default function SpellingBee() {
               e.preventDefault();
               handleKey("'");
             }}
-            className="flex h-11 w-[10%] max-w-[40px] items-center justify-center rounded-lg bg-arcade-card text-lg font-bold text-gray-400 active:bg-arcade-accent active:scale-95 select-none"
+            className="flex h-11 w-[10%] max-w-[40px] items-center justify-center text-lg font-bold select-none transition-colors"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              color: '#86efac',
+              borderRadius: '2px',
+            }}
+            onPointerEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#0a2a14';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
+            }}
+            onPointerLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
+            }}
           >
             {"'"}
           </button>
@@ -437,7 +667,14 @@ export default function SpellingBee() {
               handleSubmit();
             }}
             disabled={input.trim() === ''}
-            className="flex h-11 flex-1 max-w-[140px] items-center justify-center rounded-lg bg-arcade-accent text-sm font-bold text-white active:bg-arcade-accent-hover active:scale-95 disabled:opacity-30 select-none"
+            className="flex h-11 flex-1 max-w-[140px] items-center justify-center text-sm font-bold select-none transition-all active:scale-95 disabled:opacity-30"
+            style={{
+              background: '#040e07',
+              border: '1px solid #22c55e',
+              color: '#4ade80',
+              boxShadow: '0 0 10px #22c55e44',
+              borderRadius: '2px',
+            }}
           >
             CHECK
           </button>
@@ -447,12 +684,40 @@ export default function SpellingBee() {
               buzz();
               handleSkip();
             }}
-            className="flex h-11 w-[15%] max-w-[60px] items-center justify-center rounded-lg bg-arcade-card text-xs font-semibold text-gray-400 active:bg-arcade-card/50 active:scale-95 select-none"
+            className="flex h-11 w-[15%] max-w-[60px] items-center justify-center text-xs font-semibold select-none transition-colors"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a4a2a',
+              color: '#166534',
+              borderRadius: '2px',
+            }}
           >
             Skip
           </button>
         </div>
       </div>
+
+      <style>{`
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          100% { transform: scale(1); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%,100% { transform: translate(0,0); }
+          20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
+          50%  { transform: translate(6px,-1px) rotate(1deg); }
+        }
+        @keyframes multiply-correct {
+          0%   { box-shadow: inset 0 0 0 2px #22c55e; }
+          100% { box-shadow: inset 0 0 0 0px #22c55e00; }
+        }
+        @keyframes multiply-wrong {
+          0%,20%,60% { transform: translateX(-4px); }
+          40%,80%    { transform: translateX(4px); }
+          100%       { transform: translateX(0); }
+        }
+      `}</style>
     </div>
   );
 }

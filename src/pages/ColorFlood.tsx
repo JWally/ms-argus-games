@@ -14,9 +14,9 @@ import {
 // ── Size presets ─────────────────────────────────────────────────────
 
 const SIZE_OPTIONS = [
-  { label: 'Small', size: 10, par: 18 },
-  { label: 'Medium', size: 14, par: 25 },
-  { label: 'Large', size: 18, par: 32 },
+  { label: 'SMALL', size: 10, par: 18 },
+  { label: 'MEDIUM', size: 14, par: 25 },
+  { label: 'LARGE', size: 18, par: 32 },
 ] as const;
 
 // ── Detect mobile (narrow viewport) for default size ─────────────────
@@ -66,28 +66,75 @@ export default function ColorFlood() {
   const cellSize = `calc((min(100vw - 32px, 400px) - ${(boardSize - 1) * 2}px) / ${boardSize})`;
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-arcade-bg px-4 pb-12 pt-4">
-      {/* Nav */}
+    <div
+      className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      {/* CRT Scanlines */}
+      <div
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
+          opacity: 0.5,
+        }}
+      />
+
+      {/* Back link */}
       <div className="mb-4 w-full max-w-[400px]">
-        <Link to="/" className="text-sm text-arcade-accent hover:underline">
+        <Link to="/" className="text-sm font-mono tracking-widest hover:underline transition-colors" style={{ color: '#22c55e' }}>
           &larr; Back to Arcade
         </Link>
       </div>
 
       {/* Title */}
-      <h1 className="font-display text-xl text-arcade-accent sm:text-2xl">COLOR FLOOD</h1>
+      <div className="mb-1 text-center">
+        <h1
+          className="font-display text-lg tracking-[0.3em]"
+          style={{
+            color: '#4ade80',
+            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+          }}
+        >
+          COLOR FLOOD
+        </h1>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          CHROMATIC SATURATION PROTOCOL
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="my-2 h-px w-full max-w-[400px]"
+        style={{
+          background: 'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
+          boxShadow: '0 0 6px #22c55e44',
+        }}
+      />
 
       {/* Size selector */}
-      <div className="mt-4 flex gap-2">
+      <div className="mt-2 flex gap-2">
         {SIZE_OPTIONS.map((opt) => (
           <button
             key={opt.size}
             onClick={() => restart(opt.size)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+            className="px-4 py-1.5 text-xs font-bold tracking-widest transition-all hover:scale-105"
+            style={
               boardSize === opt.size
-                ? 'bg-arcade-accent text-white'
-                : 'bg-arcade-card text-gray-400 hover:text-white'
-            }`}
+                ? {
+                    background: '#040e07',
+                    border: '1px solid #22c55e',
+                    color: '#4ade80',
+                    boxShadow: '0 0 10px #22c55e44',
+                    borderRadius: '2px',
+                  }
+                : {
+                    background: '#040e07',
+                    border: '1px solid #1a4a2a',
+                    color: '#166534',
+                    borderRadius: '2px',
+                  }
+            }
           >
             {opt.label}
           </button>
@@ -95,22 +142,29 @@ export default function ColorFlood() {
       </div>
 
       {/* Stats row */}
-      <div className="mt-4 flex w-full max-w-[400px] items-center justify-between text-sm text-gray-300">
-        <span>
-          Moves:{' '}
-          <span className={`font-bold ${game.moves > game.par ? 'text-red-400' : 'text-white'}`}>
+      <div className="mt-4 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">
+        <span style={{ color: '#86efac' }}>
+          OPS:{' '}
+          <span style={{ color: game.moves > game.par ? '#dc2626' : '#4ade80', fontWeight: 'bold' }}>
             {game.moves}
           </span>{' '}
-          / {game.par}
+          <span style={{ color: '#166534' }}>/ {game.par}</span>
         </span>
-        <span>{pct}% captured</span>
+        <span style={{ color: '#166534' }}>{pct}% CAPTURED</span>
       </div>
 
       {/* Progress bar */}
-      <div className="mt-2 h-2 w-full max-w-[400px] overflow-hidden rounded-full bg-arcade-card">
+      <div
+        className="mt-2 h-2 w-full max-w-[400px] overflow-hidden"
+        style={{
+          background: '#040e07',
+          border: '1px solid #0f2a18',
+          borderRadius: '2px',
+        }}
+      >
         <div
-          className="h-full rounded-full bg-arcade-accent transition-all duration-300"
-          style={{ width: `${pct}%` }}
+          className="h-full transition-all duration-300"
+          style={{ width: `${pct}%`, background: '#22c55e' }}
         />
       </div>
 
@@ -153,10 +207,11 @@ export default function ColorFlood() {
               disabled={isActive || game.won}
               onClick={() => pick(idx as ColorIndex)}
               aria-label={`Pick ${color.name}`}
-              className="h-12 w-12 rounded-lg border-2 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14"
+              className="h-12 w-12 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14"
               style={{
                 backgroundColor: color.hex,
-                borderColor: isActive ? '#fff' : 'transparent',
+                borderRadius: '4px',
+                border: isActive ? '2px solid #22c55e' : '2px solid transparent',
               }}
             />
           );
@@ -165,36 +220,75 @@ export default function ColorFlood() {
 
       {/* Best score */}
       {bestScore !== null && !game.won && (
-        <p className="mt-4 text-xs text-gray-500">
-          Best: {bestScore} move{bestScore !== 1 ? 's' : ''} ({boardSize}x{boardSize})
+        <p className="mt-4 font-mono text-xs" style={{ color: '#166534' }}>
+          BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''} ({boardSize}x{boardSize})
         </p>
       )}
 
       {/* Win screen */}
       {game.won && (
-        <div className="mt-6 w-full max-w-[400px] rounded-xl border border-arcade-accent/40 bg-arcade-card p-6 text-center">
-          <p className="font-display text-sm text-arcade-accent">YOU WIN!</p>
-          <p className="mt-3 text-lg text-white">
-            {game.moves} move{game.moves !== 1 ? 's' : ''}{' '}
+        <div
+          className="mt-6 w-full max-w-[400px] p-6 text-center"
+          style={{
+            background: '#030f06',
+            border: '1px solid #1a6632',
+            borderRadius: '4px',
+            boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
+            animation: 'bs-victory 0.8s ease-out',
+          }}
+        >
+          <p
+            className="font-display text-2xl tracking-widest"
+            style={{ color: '#4ade80', textShadow: '0 0 20px #22c55e, 0 0 60px #22c55e66' }}
+          >
+            SECTOR FLOODED
+          </p>
+          <p className="mt-1 font-mono text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+            ALL SECTORS SATURATED
+          </p>
+          <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
+            {game.moves} MOVE{game.moves !== 1 ? 'S' : ''}{' '}
             {game.moves <= game.par ? (
-              <span className="text-arcade-success">(under par!)</span>
+              <span style={{ color: '#4ade80' }}>(UNDER PAR)</span>
             ) : (
-              <span className="text-gray-400">(par: {game.par})</span>
+              <span style={{ color: '#166534' }}>(PAR: {game.par})</span>
             )}
           </p>
           {bestScore !== null && (
-            <p className="mt-1 text-sm text-gray-400">
-              Best: {bestScore} move{bestScore !== 1 ? 's' : ''}
+            <p className="mt-1 font-mono text-xs" style={{ color: '#166534' }}>
+              BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''}
             </p>
           )}
           <button
             onClick={() => restart()}
-            className="mt-5 rounded-lg bg-arcade-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-arcade-accent-hover"
+            className="mt-5 px-6 py-2.5 text-sm font-bold tracking-widest transition-all hover:scale-105"
+            style={{
+              background: '#040e07',
+              border: '1px solid #22c55e',
+              color: '#4ade80',
+              boxShadow: '0 0 10px #22c55e44',
+              borderRadius: '2px',
+            }}
           >
-            Play Again
+            NEW OPERATION
           </button>
         </div>
       )}
+
+      <style>{`
+        @keyframes bs-victory {
+          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
+          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
+          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
+          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+        }
+        @keyframes bs-defeat {
+          0%   { transform: translate(0,0) rotate(0deg); }
+          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
+          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
+          100% { transform: translate(0,0) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 }
