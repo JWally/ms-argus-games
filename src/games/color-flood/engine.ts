@@ -179,6 +179,10 @@ export function getBestScore(size: number): number | null {
 export function saveBestScore(size: number, moves: number): void {
   const prev = getBestScore(size);
   if (prev === null || moves < prev) {
-    localStorage.setItem(bestKey(size), String(moves));
+    try {
+      localStorage.setItem(bestKey(size), String(moves));
+    } catch {
+      /* storage full */
+    }
   }
 }

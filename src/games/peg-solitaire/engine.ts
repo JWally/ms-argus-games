@@ -264,7 +264,11 @@ export function getHighScore(): number {
 export function saveHighScore(score: number): void {
   const prev = getHighScore();
   if (prev === 0 || score < prev) {
-    localStorage.setItem('peg-solitaire-high', String(score));
+    try {
+      localStorage.setItem('peg-solitaire-high', String(score));
+    } catch {
+      /* storage full */
+    }
   }
 }
 

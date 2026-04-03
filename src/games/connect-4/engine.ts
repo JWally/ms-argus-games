@@ -182,7 +182,11 @@ function loadStats(): { wins: number; losses: number; draws: number } {
 }
 
 function saveStats(wins: number, losses: number, draws: number): void {
-  localStorage.setItem('connect4-stats', JSON.stringify({ wins, losses, draws }));
+  try {
+    localStorage.setItem('connect4-stats', JSON.stringify({ wins, losses, draws }));
+  } catch {
+    /* storage full */
+  }
 }
 
 // ── Board helpers ────────────────────────────────────────────────────

@@ -45,13 +45,21 @@ export function saveList(name: string, words: string[]): WordList {
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const newList: WordList = { id, name, words, createdAt: Date.now() };
   lists.push(newList);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+  } catch {
+    /* storage full */
+  }
   return newList;
 }
 
 export function deleteList(id: string): void {
   const lists = getSavedLists().filter((l) => l.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+  } catch {
+    /* storage full */
+  }
   const active = localStorage.getItem(ACTIVE_LIST_KEY);
   if (active === id) localStorage.removeItem(ACTIVE_LIST_KEY);
 }
@@ -61,7 +69,11 @@ export function getActiveListId(): string | null {
 }
 
 export function setActiveListId(id: string): void {
-  localStorage.setItem(ACTIVE_LIST_KEY, id);
+  try {
+    localStorage.setItem(ACTIVE_LIST_KEY, id);
+  } catch {
+    /* storage full */
+  }
 }
 
 // ── Parse words from raw text ────────────────────────────────────────

@@ -313,5 +313,9 @@ export function saveResult(won: boolean): void {
   const record = getBestScore();
   if (won) record.wins++;
   else record.losses++;
-  localStorage.setItem('ataxx-record', JSON.stringify(record));
+  try {
+    localStorage.setItem('ataxx-record', JSON.stringify(record));
+  } catch {
+    /* storage full */
+  }
 }

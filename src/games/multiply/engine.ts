@@ -168,7 +168,11 @@ export function saveBestTime(factor: number | null, ms: number, perfect: boolean
   if (!perfect) return; // only save if all correct
   const prev = getBestTime(factor);
   if (prev === null || ms < prev) {
-    localStorage.setItem(bestKey(factor), String(ms));
+    try {
+      localStorage.setItem(bestKey(factor), String(ms));
+    } catch {
+      /* storage full */
+    }
   }
 }
 

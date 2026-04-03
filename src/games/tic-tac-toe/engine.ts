@@ -3,9 +3,14 @@
 type Cell = 0 | 1 | 2; // 0=empty, 1=player(X), 2=AI(O)
 
 const WIN_LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8],
-  [0, 3, 6], [1, 4, 7], [2, 5, 8],
-  [0, 4, 8], [2, 4, 6],
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
 ] as const;
 
 export interface GameState {
@@ -122,7 +127,11 @@ function loadStats(): { wins: number; losses: number; draws: number } {
 }
 
 function saveStats(wins: number, losses: number, draws: number): void {
-  localStorage.setItem('ttt-stats', JSON.stringify({ wins, losses, draws }));
+  try {
+    localStorage.setItem('ttt-stats', JSON.stringify({ wins, losses, draws }));
+  } catch {
+    /* storage full */
+  }
 }
 
 // ── Game logic ────────────────────────────────────────────────────────────
@@ -239,7 +248,11 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout
     ctx.textAlign = 'center';
     ctx.font = '13px sans-serif';
     ctx.fillStyle = state.turn === 1 ? X_COLOR : O_COLOR;
-    ctx.fillText(state.turn === 1 ? 'Your turn (X)' : 'AI thinking... (O)', width / 2, layout.gridY - 10);
+    ctx.fillText(
+      state.turn === 1 ? 'Your turn (X)' : 'AI thinking... (O)',
+      width / 2,
+      layout.gridY - 10
+    );
   }
 }
 
@@ -275,7 +288,12 @@ function drawGrid(ctx: CanvasRenderingContext2D, state: GameState, layout: Layou
     for (const idx of state.winLine) {
       const row = Math.floor(idx / 3);
       const col = idx % 3;
-      ctx.fillRect(gridX + col * cellSize + 2, gridY + row * cellSize + 2, cellSize - 4, cellSize - 4);
+      ctx.fillRect(
+        gridX + col * cellSize + 2,
+        gridY + row * cellSize + 2,
+        cellSize - 4,
+        cellSize - 4
+      );
     }
   }
 
@@ -370,7 +388,14 @@ function drawDoneOverlay(ctx: CanvasRenderingContext2D, state: GameState): void 
 }
 
 // eslint-disable-next-line max-params
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);

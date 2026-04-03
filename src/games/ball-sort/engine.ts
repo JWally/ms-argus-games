@@ -8,34 +8,34 @@
 export const TUBE_CAPACITY = 4;
 
 export const BALL_COLORS = [
-  { name: 'red',    hex: '#ef4444' },
-  { name: 'blue',   hex: '#3b82f6' },
-  { name: 'green',  hex: '#22c55e' },
+  { name: 'red', hex: '#ef4444' },
+  { name: 'blue', hex: '#3b82f6' },
+  { name: 'green', hex: '#22c55e' },
   { name: 'yellow', hex: '#eab308' },
   { name: 'purple', hex: '#a855f7' },
   { name: 'orange', hex: '#f97316' },
-  { name: 'pink',   hex: '#ec4899' },
-  { name: 'teal',   hex: '#14b8a6' },
+  { name: 'pink', hex: '#ec4899' },
+  { name: 'teal', hex: '#14b8a6' },
 ] as const;
 
 export type ColorIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type Tube = ColorIndex[];
 
 export const DIFFICULTIES = {
-  easy:   { colors: 5, emptyTubes: 2 },
+  easy: { colors: 5, emptyTubes: 2 },
   medium: { colors: 6, emptyTubes: 1 },
-  hard:   { colors: 7, emptyTubes: 1 },
+  hard: { colors: 7, emptyTubes: 1 },
 } as const;
 
 export type DifficultyKey = keyof typeof DIFFICULTIES;
 
 export interface GameState {
-  tubes:     Tube[];
-  selected:  number | null;
-  moves:     number;
-  won:       boolean;
+  tubes: Tube[];
+  selected: number | null;
+  moves: number;
+  won: boolean;
   difficulty: DifficultyKey;
-  history:   Tube[][];
+  history: Tube[][];
 }
 
 // ── Tube helpers ──────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export function canPour(tubes: Tube[], from: number, to: number): boolean {
 }
 
 function pour(tubes: Tube[], from: number, to: number): Tube[] {
-  const next = tubes.map(t => [...t]);
+  const next = tubes.map((t) => [...t]);
   const group = topGroup(next[from])!;
   const balls = next[from].splice(next[from].length - group.count, group.count);
   next[to].push(...balls);
@@ -75,7 +75,7 @@ function pour(tubes: Tube[], from: number, to: number): Tube[] {
 
 export function isSolved(tubes: Tube[]): boolean {
   return tubes.every(
-    t => t.length === 0 || (t.length === TUBE_CAPACITY && t.every(c => c === t[0])),
+    (t) => t.length === 0 || (t.length === TUBE_CAPACITY && t.every((c) => c === t[0]))
   );
 }
 
@@ -110,12 +110,12 @@ function scramble(colors: number, emptyTubes: number): Tube[] {
 export function createGame(difficulty: DifficultyKey): GameState {
   const { colors, emptyTubes } = DIFFICULTIES[difficulty];
   return {
-    tubes:     scramble(colors, emptyTubes),
-    selected:  null,
-    moves:     0,
-    won:       false,
+    tubes: scramble(colors, emptyTubes),
+    selected: null,
+    moves: 0,
+    won: false,
     difficulty,
-    history:   [],
+    history: [],
   };
 }
 
@@ -139,9 +139,9 @@ export function selectTube(state: GameState, idx: number): GameState {
     const won = isSolved(newTubes);
     return {
       ...state,
-      tubes:   newTubes,
+      tubes: newTubes,
       selected: null,
-      moves:   state.moves + 1,
+      moves: state.moves + 1,
       won,
       history: [...state.history, tubes],
     };
@@ -157,10 +157,10 @@ export function undoMove(state: GameState): GameState {
   const prev = state.history[state.history.length - 1];
   return {
     ...state,
-    tubes:   prev,
+    tubes: prev,
     selected: null,
-    moves:   state.moves - 1,
-    won:     false,
+    moves: state.moves - 1,
+    won: false,
     history: state.history.slice(0, -1),
   };
 }
@@ -179,6 +179,10 @@ export function getBestScore(d: DifficultyKey): number | null {
 export function saveBestScore(d: DifficultyKey, moves: number): void {
   const prev = getBestScore(d);
   if (prev === null || moves < prev) {
-    localStorage.setItem(bestKey(d), String(moves));
+    try {
+      localStorage.setItem(bestKey(d), String(moves));
+    } catch {
+      /* storage full */
+    }
   }
 }

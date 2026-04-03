@@ -126,7 +126,11 @@ function loadBest(): Record<number, number> {
 }
 
 function saveBest(best: Record<number, number>): void {
-  localStorage.setItem('hanoi-best', JSON.stringify(best));
+  try {
+    localStorage.setItem('hanoi-best', JSON.stringify(best));
+  } catch {
+    /* storage full */
+  }
 }
 
 // ── Canvas rendering ──────────────────────────────────────────────────────
@@ -170,7 +174,17 @@ function getLayout(width: number, height: number, numDisks: number): Layout {
     margin + section * 1.5,
     margin + section * 2.5,
   ];
-  return { pegX, pegH, pegBaseY, baseX: margin, baseW: width - margin * 2, baseH, diskH, maxDiskW, minDiskW };
+  return {
+    pegX,
+    pegH,
+    pegBaseY,
+    baseX: margin,
+    baseW: width - margin * 2,
+    baseH,
+    diskH,
+    maxDiskW,
+    minDiskW,
+  };
 }
 
 export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
@@ -374,7 +388,14 @@ function drawDoneOverlay(ctx: CanvasRenderingContext2D, state: GameState): void 
 }
 
 // eslint-disable-next-line max-params
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);

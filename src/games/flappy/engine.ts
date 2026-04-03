@@ -292,6 +292,10 @@ export function getHighScore(): number {
 export function saveHighScore(score: number): void {
   const prev = getHighScore();
   if (score > prev) {
-    localStorage.setItem('flappy-high', String(score));
+    try {
+      localStorage.setItem('flappy-high', String(score));
+    } catch {
+      /* storage full */
+    }
   }
 }

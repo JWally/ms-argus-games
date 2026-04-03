@@ -17,7 +17,7 @@ export interface GameState {
   size: number;
   walls: WallCell[][];
   painted: boolean[][];
-  paintedAt: (number | null)[][];   // wall-clock ms when cell was last painted
+  paintedAt: (number | null)[][]; // wall-clock ms when cell was last painted
   playerRow: number;
   playerCol: number;
   moves: number;
@@ -25,12 +25,12 @@ export interface GameState {
   lost: boolean;
   lostReason: 'limit' | 'mine' | 'patrol' | 'time' | null;
   paintedCount: number;
-  par: number;                      // greedy solver move count (benchmark)
-  moveLimit: number;                // hard move cap; reaching it → lostReason 'limit'
-  mines: boolean[][];               // cells that kill on entry
-  fadeDuration: number;             // ms before a painted cell fades back to empty
-  timeLimit: number;                // total seconds allowed
-  deadline: number;                 // absolute ms deadline; Infinity until game started
+  par: number; // greedy solver move count (benchmark)
+  moveLimit: number; // hard move cap; reaching it → lostReason 'limit'
+  mines: boolean[][]; // cells that kill on entry
+  fadeDuration: number; // ms before a painted cell fades back to empty
+  timeLimit: number; // total seconds allowed
+  deadline: number; // absolute ms deadline; Infinity until game started
   patrol: { row: number; col: number; dir: Direction } | null;
   patrolOrigin: { row: number; col: number; dir: Direction } | null;
 }
@@ -61,7 +61,7 @@ const PERPS: Record<Direction, readonly [Direction, Direction]> = {
 };
 
 // Right-hand / left-hand turn helpers used by the patrol wall-follower.
-const CW: Record<Direction, Direction>  = { n: 'e', e: 's', s: 'w', w: 'n' };
+const CW: Record<Direction, Direction> = { n: 'e', e: 's', s: 'w', w: 'n' };
 const CCW: Record<Direction, Direction> = { n: 'w', w: 's', s: 'e', e: 'n' };
 
 // ── Maze generation (recursive backtracker, iterative) ────────────────────
@@ -108,7 +108,7 @@ function placeMines(walls: WallCell[][], size: number, count: number): boolean[]
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (r + c < 3) continue; // skip near-origin cells
-      const exits = ALL_DIRS.filter(d => !walls[r][c][d]).length;
+      const exits = ALL_DIRS.filter((d) => !walls[r][c][d]).length;
       if (exits === 1) candidates.push([r, c]);
     }
   }
@@ -128,7 +128,7 @@ function placeMines(walls: WallCell[][], size: number, count: number): boolean[]
 
 function stepPatrol(
   p: { row: number; col: number; dir: Direction },
-  walls: WallCell[][],
+  walls: WallCell[][]
 ): { row: number; col: number; dir: Direction } {
   const { row: r, col: c, dir } = p;
   for (const d of [CW[dir], dir, CCW[dir], OPPOSITE[dir]] as Direction[]) {
@@ -148,15 +148,25 @@ export function createGame(size: number): GameState {
 
   // Hazard-free bare state used only for par computation.
   const bare: GameState = {
-    size, walls,
+    size,
+    walls,
     painted: makeGrid(size, false),
     paintedAt: makeGrid<number | null>(size, null),
-    playerRow: 0, playerCol: 0, moves: 0,
-    won: size === 1, lost: false, lostReason: null, paintedCount: 1,
-    par: 0, moveLimit: 99999,
+    playerRow: 0,
+    playerCol: 0,
+    moves: 0,
+    won: size === 1,
+    lost: false,
+    lostReason: null,
+    paintedCount: 1,
+    par: 0,
+    moveLimit: 99999,
     mines: makeGrid(size, false),
-    fadeDuration: Infinity, timeLimit: 9999, deadline: Infinity,
-    patrol: null, patrolOrigin: null,
+    fadeDuration: Infinity,
+    timeLimit: 9999,
+    deadline: Infinity,
+    patrol: null,
+    patrolOrigin: null,
   };
   bare.painted[0][0] = true;
   bare.paintedAt[0][0] = now;
@@ -170,19 +180,30 @@ export function createGame(size: number): GameState {
   const patrolOrigin = { row: po, col: po, dir: 'n' as Direction };
 
   const fadeDuration = size <= 8 ? 20_000 : size <= 12 ? 25_000 : 30_000;
-  const timeLimit    = size <= 8 ? 90    : size <= 12 ? 150    : 210;
+  const timeLimit = size <= 8 ? 90 : size <= 12 ? 150 : 210;
 
-  const painted   = makeGrid(size, false);
+  const painted = makeGrid(size, false);
   const paintedAt = makeGrid<number | null>(size, null);
-  painted[0][0]   = true;
+  painted[0][0] = true;
   paintedAt[0][0] = now;
 
   return {
-    size, walls, painted, paintedAt,
-    playerRow: 0, playerCol: 0, moves: 0,
-    won: size === 1, lost: false, lostReason: null, paintedCount: 1,
-    par, moveLimit: Math.ceil(par * 2.2),
-    mines, fadeDuration, timeLimit,
+    size,
+    walls,
+    painted,
+    paintedAt,
+    playerRow: 0,
+    playerCol: 0,
+    moves: 0,
+    won: size === 1,
+    lost: false,
+    lostReason: null,
+    paintedCount: 1,
+    par,
+    moveLimit: Math.ceil(par * 2.2),
+    mines,
+    fadeDuration,
+    timeLimit,
     deadline: Infinity, // timer starts when briefing is dismissed
     patrol: { ...patrolOrigin },
     patrolOrigin,
@@ -194,20 +215,26 @@ export function createGame(size: number): GameState {
 
 export function resetGame(state: GameState, forGhost = false): GameState {
   const now = Date.now();
-  const painted   = makeGrid(state.size, false);
+  const painted = makeGrid(state.size, false);
   const paintedAt = makeGrid<number | null>(state.size, null);
-  painted[0][0]   = true;
+  painted[0][0] = true;
   paintedAt[0][0] = now;
 
   return {
     ...state,
-    painted, paintedAt,
-    playerRow: 0, playerCol: 0, moves: 0,
-    won: state.size === 1, lost: false, lostReason: null, paintedCount: 1,
+    painted,
+    paintedAt,
+    playerRow: 0,
+    playerCol: 0,
+    moves: 0,
+    won: state.size === 1,
+    lost: false,
+    lostReason: null,
+    paintedCount: 1,
     deadline: now + state.timeLimit * 1000,
-    patrol:      forGhost ? null                       : (state.patrolOrigin ? { ...state.patrolOrigin } : null),
-    mines:       forGhost ? makeGrid(state.size, false) : state.mines,
-    fadeDuration: forGhost ? Infinity                   : state.fadeDuration,
+    patrol: forGhost ? null : state.patrolOrigin ? { ...state.patrolOrigin } : null,
+    mines: forGhost ? makeGrid(state.size, false) : state.mines,
+    fadeDuration: forGhost ? Infinity : state.fadeDuration,
   };
 }
 
@@ -230,9 +257,9 @@ export function slide(state: GameState, dir: Direction): GameState {
   let moved = false;
   const now = Date.now();
 
-  const newPainted   = state.painted.map(row => [...row]);
-  const newPaintedAt = state.paintedAt.map(row => [...row]);
-  let paintedCount   = state.paintedCount;
+  const newPainted = state.painted.map((row) => [...row]);
+  const newPaintedAt = state.paintedAt.map((row) => [...row]);
+  let paintedCount = state.paintedCount;
 
   while (!walls[r][c][dir]) {
     r += dr;
@@ -251,11 +278,15 @@ export function slide(state: GameState, dir: Direction): GameState {
       if (patrol !== null) patrol = stepPatrol(patrol, walls);
       return {
         ...state,
-        painted: newPainted, paintedAt: newPaintedAt,
-        playerRow: r, playerCol: c,
+        painted: newPainted,
+        paintedAt: newPaintedAt,
+        playerRow: r,
+        playerCol: c,
         moves: state.moves + 1,
-        paintedCount, patrol,
-        lost: true, lostReason: 'mine',
+        paintedCount,
+        patrol,
+        lost: true,
+        lostReason: 'mine',
       };
     }
 
@@ -273,21 +304,32 @@ export function slide(state: GameState, dir: Direction): GameState {
   if (patrol !== null && !won) {
     patrol = stepPatrol(patrol, walls);
     if (
-      (patrol.row === r && patrol.col === c) ||                              // patrol caught player
-      (patrol.row === state.playerRow && patrol.col === state.playerCol)     // paths crossed (swap)
-    ) lostToPatrol = true;
+      (patrol.row === r && patrol.col === c) || // patrol caught player
+      (patrol.row === state.playerRow && patrol.col === state.playerCol) // paths crossed (swap)
+    )
+      lostToPatrol = true;
   }
 
   const lostToLimit = !won && !lostToPatrol && newMoves >= state.moveLimit;
-  const lost        = lostToPatrol || lostToLimit;
-  const lostReason: GameState['lostReason'] =
-    lostToPatrol ? 'patrol' : lostToLimit ? 'limit' : null;
+  const lost = lostToPatrol || lostToLimit;
+  const lostReason: GameState['lostReason'] = lostToPatrol
+    ? 'patrol'
+    : lostToLimit
+      ? 'limit'
+      : null;
 
   return {
     ...state,
-    painted: newPainted, paintedAt: newPaintedAt,
-    playerRow: r, playerCol: c,
-    moves: newMoves, won, lost, lostReason, paintedCount, patrol,
+    painted: newPainted,
+    paintedAt: newPaintedAt,
+    playerRow: r,
+    playerCol: c,
+    moves: newMoves,
+    won,
+    lost,
+    lostReason,
+    paintedCount,
+    patrol,
   };
 }
 
@@ -302,7 +344,7 @@ export function applyFade(state: GameState, now: number): GameState | null {
   }
 
   let changed = false;
-  const newPainted = state.painted.map(row => [...row]);
+  const newPainted = state.painted.map((row) => [...row]);
   let paintedCount = state.paintedCount;
 
   for (let r = 0; r < state.size; r++) {
@@ -323,8 +365,8 @@ export function applyFade(state: GameState, now: number): GameState | null {
 // ── Star rating ───────────────────────────────────────────────────────────
 
 export function getStars(moves: number, par: number): 1 | 2 | 3 {
-  if (moves <= par)                    return 3;
-  if (moves <= Math.ceil(par * 1.5))   return 2;
+  if (moves <= par) return 3;
+  if (moves <= Math.ceil(par * 1.5)) return 2;
   return 1;
 }
 
@@ -357,20 +399,19 @@ export function render(
   // ── Cell floors and corridors ───────────────────────────────────────────
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
-      const x  = Math.round(col * cw);
-      const y  = Math.round(row * ch);
+      const x = Math.round(col * cw);
+      const y = Math.round(row * ch);
       const x2 = Math.round((col + 1) * cw);
       const y2 = Math.round((row + 1) * ch);
 
       let floorColor = emptyColor;
       if (painted[row][col]) {
         const at = paintedAt[row][col];
-        const fadeRatio = (isFinite(state.fadeDuration) && !isFinite(state.deadline) === false && at !== null)
-          ? Math.min((now - at) / state.fadeDuration, 1)
-          : 0;
-        floorColor = fadeRatio < 0.65 ? freshColor
-          : fadeRatio < 0.85         ? '#0e1e0c'
-          :                            '#16190a'; // warm dim — about to vanish
+        const fadeRatio =
+          isFinite(state.fadeDuration) && !isFinite(state.deadline) === false && at !== null
+            ? Math.min((now - at) / state.fadeDuration, 1)
+            : 0;
+        floorColor = fadeRatio < 0.65 ? freshColor : fadeRatio < 0.85 ? '#0e1e0c' : '#16190a'; // warm dim — about to vanish
       }
 
       ctx.fillStyle = floorColor;
@@ -393,17 +434,21 @@ export function render(
   if (!isGhost) {
     const pad = Math.min(cw, ch) * 0.22;
     ctx.strokeStyle = '#f97316';
-    ctx.lineWidth   = Math.max(1.5, Math.min(cw, ch) * 0.07);
+    ctx.lineWidth = Math.max(1.5, Math.min(cw, ch) * 0.07);
     ctx.shadowColor = '#f97316';
-    ctx.shadowBlur  = 8;
+    ctx.shadowBlur = 8;
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
         if (state.mines[row][col]) {
-          const x1 = col * cw + pad,       y1 = row * ch + pad;
-          const x2 = (col + 1) * cw - pad, y2 = (row + 1) * ch - pad;
+          const x1 = col * cw + pad,
+            y1 = row * ch + pad;
+          const x2 = (col + 1) * cw - pad,
+            y2 = (row + 1) * ch - pad;
           ctx.beginPath();
-          ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-          ctx.moveTo(x2, y1); ctx.lineTo(x1, y2);
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.moveTo(x2, y1);
+          ctx.lineTo(x1, y2);
           ctx.stroke();
         }
       }
@@ -412,9 +457,9 @@ export function render(
   }
 
   // ── Blinking IED dots on uncleared non-mine cells ───────────────────────
-  const dotAlpha  = 0.55 + 0.45 * Math.sin(time / 300);
+  const dotAlpha = 0.55 + 0.45 * Math.sin(time / 300);
   const dotRadius = Math.min(cw, ch) * 0.11;
-  ctx.fillStyle   = '#ef4444';
+  ctx.fillStyle = '#ef4444';
   ctx.globalAlpha = dotAlpha;
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
@@ -430,12 +475,12 @@ export function render(
   // ── Patrol ball (orange, pulsing) ───────────────────────────────────────
   if (state.patrol && !isGhost) {
     const { row: pr, col: pc } = state.patrol;
-    const px    = (pc + 0.5) * cw;
-    const py    = (pr + 0.5) * ch;
+    const px = (pc + 0.5) * cw;
+    const py = (pr + 0.5) * ch;
     const pulse = 0.85 + 0.15 * Math.sin(time / 180);
-    const pr2   = Math.min(cw, ch) * 0.2 * pulse;
+    const pr2 = Math.min(cw, ch) * 0.2 * pulse;
     ctx.shadowColor = '#f97316';
-    ctx.shadowBlur  = 12 * pulse;
+    ctx.shadowBlur = 12 * pulse;
     ctx.beginPath();
     ctx.arc(px, py, pr2, 0, Math.PI * 2);
     ctx.fillStyle = '#fb923c';
@@ -444,14 +489,14 @@ export function render(
   }
 
   // ── Player / ghost ball ─────────────────────────────────────────────────
-  const ballX     = (playerCol + 0.5) * cw;
-  const ballY     = (playerRow + 0.5) * ch;
-  const ballR     = Math.min(cw, ch) * 0.22;
+  const ballX = (playerCol + 0.5) * cw;
+  const ballY = (playerRow + 0.5) * ch;
+  const ballR = Math.min(cw, ch) * 0.22;
   const ballColor = isGhost ? '#93c5fd' : '#4ade80';
   const glowColor = isGhost ? '#60a5fa' : '#22c55e';
 
   ctx.shadowColor = glowColor;
-  ctx.shadowBlur  = 14;
+  ctx.shadowBlur = 14;
   ctx.beginPath();
   ctx.arc(ballX, ballY, ballR, 0, Math.PI * 2);
   ctx.fillStyle = ballColor;
@@ -474,7 +519,7 @@ export function render(
 export function solve(initialState: GameState): Direction[] {
   let state: GameState = {
     ...initialState,
-    painted: initialState.painted.map(row => [...row]),
+    painted: initialState.painted.map((row) => [...row]),
   };
 
   const moves: Direction[] = [];
@@ -511,7 +556,7 @@ export function solve(initialState: GameState): Direction[] {
 
 function findPathToProgress(state: GameState): Direction[] {
   type Item = { r: number; c: number; path: Direction[] };
-  const start   = `${state.playerRow},${state.playerCol}`;
+  const start = `${state.playerRow},${state.playerCol}`;
   const visited = new Set<string>([start]);
   const queue: Item[] = [{ r: state.playerRow, c: state.playerCol, path: [] }];
 
@@ -525,7 +570,7 @@ function findPathToProgress(state: GameState): Direction[] {
 
     for (const dir of ALL_DIRS) {
       const next = slide(testState, dir);
-      const key  = `${next.playerRow},${next.playerCol}`;
+      const key = `${next.playerRow},${next.playerCol}`;
       if (!visited.has(key)) {
         visited.add(key);
         queue.push({ r: next.playerRow, c: next.playerCol, path: [...path, dir] });
@@ -550,6 +595,10 @@ export function getBestScore(size: number): number | null {
 export function saveBestScore(size: number, moves: number): void {
   const prev = getBestScore(size);
   if (prev === null || moves < prev) {
-    localStorage.setItem(bestKey(size), String(moves));
+    try {
+      localStorage.setItem(bestKey(size), String(moves));
+    } catch {
+      /* storage full */
+    }
   }
 }

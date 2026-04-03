@@ -159,7 +159,11 @@ function savePlayerBest(gameId: string, score: number, lowerIsBetter: boolean): 
 
   if (improved) {
     data.best = score;
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch {
+      /* storage full */
+    }
   }
   return improved;
 }
