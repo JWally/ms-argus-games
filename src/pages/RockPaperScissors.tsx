@@ -126,12 +126,12 @@ function drawChoiceIcon(
     ];
     ctx.shadowBlur = 10;
     ctx.beginPath();
-    pts.forEach(([px, py], i) => {
+    for (const [i, [px, py]] of pts.entries()) {
       const x = cx + px * size,
         y = cy + py * size;
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
-    });
+    }
     ctx.closePath();
     ctx.stroke();
     ctx.shadowBlur = 0;

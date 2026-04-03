@@ -28,6 +28,7 @@ const taglines = [
 function Ico({ children, className = 'h-10 w-10' }: { children: ReactNode; className?: string }) {
   return (
     <svg
+      aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 16 16"
       fill="currentColor"
@@ -509,6 +510,7 @@ export default function Hub() {
             return (
               <button
                 key={game.id}
+                aria-label={`Play ${game.name}`}
                 onClick={() => handlePlay(game.path)}
                 disabled={loading}
                 className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98] disabled:opacity-50"
@@ -589,12 +591,12 @@ export default function Hub() {
                 {/* Card body */}
                 <div className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
-                    <h2
+                    <span
                       className="text-xs font-bold tracking-wider sm:text-sm"
                       style={{ color: '#86efac' }}
                     >
                       {game.name.toUpperCase()}
-                    </h2>
+                    </span>
                     <span
                       className="font-mono text-sm font-bold tracking-widest px-1.5 py-0.5"
                       style={{
@@ -620,6 +622,7 @@ export default function Hub() {
                       DEPLOY
                     </span>
                     <svg
+                      aria-hidden="true"
                       className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#22c55e]"
                       fill="none"
                       viewBox="0 0 24 24"

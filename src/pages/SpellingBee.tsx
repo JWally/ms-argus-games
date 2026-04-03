@@ -488,6 +488,7 @@ export default function SpellingBee() {
       <div className="mx-auto flex flex-1 flex-col items-center justify-center max-w-[480px] w-full">
         {/* Speak button */}
         <button
+          aria-label="Hear word"
           onClick={() => speakWord(game.words[game.current])}
           className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-[#22c55e] bg-[#040e07] text-4xl text-[#4ade80] [box-shadow:0_0_10px_#22c55e44] transition-all hover:scale-105 hover:[box-shadow:0_0_20px_#22c55e88] active:scale-95"
         >

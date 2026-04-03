@@ -333,13 +333,13 @@ export default function Battleship() {
   const displayEnemyGrid = useMemo<Cell[][]>(() => {
     if (game.phase !== 'won' && game.phase !== 'lost') return game.enemyGrid;
     const g = game.enemyGrid.map((r) => [...r]) as Cell[][];
-    game.enemyShips.forEach((ship) => {
+    for (const ship of game.enemyShips) {
       if (!ship.sunk) {
-        ship.positions.forEach(([r, c]) => {
+        for (const [r, c] of ship.positions) {
           if (g[r][c] === 'empty') g[r][c] = 'ship';
-        });
+        }
       }
-    });
+    }
     return g;
   }, [game.phase, game.enemyGrid, game.enemyShips]);
 
