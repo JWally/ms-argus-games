@@ -511,22 +511,7 @@ export default function Hub() {
                 key={game.id}
                 onClick={() => handlePlay(game.path)}
                 disabled={loading}
-                className="group overflow-hidden text-left transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
-                style={{
-                  background: '#040e07',
-                  border: '1px solid #0f2a18',
-                  borderRadius: '3px',
-                  boxShadow: 'inset 0 0 20px #00000040',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#22c55e';
-                  (e.currentTarget as HTMLElement).style.boxShadow =
-                    '0 0 20px #22c55e22, inset 0 0 20px #00000040';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#0f2a18';
-                  (e.currentTarget as HTMLElement).style.boxShadow = 'inset 0 0 20px #00000040';
-                }}
+                className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98] disabled:opacity-50"
               >
                 {/* Icon art area */}
                 <div

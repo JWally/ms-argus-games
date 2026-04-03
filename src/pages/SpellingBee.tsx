@@ -532,19 +532,7 @@ export default function SpellingBee() {
         {/* Speak button */}
         <button
           onClick={() => speakWord(game.words[game.current])}
-          className="flex h-20 w-20 items-center justify-center rounded-full text-4xl transition-all hover:scale-105 active:scale-95"
-          style={{
-            border: '2px solid #22c55e',
-            background: '#040e07',
-            color: '#4ade80',
-            boxShadow: '0 0 10px #22c55e44',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px #22c55e88';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 10px #22c55e44';
-          }}
+          className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-[#22c55e] bg-[#040e07] text-4xl text-[#4ade80] [box-shadow:0_0_10px_#22c55e44] transition-all hover:scale-105 hover:[box-shadow:0_0_20px_#22c55e88] active:scale-95"
         >
           {'🔊'}
         </button>
@@ -594,21 +582,7 @@ export default function SpellingBee() {
                     e.preventDefault();
                     handleKey(letter.toLowerCase());
                   }}
-                  className="flex h-11 w-[10%] max-w-[40px] items-center justify-center text-sm font-bold transition-colors select-none"
-                  style={{
-                    background: '#040e07',
-                    border: '1px solid #1a6632',
-                    color: '#86efac',
-                    borderRadius: '2px',
-                  }}
-                  onPointerEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#0a2a14';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
-                  }}
-                  onPointerLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
-                  }}
+                  className="flex h-11 w-[10%] max-w-[40px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-sm font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14]"
                 >
                   {letter}
                 </button>
@@ -624,23 +598,7 @@ export default function SpellingBee() {
               e.preventDefault();
               handleBackspace();
             }}
-            className="flex h-11 w-[15%] max-w-[60px] items-center justify-center text-lg select-none transition-colors"
-            style={{
-              background: '#040e07',
-              border: '1px solid #1a6632',
-              color: '#86efac',
-              borderRadius: '2px',
-            }}
-            onPointerEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#1c0607';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#7f1d1d';
-              (e.currentTarget as HTMLButtonElement).style.color = '#f87171';
-            }}
-            onPointerLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
-              (e.currentTarget as HTMLButtonElement).style.color = '#86efac';
-            }}
+            className="flex h-11 w-[15%] max-w-[60px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg text-[#86efac] transition-colors hover:border-[#7f1d1d] hover:bg-[#1c0607] hover:text-[#f87171]"
           >
             {'⌫'}
           </button>
@@ -649,21 +607,7 @@ export default function SpellingBee() {
               e.preventDefault();
               handleKey("'");
             }}
-            className="flex h-11 w-[10%] max-w-[40px] items-center justify-center text-lg font-bold select-none transition-colors"
-            style={{
-              background: '#040e07',
-              border: '1px solid #1a6632',
-              color: '#86efac',
-              borderRadius: '2px',
-            }}
-            onPointerEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#0a2a14';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
-            }}
-            onPointerLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#040e07';
-              (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
-            }}
+            className="flex h-11 w-[10%] max-w-[40px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14]"
           >
             {"'"}
           </button>

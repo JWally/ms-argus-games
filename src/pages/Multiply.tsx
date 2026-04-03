@@ -204,21 +204,7 @@ export default function Multiply() {
               <button
                 key={n}
                 onClick={() => handleStart(n)}
-                className="flex flex-col items-center justify-center transition-all active:scale-95"
-                style={{
-                  background: '#040e07',
-                  border: '1px solid #1a6632',
-                  borderRadius: '2px',
-                  color: '#86efac',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#4ade80';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = '#1a6632';
-                  (e.currentTarget as HTMLButtonElement).style.color = '#86efac';
-                }}
+                className="flex flex-col items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-[#86efac] transition-all hover:border-[#22c55e] hover:text-[#4ade80] active:scale-95"
               >
                 <span className="text-3xl font-bold">{n}</span>
                 {best !== null && (
