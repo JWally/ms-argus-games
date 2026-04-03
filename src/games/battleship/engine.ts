@@ -75,9 +75,9 @@ function randomFleet(): { playerGrid: Cell[][]; playerShips: Ship[] } {
       const cells = getShipCells(row, col, def.size, orientation);
       if (!cells) continue;
       if (!cells.every(([r, c]) => grid[r][c] === 'empty')) continue;
-      cells.forEach(([r, c]) => {
+      for (const [r, c] of cells) {
         grid[r][c] = 'ship';
-      });
+      }
       ships.push({
         id: def.id,
         name: def.name,

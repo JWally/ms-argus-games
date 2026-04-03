@@ -30,6 +30,12 @@ const CHIP_COLORS: Record<number, string> = {
   250: 'from-purple-600 to-purple-800 border-purple-400',
 };
 const DEAL_MS = 320;
+const BORDER_GREEN_DIM = '1px solid #1a6632';
+const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+const BORDER_RED_DIM = '1px solid #7f1d1d';
+const BG_SURFACE = '#040e07';
+const GLOW_GREEN = '0 0 10px #22c55e44';
+const PHASE_COUNT_CHECK = 'count-check';
 const DEALER_MS = 280;
 const FLIP_MS = 450;
 const RESULT_PAUSE = 800;
@@ -189,7 +195,7 @@ function ResultOverlay({
           isWin
             ? {
                 background: '#030f06',
-                border: '1px solid #1a6632',
+                border: BORDER_GREEN_DIM,
                 borderRadius: '4px',
                 boxShadow: '0 0 40px #22c55e22',
                 animation: 'bs-victory 0.8s ease-out',
@@ -197,14 +203,14 @@ function ResultOverlay({
             : result === 'lose'
               ? {
                   background: '#0c0303',
-                  border: '1px solid #7f1d1d',
+                  border: BORDER_RED_DIM,
                   borderRadius: '4px',
                   boxShadow: '0 0 40px #dc262622',
                   animation: 'bs-defeat 0.7s ease-out',
                 }
               : {
-                  background: '#040e07',
-                  border: '1px solid #1a6632',
+                  background: BG_SURFACE,
+                  border: BORDER_GREEN_DIM,
                   borderRadius: '4px',
                   animation: 'resultSlideIn 0.35s ease-out',
                 }
@@ -252,7 +258,7 @@ function ResultOverlay({
               <span>${bet.toLocaleString()}</span>
             </div>
           )}
-          <div style={{ borderTop: '1px solid #1a6632', paddingTop: '4px' }} />
+          <div style={{ borderTop: BORDER_GREEN_DIM, paddingTop: '4px' }} />
           <div className="flex justify-between text-base font-bold" style={{ color: '#4ade80' }}>
             <span>New balance</span>
             <span>${newBankroll.toLocaleString()}</span>
@@ -265,15 +271,15 @@ function ResultOverlay({
           style={
             isWin
               ? {
-                  background: '#040e07',
-                  border: '1px solid #22c55e',
+                  background: BG_SURFACE,
+                  border: BORDER_GREEN_BRIGHT,
                   color: '#4ade80',
-                  boxShadow: '0 0 10px #22c55e44',
+                  boxShadow: GLOW_GREEN,
                   borderRadius: '2px',
                 }
               : {
-                  background: '#040e07',
-                  border: '1px solid #1a6632',
+                  background: BG_SURFACE,
+                  border: BORDER_GREEN_DIM,
                   color: '#86efac',
                   borderRadius: '2px',
                 }
@@ -410,7 +416,7 @@ function HandDisplay({
                 : value === 21
                   ? { background: '#f59e0b', color: '#1a0a00' }
                   : active
-                    ? { background: '#0a2a14', color: '#4ade80', border: '1px solid #22c55e' }
+                    ? { background: '#0a2a14', color: '#4ade80', border: BORDER_GREEN_BRIGHT }
                     : { background: 'rgba(0,0,0,0.4)', color: '#86efac' }
             }
           >
@@ -500,7 +506,7 @@ export default function CardCounter() {
       setAnimLock(false);
       setFlyInPlayer(false);
       setFlyInDealer(false);
-      if (next.phase === 'result' || next.phase === 'count-check') {
+      if (next.phase === 'result' || next.phase === PHASE_COUNT_CHECK) {
         setHoleDown(false);
         if (next.result === 'win' || next.result === 'blackjack') {
           add(() => {
@@ -529,7 +535,7 @@ export default function CardCounter() {
 
     add(() => {
       setAnimLock(false);
-      if (next.phase === 'result' || next.phase === 'count-check') {
+      if (next.phase === 'result' || next.phase === PHASE_COUNT_CHECK) {
         add(() => {
           if (next.result === 'lose') {
             setShowResultOverlay(true);
@@ -714,8 +720,8 @@ export default function CardCounter() {
             onClick={handleToggleCount}
             className="px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
             style={{
-              background: '#040e07',
-              border: '1px solid #1a6632',
+              background: BG_SURFACE,
+              border: BORDER_GREEN_DIM,
               color: '#166534',
               borderRadius: '2px',
             }}
@@ -735,7 +741,7 @@ export default function CardCounter() {
                     ? { background: '#0a2a14', color: '#4ade80' }
                     : game.runningCount < 0
                       ? { background: '#1c0607', color: '#f87171' }
-                      : { background: '#040e07', color: '#166534' }
+                      : { background: BG_SURFACE, color: '#166534' }
                 }
               >
                 {game.runningCount > 0 ? '+' : ''}
@@ -763,8 +769,8 @@ export default function CardCounter() {
           <div
             className="mx-4 mt-1 px-3 py-1 text-center text-xs"
             style={{
-              background: '#040e07',
-              border: '1px solid #1a6632',
+              background: BG_SURFACE,
+              border: BORDER_GREEN_DIM,
               borderRadius: '2px',
               color: '#166534',
             }}
@@ -819,8 +825,8 @@ export default function CardCounter() {
             <div
               className="px-4 py-2 text-center text-sm"
               style={{
-                background: '#040e07',
-                border: '1px solid #1a6632',
+                background: BG_SURFACE,
+                border: BORDER_GREEN_DIM,
                 borderRadius: '2px',
                 color: '#86efac',
               }}
@@ -837,20 +843,20 @@ export default function CardCounter() {
                 game.result === 'win' || game.result === 'blackjack'
                   ? {
                       background: '#0a2a14',
-                      border: '1px solid #22c55e',
+                      border: BORDER_GREEN_BRIGHT,
                       color: '#4ade80',
                       borderRadius: '2px',
                     }
                   : game.result === 'lose'
                     ? {
                         background: '#1c0607',
-                        border: '1px solid #7f1d1d',
+                        border: BORDER_RED_DIM,
                         color: '#f87171',
                         borderRadius: '2px',
                       }
                     : {
-                        background: '#040e07',
-                        border: '1px solid #1a6632',
+                        background: BG_SURFACE,
+                        border: BORDER_GREEN_DIM,
                         color: '#86efac',
                         borderRadius: '2px',
                       }
@@ -878,7 +884,7 @@ export default function CardCounter() {
             <div className="flex w-full max-w-[400px] justify-center gap-3 text-sm sm:gap-4 sm:text-xs">
               <div
                 className="px-2.5 py-1.5"
-                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+                style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
                 <span style={{ color: '#166534' }}>Bust risk </span>
                 <span
@@ -893,7 +899,7 @@ export default function CardCounter() {
               </div>
               <div
                 className="px-2.5 py-1.5"
-                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+                style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
                 <span style={{ color: '#166534' }}>Dealer bust </span>
                 <span
@@ -905,7 +911,7 @@ export default function CardCounter() {
               </div>
               <div
                 className="px-2.5 py-1.5"
-                style={{ background: '#040e07', border: '1px solid #1a6632', borderRadius: '2px' }}
+                style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
                 <span style={{ color: '#166534' }}>Edge </span>
                 <span
@@ -927,8 +933,8 @@ export default function CardCounter() {
             <div
               className="w-full max-w-[380px] px-4 py-2.5 text-center text-sm"
               style={{
-                background: '#040e07',
-                border: '1px solid #1a6632',
+                background: BG_SURFACE,
+                border: BORDER_GREEN_DIM,
                 color: '#86efac',
                 borderRadius: '2px',
               }}
@@ -938,12 +944,12 @@ export default function CardCounter() {
           )}
 
           {/* Count check quiz */}
-          {game.phase === 'count-check' && !animLock && (
+          {game.phase === PHASE_COUNT_CHECK && !animLock && (
             <div
               className="w-full max-w-[340px] p-5 text-center"
               style={{
-                background: '#040e07',
-                border: '1px solid #1a6632',
+                background: BG_SURFACE,
+                border: BORDER_GREEN_DIM,
                 borderRadius: '2px',
               }}
             >
@@ -961,8 +967,8 @@ export default function CardCounter() {
                   className="w-20 px-3 py-2.5 text-center text-xl font-bold outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   style={
                     {
-                      background: '#040e07',
-                      border: '1px solid #1a6632',
+                      background: BG_SURFACE,
+                      border: BORDER_GREEN_DIM,
                       color: '#86efac',
                       borderRadius: '2px',
                       MozAppearance: 'textfield',
@@ -979,10 +985,10 @@ export default function CardCounter() {
                   disabled={countInput === ''}
                   className="px-5 py-2.5 text-base font-bold transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
                   style={{
-                    background: '#040e07',
-                    border: '1px solid #22c55e',
+                    background: BG_SURFACE,
+                    border: BORDER_GREEN_BRIGHT,
                     color: '#4ade80',
-                    boxShadow: '0 0 10px #22c55e44',
+                    boxShadow: GLOW_GREEN,
                     borderRadius: '2px',
                   }}
                 >
@@ -1046,10 +1052,10 @@ export default function CardCounter() {
                   onClick={handleHit}
                   className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
                   style={{
-                    background: '#040e07',
-                    border: '1px solid #22c55e',
+                    background: BG_SURFACE,
+                    border: BORDER_GREEN_BRIGHT,
                     color: '#4ade80',
-                    boxShadow: '0 0 10px #22c55e44',
+                    boxShadow: GLOW_GREEN,
                     borderRadius: '2px',
                   }}
                 >
@@ -1060,7 +1066,7 @@ export default function CardCounter() {
                   className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
                   style={{
                     background: '#1c0607',
-                    border: '1px solid #7f1d1d',
+                    border: BORDER_RED_DIM,
                     color: '#f87171',
                     borderRadius: '2px',
                   }}
@@ -1072,7 +1078,7 @@ export default function CardCounter() {
                   disabled={game.playerHand.length !== 2 || game.bet > game.bankroll}
                   className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
                   style={{
-                    background: '#040e07',
+                    background: BG_SURFACE,
                     border: '1px solid #f59e0b',
                     color: '#f59e0b',
                     borderRadius: '2px',
@@ -1085,8 +1091,8 @@ export default function CardCounter() {
                 onClick={() => setShowAdvice((v) => !v)}
                 className="mt-2 w-full py-2 text-xs font-semibold transition-all hover:scale-[1.01] active:scale-95"
                 style={{
-                  background: '#040e07',
-                  border: '1px solid #1a6632',
+                  background: BG_SURFACE,
+                  border: BORDER_GREEN_DIM,
                   color: '#166534',
                   borderRadius: '2px',
                 }}
@@ -1097,19 +1103,19 @@ export default function CardCounter() {
           )}
 
           {/* Result phase (after overlay dismissed) */}
-          {(game.phase === 'result' || game.phase === 'count-check') &&
+          {(game.phase === 'result' || game.phase === PHASE_COUNT_CHECK) &&
             !animLock &&
             !showResultOverlay &&
-            game.phase !== 'count-check' && (
+            game.phase !== PHASE_COUNT_CHECK && (
               <div className="mx-auto flex max-w-[420px] flex-col gap-2">
                 <button
                   onClick={handleNext}
                   className="w-full py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
                   style={{
-                    background: '#040e07',
-                    border: '1px solid #22c55e',
+                    background: BG_SURFACE,
+                    border: BORDER_GREEN_BRIGHT,
                     color: '#4ade80',
-                    boxShadow: '0 0 10px #22c55e44',
+                    boxShadow: GLOW_GREEN,
                     borderRadius: '2px',
                   }}
                 >
@@ -1119,7 +1125,7 @@ export default function CardCounter() {
                   onClick={handleNewGame}
                   className="w-full py-2 text-sm font-semibold transition-all hover:scale-[1.01] active:scale-95"
                   style={{
-                    background: '#040e07',
+                    background: BG_SURFACE,
                     border: '1px solid #1a4a2a',
                     color: '#166534',
                     borderRadius: '2px',
