@@ -2,30 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useCaptchaGate } from '../hooks/useCaptchaGate';
 
-const taglines = [
-  'Insert coin to continue.',
-  'No quarters required.',
-  'Player one, ready?',
-  'The cake is a lie.',
-  'All your base are belong to us.',
-  'It\u2019s dangerous to go alone!',
-  'Do a barrel roll!',
-  'Would you like to play a game?',
-  'Up up down down left right left right B A start.',
-  'The princess is in another castle.',
-  'Game over, man. Game over!',
-  'Stay awhile and listen.',
-  'War. War never changes.',
-  'Hey! Listen!',
-  'Finish him!',
-  'Hadouken!',
-  'Thank you, but our princess is in another castle!',
-];
-
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
 // https://icons.getbootstrap.com
 
-function Ico({ children, className = 'h-10 w-10' }: { children: ReactNode; className?: string }) {
+function Ico({ children, className = 'h-14 w-14' }: { children: ReactNode; className?: string }) {
   return (
     <svg
       aria-hidden="true"
@@ -408,12 +388,27 @@ const TAG_CFG: Record<TagKey, { color: string; border: string; bg: string; label
   Brain: { color: '#f87171', border: '#7f1d1d', bg: '#1c0607', label: 'INT' },
 };
 
+const BORDER = '1px solid #0f2a18';
+
 // ── Main component ─────────────────────────────────────────────────────
 
 export default function Hub() {
   const navigate = useNavigate();
   const { loading, error, requestAccess } = useCaptchaGate();
-  const [tagline] = useState(() => taglines[Math.floor(Math.random() * taglines.length)]);
+  const [activeTag, setActiveTag] = useState<'All' | TagKey>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const selectTag = (tag: 'All' | TagKey) => {
+    setActiveTag(tag);
+    setMenuOpen(false);
+  };
+  const visibleGames = games.filter((g) => {
+    const matchTag = activeTag === 'All' || g.tag === activeTag;
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch = !q || g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q);
+    return matchTag && matchSearch;
+  });
 
   const handlePlay = async (path: string) => {
     const verified = await requestAccess();
@@ -435,38 +430,193 @@ export default function Hub() {
         }}
       />
 
-      {/* Header */}
-      <header className="px-4 pb-5 pt-8 text-center sm:pb-7 sm:pt-12">
-        <h1
-          className="font-display text-xl tracking-[0.25em] sm:text-3xl"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          ARCADES.CLICK
-        </h1>
-        <div className="mt-1.5 text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
-          TACTICAL ENTERTAINMENT DIVISION
-        </div>
-        <p className="mt-3 font-mono text-sm" style={{ color: '#1a6632' }}>
-          <span style={{ color: '#22c55e' }}>&gt;</span> &ldquo;{tagline}&rdquo;
-        </p>
+      {/* Nav */}
+      <nav
+        className="sticky top-0 z-40"
+        style={{
+          background: '#030c06f0',
+          borderBottom: BORDER,
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 4px 16px #000c',
+        }}
+      >
+        {/* Main bar */}
+        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4 sm:px-6">
+          {/* Logo */}
+          <span
+            className="font-display text-base tracking-[0.2em] sm:text-lg"
+            style={{
+              color: '#4ade80',
+              textShadow: '0 0 8px #22c55e, 0 0 20px #22c55e44',
+            }}
+          >
+            ARCADES.CLICK
+          </span>
 
-        {/* Divider */}
-        <div
-          className="mx-auto mt-4 h-px w-48 sm:w-64"
-          style={{
-            background:
-              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-            boxShadow: '0 0 6px #22c55e44',
-          }}
-        />
-      </header>
+          {/* Desktop category links */}
+          <div className="hidden items-center gap-1 sm:flex">
+            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain'] as const).map((tag) => {
+              const isAll = tag === 'All';
+              const cfg = isAll ? null : TAG_CFG[tag as TagKey];
+              const isActive = activeTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => selectTag(tag)}
+                  className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
+                  style={
+                    isActive
+                      ? {
+                          color: isAll ? '#4ade80' : cfg!.color,
+                          border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
+                          background: isAll ? '#071a0e' : cfg!.bg,
+                        }
+                      : {
+                          color: '#1a6632',
+                          border: '1px solid transparent',
+                          background: 'transparent',
+                        }
+                  }
+                >
+                  {isAll ? 'ALL' : tag.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop search */}
+          <div
+            className="ml-auto hidden items-center gap-2 rounded-[2px] px-3 py-1.5 sm:flex"
+            style={{ border: BORDER, background: '#040e07' }}
+          >
+            <svg
+              aria-hidden="true"
+              className="h-3 w-3 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              style={{ color: '#1a6632' }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="SEARCH..."
+              className="w-32 bg-transparent font-mono text-xs tracking-wider outline-none"
+              style={{ color: '#4ade80' }}
+            />
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="ml-auto flex flex-col items-center justify-center gap-1.5 p-2 sm:hidden"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? (
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                style={{ color: '#4ade80' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <>
+                <span className="block h-px w-5" style={{ background: '#4ade80' }} />
+                <span className="block h-px w-5" style={{ background: '#4ade80' }} />
+                <span className="block h-px w-5" style={{ background: '#4ade80' }} />
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="sm:hidden" style={{ borderTop: BORDER, background: '#030c06' }}>
+            {/* Mobile search */}
+            <div className="px-4 py-3" style={{ borderBottom: BORDER }}>
+              <div
+                className="flex items-center gap-2 rounded-[2px] px-3 py-2"
+                style={{ border: BORDER, background: '#040e07' }}
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  style={{ color: '#1a6632' }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="SEARCH GAMES..."
+                  className="w-full bg-transparent font-mono text-sm tracking-wider outline-none"
+                  style={{ color: '#4ade80' }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Category items */}
+            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain'] as const).map((tag) => {
+              const isActive = activeTag === tag;
+              const label = tag === 'All' ? 'ALL GAMES' : tag.toUpperCase();
+              const count =
+                tag === 'All' ? games.length : games.filter((g) => g.tag === tag).length;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => selectTag(tag)}
+                  className="flex w-full items-center gap-3 px-5 py-4 transition-colors duration-150"
+                  style={{
+                    borderBottom: '1px solid #0a1e0f',
+                    background: isActive ? '#071a0e' : 'transparent',
+                    borderLeft: isActive ? '3px solid #22c55e' : '3px solid transparent',
+                  }}
+                >
+                  <span
+                    className="font-mono text-base tracking-widest"
+                    style={{ color: isActive ? '#4ade80' : '#1a6632' }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    className="ml-auto font-mono text-xs"
+                    style={{ color: isActive ? '#4ade80' : '#0f3018' }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </nav>
 
       {/* Error banner */}
       {error && (
-        <div className="mx-auto w-full max-w-5xl px-4">
+        <div className="mx-auto w-full max-w-5xl px-4 pt-2">
           <div
             className="px-4 py-2 text-xs font-mono"
             style={{ background: '#1c0607', border: '1px solid #7f1d1d', color: '#f87171' }}
@@ -476,36 +626,10 @@ export default function Hub() {
         </div>
       )}
 
-      {/* Status bar */}
-      <div
-        className="mx-auto mb-2 mt-1 w-full max-w-5xl px-4 sm:px-6"
-        style={{ paddingBottom: '2px' }}
-      >
-        <div
-          className="flex items-center gap-2 px-3 py-2"
-          style={{
-            background: '#040e07',
-            border: '1px solid #0f3018',
-            borderRadius: '2px',
-          }}
-        >
-          <div
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ background: '#22c55e', boxShadow: '0 0 4px #22c55e' }}
-          />
-          <span className="font-mono text-xs tracking-[0.25em]" style={{ color: '#86efac' }}>
-            MISSION SELECT
-          </span>
-          <span className="ml-auto font-mono text-xs" style={{ color: '#166534' }}>
-            {games.length} OBJECTIVES AVAILABLE
-          </span>
-        </div>
-      </div>
-
       {/* Game grid */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-3 pb-6 pt-2 sm:px-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-3 pb-6 pt-4 sm:px-6">
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-          {games.map((game) => {
+          {visibleGames.map((game) => {
             const tag = TAG_CFG[game.tag];
             return (
               <button
@@ -517,7 +641,7 @@ export default function Hub() {
               >
                 {/* Icon art area */}
                 <div
-                  className="relative flex h-20 items-center justify-center sm:h-24"
+                  className="relative flex h-36 items-center justify-center sm:h-44"
                   style={{ background: '#030c06' }}
                 >
                   {/* Radar rings */}
@@ -525,8 +649,8 @@ export default function Hub() {
                     <div
                       className="absolute rounded-full"
                       style={{
-                        width: 80,
-                        height: 80,
+                        width: 120,
+                        height: 120,
                         border: '1px solid #0f2a1866',
                         borderRadius: '50%',
                       }}
@@ -534,8 +658,8 @@ export default function Hub() {
                     <div
                       className="absolute rounded-full"
                       style={{
-                        width: 52,
-                        height: 52,
+                        width: 80,
+                        height: 80,
                         border: '1px solid #0f2a1844',
                         borderRadius: '50%',
                       }}
@@ -568,7 +692,7 @@ export default function Hub() {
                       style={{
                         color: '#22c55e',
                         filter: 'drop-shadow(0 0 6px #22c55e88)',
-                        fontSize: '15px',
+                        fontSize: '22px',
                       }}
                     >
                       2 <span style={{ color: '#4ade80' }}>×</span> 2{' '}
@@ -612,26 +736,6 @@ export default function Hub() {
                   <p className="mt-1 text-sm leading-snug" style={{ color: '#1a6632' }}>
                     {game.desc}
                   </p>
-
-                  {/* Deploy CTA */}
-                  <div
-                    className="mt-2.5 flex items-center gap-1 text-xs font-bold tracking-[0.2em] transition-colors"
-                    style={{ color: '#166534' }}
-                  >
-                    <span className="group-hover:text-[#22c55e] transition-colors duration-200">
-                      DEPLOY
-                    </span>
-                    <svg
-                      aria-hidden="true"
-                      className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-[#22c55e]"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
                 </div>
               </button>
             );
@@ -651,7 +755,7 @@ export default function Hub() {
       {/* Footer */}
       <footer
         className="px-4 py-4 text-center font-mono text-xs tracking-wider"
-        style={{ borderTop: '1px solid #0f2a18', color: '#0f3018' }}
+        style={{ borderTop: BORDER, color: '#0f3018' }}
       >
         POWERED BY{' '}
         <a
