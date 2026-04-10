@@ -23,7 +23,7 @@ export type Outcome = 'win' | 'lose' | 'tie';
 export type Mode = 'vs-ai' | 'coach';
 
 export const CHOICES: Choice[] = ['rock', 'paper', 'scissors'];
-export const TOTAL_ROUNDS = 15;
+export const TOTAL_ROUNDS = 30;
 
 export interface Round {
   // vs-ai:  humanChoice = user's pick;      aiChoice = AI's pick

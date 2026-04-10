@@ -200,15 +200,6 @@ const IcoWayfinder = () => (
     <line x1="2" y1="11" x2="3" y2="4" stroke="currentColor" strokeWidth=".7" fill="none" />
   </Ico>
 );
-const IcoTicketBlaster = () => (
-  <Ico>
-    <path
-      fillRule="evenodd"
-      d="M.5 3A.5.5 0 0 0 0 3.5V7a1.5 1.5 0 0 0 0 3v2.5A.5.5 0 0 0 .5 13h15a.5.5 0 0 0 .5-.5V10a1.5 1.5 0 0 0 0-3V3.5A.5.5 0 0 0 15.5 3zM8.5 5 6 9h2L6.5 12l4-5H8.5z"
-    />
-  </Ico>
-);
-
 // ── Game definitions ───────────────────────────────────────────────────
 
 type TagKey = 'Arcade' | 'Strategy' | 'Puzzle' | 'Brain';
@@ -368,14 +359,6 @@ const games: Game[] = [
     tag: 'Puzzle',
     path: '/wayfinder',
     Icon: IcoWayfinder,
-  },
-  {
-    id: 'ticket-blaster',
-    name: 'Ticket Blaster',
-    desc: 'Race the clock — blast through checkout',
-    tag: 'Arcade',
-    path: '/ticket-blaster',
-    Icon: IcoTicketBlaster,
   },
 ];
 

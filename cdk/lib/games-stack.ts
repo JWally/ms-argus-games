@@ -36,16 +36,23 @@ interface GamesStackProps extends cdk.StackProps {
   subdomain?: string;
   bioApiUrl: string;
   bioApiSecret: string;
-  tbJwtSecret: string;
-  sigintAesKey?: string;
+  integrityApiUrl?: string;
+  integrityApiKey?: string;
 }
 
 export class GamesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GamesStackProps) {
     super(scope, id, props);
 
-    const { stage, rootDomain, subdomain, bioApiUrl, bioApiSecret, tbJwtSecret, sigintAesKey } =
-      props;
+    const {
+      stage,
+      rootDomain,
+      subdomain,
+      bioApiUrl,
+      bioApiSecret,
+      integrityApiUrl,
+      integrityApiKey,
+    } = props;
     const domainName = subdomain ? `${subdomain}.${rootDomain}` : rootDomain;
 
     // ── S3 bucket ────────────────────────────────────────────────────────
@@ -75,31 +82,6 @@ export class GamesStack extends cdk.Stack {
       validation: CertificateValidation.fromDns(zone),
     });
 
-    // ── DynamoDB tables (Ticket Blaster) ──────────────────────────────────
-    const tbSessionsTable = new cdk.aws_dynamodb.Table(this, 'TbSessions', {
-      tableName: `${props.stackName}-tb-sessions`,
-      partitionKey: { name: 'sessionId', type: cdk.aws_dynamodb.AttributeType.STRING },
-      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      timeToLiveAttribute: 'ttl',
-    });
-
-    const tbPurchasesTable = new cdk.aws_dynamodb.Table(this, 'TbPurchases', {
-      tableName: `${props.stackName}-tb-purchases`,
-      partitionKey: { name: 'email', type: cdk.aws_dynamodb.AttributeType.STRING },
-      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    const tbRateLimitsTable = new cdk.aws_dynamodb.Table(this, 'TbRateLimits', {
-      tableName: `${props.stackName}-tb-rate-limits`,
-      partitionKey: { name: 'ip', type: cdk.aws_dynamodb.AttributeType.STRING },
-      sortKey: { name: 'window', type: cdk.aws_dynamodb.AttributeType.STRING },
-      billingMode: cdk.aws_dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      timeToLiveAttribute: 'ttl',
-    });
-
     // ── API Proxy Lambda ─────────────────────────────────────────────────
     const proxyFn = new lambda.NodejsFunction(this, 'ApiProxy', {
       entry: path.join(__dirname, 'api-proxy.ts'),
@@ -123,55 +105,29 @@ export class GamesStack extends cdk.Stack {
       targets: [new eventTargets.LambdaFunction(proxyFn)],
     });
 
-    // ── Ticket Blaster Lambda ─────────────────────────────────────────────
-    const tbFn = new lambda.NodejsFunction(this, 'TicketBlasterApi', {
-      entry: path.join(__dirname, 'ticket-blaster/handler.ts'),
-      handler: 'handler',
-      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
-      architecture: lambdaRuntime.Architecture.ARM_64,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(10),
-      environment: {
-        TB_SESSIONS_TABLE: tbSessionsTable.tableName,
-        TB_PURCHASES_TABLE: tbPurchasesTable.tableName,
-        TB_RATE_LIMITS_TABLE: tbRateLimitsTable.tableName,
-        TB_JWT_SECRET: tbJwtSecret,
-        BIO_API_URL: bioApiUrl,
-        BIO_API_SECRET: bioApiSecret,
-      },
-      logRetention: logs.RetentionDays.ONE_WEEK,
-      bundling: { minify: true, sourceMap: false, target: 'node22' },
-    });
+    // ── Integrity Proxy Lambda ─────────────────────────────────────────
+    let integrityFn: lambda.NodejsFunction | undefined;
+    if (integrityApiUrl && integrityApiKey) {
+      integrityFn = new lambda.NodejsFunction(this, 'IntegrityProxy', {
+        entry: path.join(__dirname, 'integrity-proxy.ts'),
+        handler: 'handler',
+        runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+        architecture: lambdaRuntime.Architecture.ARM_64,
+        memorySize: 512,
+        timeout: cdk.Duration.seconds(10),
+        environment: {
+          INTEGRITY_API_URL: integrityApiUrl,
+          INTEGRITY_API_KEY: integrityApiKey,
+        },
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        bundling: { minify: true, sourceMap: false, target: 'node22' },
+      });
 
-    tbSessionsTable.grantReadWriteData(tbFn);
-    tbPurchasesTable.grantReadWriteData(tbFn);
-    tbRateLimitsTable.grantReadWriteData(tbFn);
-
-    // Warmer for TB Lambda
-    new events.Rule(this, 'TbWarmerRule', {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-      targets: [new eventTargets.LambdaFunction(tbFn)],
-    });
-
-    // ── Sigint Check Lambda ──────────────────────────────────────────────
-    const sigintFn = new lambda.NodejsFunction(this, 'SigintCheck', {
-      entry: path.join(__dirname, 'sigint-check.ts'),
-      handler: 'handler',
-      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
-      architecture: lambdaRuntime.Architecture.ARM_64,
-      memorySize: 512,
-      timeout: cdk.Duration.seconds(5),
-      environment: {
-        ...(sigintAesKey ? { SIGINT_AES_KEY: sigintAesKey } : {}),
-      },
-      logRetention: logs.RetentionDays.ONE_WEEK,
-      bundling: { minify: true, sourceMap: false, target: 'node22' },
-    });
-
-    new events.Rule(this, 'SigintWarmerRule', {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-      targets: [new eventTargets.LambdaFunction(sigintFn)],
-    });
+      new events.Rule(this, 'IntegrityWarmerRule', {
+        schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
+        targets: [new eventTargets.LambdaFunction(integrityFn)],
+      });
+    }
 
     // ── API Gateway ──────────────────────────────────────────────────────
     const api = new apigatewayv2.HttpApi(this, 'Api', {
@@ -196,35 +152,18 @@ export class GamesStack extends cdk.Stack {
       integration: lambdaIntegration,
     });
 
-    // Sigint check route
-    const sigintIntegration = new integrations.HttpLambdaIntegration('SigintIntegration', sigintFn);
-
-    api.addRoutes({
-      path: '/api/sigint-check',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: sigintIntegration,
-    });
-
-    // Ticket Blaster routes
-    const tbIntegration = new integrations.HttpLambdaIntegration('TbIntegration', tbFn);
-
-    api.addRoutes({
-      path: '/api/ticket-blaster/session',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: tbIntegration,
-    });
-
-    api.addRoutes({
-      path: '/api/ticket-blaster/purchase',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: tbIntegration,
-    });
-
-    api.addRoutes({
-      path: '/api/ticket-blaster/signout',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: tbIntegration,
-    });
+    // Integrity proxy route
+    if (integrityFn) {
+      const integrityIntegration = new integrations.HttpLambdaIntegration(
+        'IntegrityIntegration',
+        integrityFn
+      );
+      api.addRoutes({
+        path: '/api/integrity/check',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: integrityIntegration,
+      });
+    }
 
     // ── Cache policies ───────────────────────────────────────────────────
     const staticCachePolicy = new CachePolicy(this, 'StaticAssetsCachePolicy', {

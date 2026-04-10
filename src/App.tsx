@@ -2,6 +2,7 @@ import { type ReactNode, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Hub from './pages/Hub';
 import CaptchaGate from './components/CaptchaGate';
+import { useIntegrityGuard } from './hooks/useIntegrityGuard';
 
 const Ataxx = lazy(() => import('./pages/Ataxx'));
 const Breakout = lazy(() => import('./pages/Breakout'));
@@ -11,10 +12,9 @@ const Connect4 = lazy(() => import('./pages/Connect4'));
 const Flappy = lazy(() => import('./pages/Flappy'));
 const Multiply = lazy(() => import('./pages/Multiply'));
 const PegSolitaire = lazy(() => import('./pages/PegSolitaire'));
-const TicketBlaster = lazy(() => import('./pages/TicketBlaster'));
 const SpellingBee = lazy(() => import('./pages/SpellingBee'));
 const CardCounter = lazy(() => import('./pages/CardCounter'));
-const RockPaperScissors = lazy(() => import('./pages/RockPaperScissors'))
+const RockPaperScissors = lazy(() => import('./pages/RockPaperScissors'));
 const Battleship = lazy(() => import('./pages/Battleship'));
 const BallSort = lazy(() => import('./pages/BallSort'));
 const Go = lazy(() => import('./pages/Go'));
@@ -28,6 +28,8 @@ function Gated({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  useIntegrityGuard();
+
   return (
     <Suspense fallback={null}>
       <Routes>
@@ -173,14 +175,6 @@ export default function App() {
           element={
             <Gated>
               <Amaze />
-            </Gated>
-          }
-        />
-        <Route
-          path="/ticket-blaster"
-          element={
-            <Gated>
-              <TicketBlaster />
             </Gated>
           }
         />
