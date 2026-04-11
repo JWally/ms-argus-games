@@ -7,10 +7,19 @@ const app = new App();
 
 const account = process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID || '';
 const bioApiSecret = app.node.tryGetContext('bioApiSecret') as string;
+const integrityApiUrl = app.node.tryGetContext('integrityApiUrl') as string | undefined;
+const integrityApiKey = app.node.tryGetContext('integrityApiKey') as string | undefined;
 
 if (!bioApiSecret) {
   throw new Error(
     'Missing bioApiSecret context. Deploy with: npx cdk deploy -c bioApiSecret=ak_live_...'
+  );
+}
+
+if (integrityApiUrl ? !integrityApiKey : integrityApiKey) {
+  throw new Error(
+    'integrityApiUrl and integrityApiKey must both be provided or both omitted. ' +
+      'Deploy with: -c integrityApiUrl=https://... -c integrityApiKey=ak_...'
   );
 }
 
@@ -21,8 +30,8 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   rootDomain: 'arcades.click',
   bioApiUrl: 'https://api-bio-dev-jw.argus.pw',
   bioApiSecret,
-  integrityApiUrl: app.node.tryGetContext('integrityApiUrl') as string | undefined,
-  integrityApiKey: app.node.tryGetContext('integrityApiKey') as string | undefined,
+  integrityApiUrl,
+  integrityApiKey,
   synthesizer: new CliCredentialsStackSynthesizer(),
 });
 
