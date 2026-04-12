@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useCaptchaGate } from '../hooks/useCaptchaGate';
+import { ScanIcon } from './scan/icons/ScanIcon';
 
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
 // https://icons.getbootstrap.com
@@ -202,7 +203,7 @@ const IcoWayfinder = () => (
 );
 // ── Game definitions ───────────────────────────────────────────────────
 
-type TagKey = 'Arcade' | 'Strategy' | 'Puzzle' | 'Brain';
+type TagKey = 'Arcade' | 'Strategy' | 'Puzzle' | 'Brain' | 'Diagnostic';
 
 interface Game {
   id: string;
@@ -360,6 +361,14 @@ const games: Game[] = [
     path: '/wayfinder',
     Icon: IcoWayfinder,
   },
+  {
+    id: 'scan',
+    name: 'SCAN',
+    desc: 'Run diagnostic. See what we see.',
+    tag: 'Diagnostic',
+    path: '/scan',
+    Icon: ScanIcon,
+  },
 ];
 
 // ── Tag styling ────────────────────────────────────────────────────────
@@ -369,6 +378,7 @@ const TAG_CFG: Record<TagKey, { color: string; border: string; bg: string; label
   Strategy: { color: '#f59e0b', border: '#78350f', bg: '#1c1206', label: 'STR' },
   Puzzle: { color: '#22d3ee', border: '#164e63', bg: '#061a1c', label: 'PZL' },
   Brain: { color: '#f87171', border: '#7f1d1d', bg: '#1c0607', label: 'INT' },
+  Diagnostic: { color: '#94a3b8', border: '#475569', bg: '#0f172a', label: 'DIA' },
 };
 
 const BORDER = '1px solid #0f2a18';
@@ -393,9 +403,15 @@ export default function Hub() {
     return matchTag && matchSearch;
   });
 
-  const handlePlay = async (path: string) => {
+  const handlePlay = async (game: Game) => {
+    // Diagnostic tiles (SCAN) bypass the CAPTCHA — the fingerprint IS the
+    // interaction. Every other tile still goes through verification.
+    if (game.tag === 'Diagnostic') {
+      navigate(game.path);
+      return;
+    }
     const verified = await requestAccess();
-    if (verified) navigate(path);
+    if (verified) navigate(game.path);
   };
 
   return (
@@ -438,33 +454,35 @@ export default function Hub() {
 
           {/* Desktop category links */}
           <div className="hidden items-center gap-1 sm:flex">
-            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain'] as const).map((tag) => {
-              const isAll = tag === 'All';
-              const cfg = isAll ? null : TAG_CFG[tag as TagKey];
-              const isActive = activeTag === tag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => selectTag(tag)}
-                  className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
-                  style={
-                    isActive
-                      ? {
-                          color: isAll ? '#4ade80' : cfg!.color,
-                          border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
-                          background: isAll ? '#071a0e' : cfg!.bg,
-                        }
-                      : {
-                          color: '#1a6632',
-                          border: '1px solid transparent',
-                          background: 'transparent',
-                        }
-                  }
-                >
-                  {isAll ? 'ALL' : tag.toUpperCase()}
-                </button>
-              );
-            })}
+            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const).map(
+              (tag) => {
+                const isAll = tag === 'All';
+                const cfg = isAll ? null : TAG_CFG[tag as TagKey];
+                const isActive = activeTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => selectTag(tag)}
+                    className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
+                    style={
+                      isActive
+                        ? {
+                            color: isAll ? '#4ade80' : cfg!.color,
+                            border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
+                            background: isAll ? '#071a0e' : cfg!.bg,
+                          }
+                        : {
+                            color: '#1a6632',
+                            border: '1px solid transparent',
+                            background: 'transparent',
+                          }
+                    }
+                  >
+                    {isAll ? 'ALL' : tag.toUpperCase()}
+                  </button>
+                );
+              }
+            )}
           </div>
 
           {/* Desktop search */}
@@ -562,37 +580,39 @@ export default function Hub() {
             </div>
 
             {/* Category items */}
-            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain'] as const).map((tag) => {
-              const isActive = activeTag === tag;
-              const label = tag === 'All' ? 'ALL GAMES' : tag.toUpperCase();
-              const count =
-                tag === 'All' ? games.length : games.filter((g) => g.tag === tag).length;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => selectTag(tag)}
-                  className="flex w-full items-center gap-3 px-5 py-4 transition-colors duration-150"
-                  style={{
-                    borderBottom: '1px solid #0a1e0f',
-                    background: isActive ? '#071a0e' : 'transparent',
-                    borderLeft: isActive ? '3px solid #22c55e' : '3px solid transparent',
-                  }}
-                >
-                  <span
-                    className="font-mono text-base tracking-widest"
-                    style={{ color: isActive ? '#4ade80' : '#1a6632' }}
+            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const).map(
+              (tag) => {
+                const isActive = activeTag === tag;
+                const label = tag === 'All' ? 'ALL GAMES' : tag.toUpperCase();
+                const count =
+                  tag === 'All' ? games.length : games.filter((g) => g.tag === tag).length;
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => selectTag(tag)}
+                    className="flex w-full items-center gap-3 px-5 py-4 transition-colors duration-150"
+                    style={{
+                      borderBottom: '1px solid #0a1e0f',
+                      background: isActive ? '#071a0e' : 'transparent',
+                      borderLeft: isActive ? '3px solid #22c55e' : '3px solid transparent',
+                    }}
                   >
-                    {label}
-                  </span>
-                  <span
-                    className="ml-auto font-mono text-xs"
-                    style={{ color: isActive ? '#4ade80' : '#0f3018' }}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                    <span
+                      className="font-mono text-base tracking-widest"
+                      style={{ color: isActive ? '#4ade80' : '#1a6632' }}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      className="ml-auto font-mono text-xs"
+                      style={{ color: isActive ? '#4ade80' : '#0f3018' }}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              }
+            )}
           </div>
         )}
       </nav>
@@ -618,7 +638,7 @@ export default function Hub() {
               <button
                 key={game.id}
                 aria-label={`Play ${game.name}`}
-                onClick={() => handlePlay(game.path)}
+                onClick={() => handlePlay(game)}
                 disabled={loading}
                 className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98] disabled:opacity-50"
               >

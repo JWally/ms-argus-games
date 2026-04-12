@@ -22,6 +22,7 @@ const TicTacToe = lazy(() => import('./pages/TicTacToe'));
 const HanoiHilton = lazy(() => import('./pages/HanoiHilton'));
 const Wayfinder = lazy(() => import('./pages/Wayfinder'));
 const Amaze = lazy(() => import('./pages/Amaze'));
+const Scan = lazy(() => import('./pages/Scan'));
 
 function Gated({ children }: { children: ReactNode }) {
   return <CaptchaGate>{children}</CaptchaGate>;
@@ -178,6 +179,7 @@ export default function App() {
             </Gated>
           }
         />
+        <Route path="/scan" element={<Scan />} />
       </Routes>
     </Suspense>
   );
