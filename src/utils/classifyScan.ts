@@ -14,7 +14,6 @@
 
 export type SignalKind =
   | 'PROXY'
-  | 'VPN'
   | 'HYPERSCALER'
   | 'CORPORATE SHIELD'
   | 'BROWSER TAMPERING'
@@ -36,7 +35,11 @@ export interface ClassifiedSignal {
 
 export interface IntegrityLike {
   analysis?: {
-    network?: { signals?: RawSignal[] };
+    network?: {
+      /** Continuous merchant-facing score [0,1] (noisy-OR of proxy + vpn). */
+      proxy_score?: number;
+      signals?: RawSignal[];
+    };
     ip?: {
       asn?: { category?: string; number?: string; org?: string | null };
       signals?: RawSignal[];
@@ -60,7 +63,13 @@ export interface IntegrityLike {
   };
 }
 
-const BINARY_KINDS: readonly SignalKind[] = ['PROXY', 'VPN', 'HYPERSCALER', 'CORPORATE SHIELD'];
+/**
+ * Kinds that use the confidence bucket (HIGH/MEDIUM/LOW) instead of a
+ * binary DETECTED tag. PROXY now uses confidence since the score is
+ * continuous; HYPERSCALER / CORPORATE SHIELD remain binary (ASN-based
+ * category lookup, no gradient).
+ */
+const BINARY_KINDS: readonly SignalKind[] = ['HYPERSCALER', 'CORPORATE SHIELD'];
 
 const RED = '#f87171';
 const YELLOW = '#f59e0b';
@@ -68,14 +77,23 @@ const GREEN = '#4ade80';
 
 // --- Per-category detectors (each returns 0 or 1 ClassifiedSignal) ---
 
+/**
+ * Single PROXY detector reading the continuous, noisy-OR'd
+ * `proxy_score` from the server analyzer. No more separate VPN tag —
+ * the score already fuses MSS + RTT evidence. Thresholds:
+ *   < 0.2 → no tag (score too low to surface)
+ *   0.2–0.5 → LOW
+ *   0.5–0.8 → MEDIUM
+ *   >= 0.8 → HIGH
+ * Thresholds are merchant-UX choices, not detection thresholds — the
+ * underlying score is continuous and not exposed in this component's
+ * rawSignals (no mechanic leak).
+ */
 function detectProxy(i: IntegrityLike): ClassifiedSignal | null {
-  const sigs = (i.analysis?.network?.signals ?? []).filter((s) => s.code === 'LIKELY_PROXY');
-  return sigs.length ? { kind: 'PROXY', rawSignals: sigs } : null;
-}
-
-function detectVpn(i: IntegrityLike): ClassifiedSignal | null {
-  const sigs = (i.analysis?.network?.signals ?? []).filter((s) => s.code === 'LIKELY_VPN');
-  return sigs.length ? { kind: 'VPN', rawSignals: sigs } : null;
+  const score = i.analysis?.network?.proxy_score ?? 0;
+  if (score < 0.2) return null;
+  const confidence: Confidence = score >= 0.8 ? 'HIGH' : score >= 0.5 ? 'MEDIUM' : 'LOW';
+  return { kind: 'PROXY', confidence, rawSignals: [] };
 }
 
 function detectAsnCategory(i: IntegrityLike): ClassifiedSignal | null {
@@ -195,7 +213,7 @@ function detectAutomation(i: IntegrityLike): ClassifiedSignal | null {
 }
 
 export function classifyScan(integrity: IntegrityLike): ClassifiedSignal[] {
-  const detectors = [detectProxy, detectVpn, detectAsnCategory, detectTampering, detectAutomation];
+  const detectors = [detectProxy, detectAsnCategory, detectTampering, detectAutomation];
   return detectors.map((fn) => fn(integrity)).filter((s): s is ClassifiedSignal => s !== null);
 }
 
