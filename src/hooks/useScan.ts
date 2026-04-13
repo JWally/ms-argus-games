@@ -1,26 +1,53 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Loader URL — replaces the direct argus-integrity.iife.js library
+// include. The loader creates a srcdoc iframe, injects the integrity
+// bundle into a pristine realm, and returns only the opaque session id
+// via postMessage. The full fingerprint never touches this page's JS
+// context. API endpoints are baked into the inner bundle at build time
+// based on its stage (dev-jw here) — they're not configurable from
+// this page.
+const LOADER_SCRIPT_URL = 'https://static-integrity-dev-jw.argus.pw/argus-loader.iife.js';
+
+// Our own backend proxy — fetches the stored integrity record from
+// argus-api's /v1/integrity-session/{id} with the merchant API key.
 const INTEGRITY_CHECK_URL = '/api/integrity/check';
-const INTEGRITY_SCRIPT_URL = 'https://static-integrity-dev-jw.argus.pw/argus-integrity.iife.js';
-const INTEGRITY_API_BASE = 'https://api-dev-jw.argus.pw';
-const SIGINT_CONFIG = {
-  baseDomain: 'argus.pw',
-  stagePrefix: 'dev-jw-',
-};
 
-type ScanState = 'idle' | 'loading' | 'scanned' | 'error';
+// Timeout passed to argus.run(). 20s is generous for the full pipeline:
+// iframe creation, sigint probes, ECDH handshake, POST.
+const RUN_TIMEOUT_MS = 20_000;
+
+/**
+ * State machine for the BOT-BUSTER page:
+ *   profiling  — loader is running in the background
+ *   profiled   — session id captured; waiting on PLAY
+ *   revealing  — PLAY clicked; fetching server-side analysis
+ *   revealed   — full result rendered
+ *   error      — either profiling or revealing failed
+ */
+export type ScanState = 'profiling' | 'profiled' | 'revealing' | 'revealed' | 'error';
 
 export interface ScanResult {
+  /** UUID the integrity VM generated; key into server's integrity-results table */
   sessionId: string;
   scannedAt: string;
   integrity: unknown; // full server response — consumers pull fields they need
+}
+
+interface ArgusLoader {
+  run(opts?: { sessionId?: string; timeoutMs?: number }): Promise<{
+    sessionId: string | null;
+    argusSessionId: string;
+    durationMs: number;
+  }>;
+  destroy(): void;
 }
 
 let scriptPromise: Promise<void> | null = null;
 
 function loadScriptOnce(src: string): Promise<void> {
   if (scriptPromise) return scriptPromise;
-  if (typeof window !== 'undefined' && (window as { ArgusIntegrity?: unknown }).ArgusIntegrity) {
+  if (typeof window !== 'undefined' && (window as unknown as { argus?: unknown }).argus) {
     scriptPromise = Promise.resolve();
     return scriptPromise;
   }
@@ -36,57 +63,98 @@ function loadScriptOnce(src: string): Promise<void> {
 }
 
 /**
- * Runs one integrity scan on demand. No CAPTCHA interaction, no caching.
- * Each call to `scan()` triggers a fresh collection + server analysis.
+ * Two-phase scanner for the BOT-BUSTER page.
  *
- * Separate from `useIntegrityGuard` (which auto-runs once on app mount and
- * is used for tampering-gated features) because the /scan page needs
- * user-triggered repeats and exposes the full result to the component.
+ * Phase 1 (auto, on mount): load the argus loader, run the integrity
+ * collection inside its srcdoc iframe, capture the argusSessionId.
+ * Nothing is shown to the user — this is the "profile" phase. The
+ * fingerprint never leaves the iframe realm.
+ *
+ * Phase 2 (on `reveal()`): fetch the server-stored analysis via the
+ * /api/integrity/check proxy. If phase 1 is still running when reveal
+ * is called, phase 2 awaits it. If phase 1 errored, phase 2 retries
+ * from scratch.
+ *
+ * Typical UX: user lands on the page → profile starts silently → when
+ * user clicks PLAY, the result is either already waiting (fast path)
+ * or reveal waits for the profile to finish (slow path).
  */
 export function useScan() {
-  const [state, setState] = useState<ScanState>('idle');
+  const [state, setState] = useState<ScanState>('profiling');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const inflight = useRef(false);
 
-  const scan = useCallback(async () => {
-    if (inflight.current) return;
-    inflight.current = true;
-    setState('loading');
+  // Promise for the in-flight profile so reveal() can await it. Never
+  // rejects — captures error into a tagged result for the caller to
+  // branch on.
+  const profilePromise = useRef<Promise<
+    { ok: true; sessionId: string } | { ok: false; error: string }
+  > | null>(null);
+
+  const startProfile = useCallback(() => {
+    setState('profiling');
+    setError(null);
+    profilePromise.current = (async () => {
+      try {
+        await loadScriptOnce(LOADER_SCRIPT_URL);
+        const argus = (window as unknown as { argus?: ArgusLoader }).argus;
+        if (!argus || typeof argus.run !== 'function') {
+          throw new Error('argus loader unavailable — did the script load?');
+        }
+        const runResult = await argus.run({ timeoutMs: RUN_TIMEOUT_MS });
+        const sessionId = runResult.argusSessionId;
+        if (!sessionId) throw new Error('loader returned empty session id');
+        return { ok: true as const, sessionId };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    })();
+
+    profilePromise.current.then((r) => {
+      if (r.ok) {
+        setState((prev) => (prev === 'profiling' ? 'profiled' : prev));
+      } else {
+        setError(r.error);
+        setState('error');
+      }
+    });
+  }, []);
+
+  // Auto-profile on mount.
+  useEffect(() => {
+    startProfile();
+  }, [startProfile]);
+
+  const reveal = useCallback(async () => {
+    // Already revealed — nothing to do. Re-triggering from the UI
+    // would be odd; but harmless.
+    if (state === 'revealing' || state === 'revealed') return;
+
+    // If profile errored, restart it before revealing.
+    let profile = profilePromise.current;
+    if (!profile || state === 'error') {
+      startProfile();
+      profile = profilePromise.current!;
+    }
+
+    setState('revealing');
     setError(null);
 
+    const p = await profile;
+    if (!p.ok) {
+      setError(p.error);
+      setState('error');
+      return;
+    }
+
     try {
-      await loadScriptOnce(INTEGRITY_SCRIPT_URL);
-
-      const argus = (
-        window as unknown as {
-          ArgusIntegrity?: {
-            collectIntegrity: () => Promise<unknown>;
-            runArgusVm: (
-              fp: unknown,
-              base: string,
-              cfg: unknown
-            ) => Promise<{ sessionId?: string }>;
-            prefetchArgusVm: (cfg: unknown) => void;
-          };
-        }
-      ).ArgusIntegrity;
-
-      if (!argus?.collectIntegrity || !argus?.runArgusVm || !argus?.prefetchArgusVm) {
-        throw new Error('ArgusIntegrity API unavailable');
-      }
-
-      argus.prefetchArgusVm(SIGINT_CONFIG);
-      const fingerprint = await argus.collectIntegrity();
-      const vmResult = await argus.runArgusVm(fingerprint, INTEGRITY_API_BASE, SIGINT_CONFIG);
-
-      const sessionId = vmResult?.sessionId;
-      if (!sessionId) throw new Error('No session id returned');
-
       const res = await fetch(INTEGRITY_CHECK_URL, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
+        body: JSON.stringify({ sessionId: p.sessionId }),
       });
       if (!res.ok) throw new Error(`Check endpoint returned ${res.status}`);
 
@@ -94,19 +162,23 @@ export function useScan() {
       const integrity = data.integrity ?? data;
 
       setResult({
-        sessionId,
+        sessionId: p.sessionId,
         scannedAt: new Date().toISOString(),
         integrity,
       });
-      setState('scanned');
+      setState('revealed');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
+      setError(err instanceof Error ? err.message : String(err));
       setState('error');
-    } finally {
-      inflight.current = false;
     }
-  }, []);
+  }, [state, startProfile]);
 
-  return { state, result, error, scan };
+  /** Restart from scratch — re-profile and re-reveal. */
+  const scanAgain = useCallback(() => {
+    setResult(null);
+    setError(null);
+    startProfile();
+  }, [startProfile]);
+
+  return { state, result, error, reveal, scanAgain };
 }

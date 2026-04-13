@@ -179,7 +179,7 @@ export default function App() {
             </Gated>
           }
         />
-        <Route path="/scan" element={<Scan />} />
+        <Route path="/bot-buster" element={<Scan />} />
       </Routes>
     </Suspense>
   );

@@ -363,10 +363,10 @@ const games: Game[] = [
   },
   {
     id: 'scan',
-    name: 'SCAN',
+    name: 'BOT-BUSTER',
     desc: 'Run diagnostic. See what we see.',
     tag: 'Diagnostic',
-    path: '/scan',
+    path: '/bot-buster',
     Icon: ScanIcon,
   },
 ];

@@ -19,13 +19,8 @@ function useLoadingDots() {
 }
 
 export default function Scan(): ReactElement {
-  const { state, result, error, scan } = useScan();
+  const { state, result, error, reveal, scanAgain } = useScan();
   const dots = useLoadingDots();
-
-  // Auto-scan on mount
-  useEffect(() => {
-    scan();
-  }, [scan]);
 
   const signals = useMemo(
     () => (result ? classifyScan(result.integrity as IntegrityLike) : []),
@@ -35,6 +30,37 @@ export default function Scan(): ReactElement {
   const scannedAt = result
     ? new Date(result.scannedAt).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
     : '';
+
+  // PLAY button: enabled as soon as profile is captured OR if we're
+  // still profiling (in which case reveal() will await). Disabled only
+  // while reveal is already in flight or the result is on screen.
+  const playDisabled = state === 'revealing' || state === 'revealed';
+
+  // Human-readable state line.
+  let statusLabel: string;
+  let statusColor: string;
+  switch (state) {
+    case 'profiling':
+      statusLabel = `PROFILING${dots}`;
+      statusColor = '#4ade80';
+      break;
+    case 'profiled':
+      statusLabel = 'READY TO REVEAL';
+      statusColor = '#4ade80';
+      break;
+    case 'revealing':
+      statusLabel = `ANALYZING${dots}`;
+      statusColor = '#4ade80';
+      break;
+    case 'revealed':
+      statusLabel = 'COMPLETE';
+      statusColor = '#4ade80';
+      break;
+    case 'error':
+      statusLabel = 'DIAGNOSTIC OFFLINE';
+      statusColor = '#f87171';
+      break;
+  }
 
   return (
     <div
@@ -73,7 +99,7 @@ export default function Scan(): ReactElement {
             ARCADES.CLICK
           </Link>
           <span className="ml-auto font-mono text-xs tracking-widest" style={{ color: '#94a3b8' }}>
-            / SCAN
+            / BOT-BUSTER
           </span>
         </div>
       </nav>
@@ -95,20 +121,15 @@ export default function Scan(): ReactElement {
               textShadow: '0 0 8px #22c55e44',
             }}
           >
-            &gt; SCAN / DIAGNOSTIC
+            &gt; BOT-BUSTER / DIAGNOSTIC
           </h1>
 
           <div className="mt-5 space-y-1 font-mono text-xs tracking-widest">
             <div>
               <span style={{ color: '#1a6632' }}>STATUS:&nbsp;&nbsp;</span>
-              <span style={{ color: state === 'error' ? '#f87171' : '#4ade80' }}>
-                {state === 'loading' && `SCANNING${dots}`}
-                {state === 'scanned' && 'COMPLETE'}
-                {state === 'error' && 'DIAGNOSTIC OFFLINE'}
-                {state === 'idle' && 'READY'}
-              </span>
+              <span style={{ color: statusColor }}>{statusLabel}</span>
             </div>
-            {state === 'scanned' && (
+            {state === 'revealed' && (
               <div>
                 <span style={{ color: '#1a6632' }}>SCANNED: </span>
                 <span>{scannedAt}</span>
@@ -117,7 +138,30 @@ export default function Scan(): ReactElement {
             {state === 'error' && error && <div style={{ color: '#f87171' }}>ERROR: {error}</div>}
           </div>
 
-          {state === 'scanned' && result && (
+          {/* PLAY button — pre-reveal. Big, centered, impossible to miss. */}
+          {(state === 'profiling' || state === 'profiled' || state === 'revealing') && (
+            <div className="mt-10 flex justify-center">
+              <button
+                onClick={() => reveal()}
+                disabled={playDisabled}
+                className="font-display tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  color: '#030c06',
+                  background: '#4ade80',
+                  border: '2px solid #22c55e',
+                  padding: '1.25rem 3.5rem',
+                  fontSize: '2rem',
+                  borderRadius: '3px',
+                  boxShadow: '0 0 18px #22c55e88, 0 0 40px #22c55e44, inset 0 0 12px #00000022',
+                  cursor: playDisabled ? 'not-allowed' : 'pointer',
+                }}
+              >
+                &gt; PLAY
+              </button>
+            </div>
+          )}
+
+          {state === 'revealed' && result && (
             <>
               <div className="mt-6 font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
                 DETECTED:
@@ -127,37 +171,38 @@ export default function Scan(): ReactElement {
             </>
           )}
 
-          {/* Actions */}
-          <div className="mt-7 flex flex-wrap gap-2">
-            <button
-              onClick={() => scan()}
-              disabled={state === 'loading'}
-              className="font-mono text-xs tracking-widest disabled:opacity-40"
-              style={{
-                color: '#4ade80',
-                border: '1px solid #1a6632',
-                background: 'transparent',
-                padding: '0.55rem 1rem',
-                borderRadius: '2px',
-              }}
-            >
-              [ SCAN AGAIN ]
-            </button>
-            <Link
-              to="/"
-              className="font-mono text-xs tracking-widest"
-              style={{
-                color: '#4ade80',
-                border: '1px solid #1a6632',
-                background: 'transparent',
-                padding: '0.55rem 1rem',
-                borderRadius: '2px',
-                textDecoration: 'none',
-              }}
-            >
-              [ BACK ]
-            </Link>
-          </div>
+          {/* Actions — shown after reveal or on error */}
+          {(state === 'revealed' || state === 'error') && (
+            <div className="mt-7 flex flex-wrap gap-2">
+              <button
+                onClick={() => scanAgain()}
+                className="font-mono text-xs tracking-widest"
+                style={{
+                  color: '#4ade80',
+                  border: '1px solid #1a6632',
+                  background: 'transparent',
+                  padding: '0.55rem 1rem',
+                  borderRadius: '2px',
+                }}
+              >
+                [ RUN AGAIN ]
+              </button>
+              <Link
+                to="/"
+                className="font-mono text-xs tracking-widest"
+                style={{
+                  color: '#4ade80',
+                  border: '1px solid #1a6632',
+                  background: 'transparent',
+                  padding: '0.55rem 1rem',
+                  borderRadius: '2px',
+                  textDecoration: 'none',
+                }}
+              >
+                [ BACK ]
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>
