@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useScan } from '../hooks/useScan';
 import { classifyScan, type IntegrityLike } from '../utils/classifyScan';
 import { SignalList } from './scan/SignalList';
-import { RawScanPanel } from './scan/RawScanPanel';
 
 const BORDER = '1px solid #0f2a18';
 const PROMPT_TEXT = 'Would you like to play a game...?';
@@ -340,7 +339,6 @@ export default function Scan(): ReactElement {
                     DETECTED:
                   </div>
                   <SignalList signals={signals} />
-                  <RawScanPanel signals={signals} sessionId={result.sessionId} />
                 </>
               )}
 
