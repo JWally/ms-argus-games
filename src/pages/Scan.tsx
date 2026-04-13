@@ -33,21 +33,29 @@ function getObserved(integrity: unknown): {
 } {
   const rec = (integrity ?? {}) as Record<string, unknown>;
   const sigint = (rec.sigint ?? {}) as Record<string, unknown>;
-  const cf = (sigint.aws_cf ?? {}) as Record<string, unknown>;
+  const cfRaw = (sigint.aws_cf ?? {}) as Record<string, unknown>;
+  // Two shapes appear in storage depending on codepath:
+  //   1) Post-hydration: sigint.aws_cf.{ip, city, country, lat, lon, tz}
+  //   2) Client-fetch passthrough: sigint.aws_cf.data.{...}, plus
+  //      {error, durationMs} siblings
+  // Prefer the unwrapped form if present, fall back to nested .data.
+  const cfData = (cfRaw.data ?? {}) as Record<string, unknown>;
+  const pick = (key: string): string | undefined =>
+    (cfRaw[key] as string | undefined) ?? (cfData[key] as string | undefined);
   const analysis = (rec.analysis ?? {}) as Record<string, unknown>;
   const ip = (analysis.ip ?? {}) as { asn?: { number?: string; org?: string | null } };
 
-  const ipStr = (cf.ip as string | undefined) ?? '—';
-  const asnNum = ip.asn?.number ?? (cf.asn as string | undefined);
+  const ipStr = pick('ip') ?? '—';
+  const asnNum = ip.asn?.number ?? pick('asn');
   const asnOrg = ip.asn?.org;
   const asn = asnNum ? `AS${asnNum}${asnOrg ? ` · ${asnOrg}` : ''}` : '—';
-  const city = cf.city as string | undefined;
-  const country = cf.country as string | undefined;
+  const city = pick('city');
+  const country = pick('country');
   const location = [city, country].filter(Boolean).join(', ') || '—';
-  const lat = cf.lat as string | undefined;
-  const lon = cf.lon as string | undefined;
+  const lat = pick('lat');
+  const lon = pick('lon');
   const coords = lat && lon ? `${lat}, ${lon}` : '—';
-  const timezone = (cf.tz as string | undefined) ?? '—';
+  const timezone = pick('tz') ?? '—';
 
   return { ip: ipStr, asn, location, coords, timezone };
 }
