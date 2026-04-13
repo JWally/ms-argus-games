@@ -21,6 +21,71 @@ function useLoadingDots() {
 }
 
 /**
+ * Picks fields out of the server-stored integrity record at the paths
+ * where ms-argus-api's sigint hydration writes them. Best-effort — any
+ * missing piece just renders as "—".
+ */
+function getObserved(integrity: unknown): {
+  ip: string;
+  asn: string;
+  location: string;
+  coords: string;
+  timezone: string;
+} {
+  const rec = (integrity ?? {}) as Record<string, unknown>;
+  const sigint = (rec.sigint ?? {}) as Record<string, unknown>;
+  const cf = (sigint.aws_cf ?? {}) as Record<string, unknown>;
+  const analysis = (rec.analysis ?? {}) as Record<string, unknown>;
+  const ip = (analysis.ip ?? {}) as { asn?: { number?: string; org?: string | null } };
+
+  const ipStr = (cf.ip as string | undefined) ?? '—';
+  const asnNum = ip.asn?.number ?? (cf.asn as string | undefined);
+  const asnOrg = ip.asn?.org;
+  const asn = asnNum ? `AS${asnNum}${asnOrg ? ` · ${asnOrg}` : ''}` : '—';
+  const city = cf.city as string | undefined;
+  const country = cf.country as string | undefined;
+  const location = [city, country].filter(Boolean).join(', ') || '—';
+  const lat = cf.lat as string | undefined;
+  const lon = cf.lon as string | undefined;
+  const coords = lat && lon ? `${lat}, ${lon}` : '—';
+  const timezone = (cf.tz as string | undefined) ?? '—';
+
+  return { ip: ipStr, asn, location, coords, timezone };
+}
+
+function ObservedMetadata({ integrity }: { integrity: unknown }) {
+  const { ip, asn, location, coords, timezone } = getObserved(integrity);
+  const rows: [string, string][] = [
+    ['IP', ip],
+    ['ASN', asn],
+    ['LOCATION', location],
+    ['COORDS', coords],
+    ['TIMEZONE', timezone],
+  ];
+  return (
+    <div className="mt-6 font-mono text-xs tracking-widest">
+      <div style={{ color: '#1a6632' }}>OBSERVED:</div>
+      <div className="mt-2 space-y-0.5">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex gap-2">
+            <span
+              style={{
+                color: '#1a6632',
+                minWidth: '5.5rem',
+                display: 'inline-block',
+              }}
+            >
+              {label}
+            </span>
+            <span style={{ color: '#4ade80' }}>{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Typewriter: reveals `text` one character at a time. Returns the
  * current substring and a `done` flag. `startDelay` gives users a
  * moment to register the cursor before characters start appearing.
@@ -50,7 +115,7 @@ function useTypewriter(text: string, speed = 55, startDelay = 350) {
 
 export default function Scan(): ReactElement {
   const navigate = useNavigate();
-  const { state, result, error, reveal, scanAgain } = useScan();
+  const { state, result, error, reveal } = useScan();
   const dots = useLoadingDots();
   const { typed, done: typingDone } = useTypewriter(PROMPT_TEXT);
 
@@ -165,7 +230,7 @@ export default function Scan(): ReactElement {
               textShadow: '0 0 8px #22c55e44',
             }}
           >
-            &gt; BOT-BUSTER / DIAGNOSTIC
+            &gt; BOT-BUSTER
           </h1>
 
           {/* ───── INTRO (typed prompt + YES/NO) ───── */}
@@ -267,6 +332,7 @@ export default function Scan(): ReactElement {
 
               {state === 'revealed' && result && (
                 <>
+                  <ObservedMetadata integrity={result.integrity} />
                   <div
                     className="mt-6 font-mono text-xs tracking-widest"
                     style={{ color: '#1a6632' }}
@@ -280,19 +346,6 @@ export default function Scan(): ReactElement {
 
               {(state === 'revealed' || state === 'error') && (
                 <div className="mt-7 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => scanAgain()}
-                    className="font-mono text-xs tracking-widest"
-                    style={{
-                      color: '#4ade80',
-                      border: '1px solid #1a6632',
-                      background: 'transparent',
-                      padding: '0.55rem 1rem',
-                      borderRadius: '2px',
-                    }}
-                  >
-                    [ RUN AGAIN ]
-                  </button>
                   <Link
                     to="/"
                     className="font-mono text-xs tracking-widest"
