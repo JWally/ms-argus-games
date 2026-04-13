@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useScan } from '../hooks/useScan';
 import { classifyScan, type IntegrityLike } from '../utils/classifyScan';
 import { SignalList } from './scan/SignalList';
 import { RawScanPanel } from './scan/RawScanPanel';
 
 const BORDER = '1px solid #0f2a18';
+const PROMPT_TEXT = 'Would you like to play a game...?';
 
+/** Animate dots for transient loading states (ANALYZING...). */
 function useLoadingDots() {
   const [dots, setDots] = useState('.');
   useEffect(() => {
@@ -18,9 +20,61 @@ function useLoadingDots() {
   return dots;
 }
 
+/**
+ * Typewriter: reveals `text` one character at a time. Returns the
+ * current substring and a `done` flag. `startDelay` gives users a
+ * moment to register the cursor before characters start appearing.
+ */
+function useTypewriter(text: string, speed = 55, startDelay = 350) {
+  const [typed, setTyped] = useState('');
+  useEffect(() => {
+    setTyped('');
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const startId = setTimeout(() => {
+      let i = 0;
+      intervalId = setInterval(() => {
+        i++;
+        setTyped(text.slice(0, i));
+        if (i >= text.length && intervalId !== null) {
+          clearInterval(intervalId);
+        }
+      }, speed);
+    }, startDelay);
+    return () => {
+      clearTimeout(startId);
+      if (intervalId !== null) clearInterval(intervalId);
+    };
+  }, [text, speed, startDelay]);
+  return { typed, done: typed.length >= text.length };
+}
+
 export default function Scan(): ReactElement {
+  const navigate = useNavigate();
   const { state, result, error, reveal, scanAgain } = useScan();
   const dots = useLoadingDots();
+  const { typed, done: typingDone } = useTypewriter(PROMPT_TEXT);
+
+  // Intro screen visibility. Flips once the user clicks YES (or NO).
+  // scanAgain() deliberately does NOT reset this — the intro is a
+  // first-visit moment; re-running from within results is a direct
+  // re-profile + re-reveal without the theatrical prompt.
+  const [answered, setAnswered] = useState(false);
+
+  const yesRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-focus the YES button once typing completes so Enter triggers it.
+  useEffect(() => {
+    if (typingDone && !answered) yesRef.current?.focus();
+  }, [typingDone, answered]);
+
+  const handleYes = () => {
+    setAnswered(true);
+    reveal();
+  };
+
+  const handleNo = () => {
+    navigate('/');
+  };
 
   const signals = useMemo(
     () => (result ? classifyScan(result.integrity as IntegrityLike) : []),
@@ -31,35 +85,25 @@ export default function Scan(): ReactElement {
     ? new Date(result.scannedAt).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
     : '';
 
-  // PLAY button: enabled as soon as profile is captured OR if we're
-  // still profiling (in which case reveal() will await). Disabled only
-  // while reveal is already in flight or the result is on screen.
-  const playDisabled = state === 'revealing' || state === 'revealed';
-
-  // Human-readable state line.
-  let statusLabel: string;
-  let statusColor: string;
-  switch (state) {
-    case 'profiling':
-      statusLabel = `PROFILING${dots}`;
-      statusColor = '#4ade80';
-      break;
-    case 'profiled':
-      statusLabel = 'READY TO REVEAL';
-      statusColor = '#4ade80';
-      break;
-    case 'revealing':
-      statusLabel = `ANALYZING${dots}`;
-      statusColor = '#4ade80';
-      break;
-    case 'revealed':
-      statusLabel = 'COMPLETE';
-      statusColor = '#4ade80';
-      break;
-    case 'error':
-      statusLabel = 'DIAGNOSTIC OFFLINE';
-      statusColor = '#f87171';
-      break;
+  // Post-answer status line — only shown after user engages.
+  let statusLabel = '';
+  let statusColor = '#4ade80';
+  if (answered) {
+    switch (state) {
+      case 'profiling':
+      case 'revealing':
+        statusLabel = `ANALYZING${dots}`;
+        break;
+      case 'revealed':
+        statusLabel = 'COMPLETE';
+        break;
+      case 'error':
+        statusLabel = 'DIAGNOSTIC OFFLINE';
+        statusColor = '#f87171';
+        break;
+      default:
+        statusLabel = '';
+    }
   }
 
   return (
@@ -124,84 +168,148 @@ export default function Scan(): ReactElement {
             &gt; BOT-BUSTER / DIAGNOSTIC
           </h1>
 
-          <div className="mt-5 space-y-1 font-mono text-xs tracking-widest">
-            <div>
-              <span style={{ color: '#1a6632' }}>STATUS:&nbsp;&nbsp;</span>
-              <span style={{ color: statusColor }}>{statusLabel}</span>
-            </div>
-            {state === 'revealed' && (
-              <div>
-                <span style={{ color: '#1a6632' }}>SCANNED: </span>
-                <span>{scannedAt}</span>
-              </div>
-            )}
-            {state === 'error' && error && <div style={{ color: '#f87171' }}>ERROR: {error}</div>}
-          </div>
-
-          {/* PLAY button — pre-reveal. Big, centered, impossible to miss. */}
-          {(state === 'profiling' || state === 'profiled' || state === 'revealing') && (
-            <div className="mt-10 flex justify-center">
-              <button
-                onClick={() => reveal()}
-                disabled={playDisabled}
-                className="font-display tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-50"
+          {/* ───── INTRO (typed prompt + YES/NO) ───── */}
+          {!answered && (
+            <div className="mt-10 mb-4 flex flex-col items-center">
+              <div
+                className="font-mono text-center tracking-wide"
                 style={{
-                  color: '#030c06',
-                  background: '#4ade80',
-                  border: '2px solid #22c55e',
-                  padding: '1.25rem 3.5rem',
-                  fontSize: '2rem',
-                  borderRadius: '3px',
-                  boxShadow: '0 0 18px #22c55e88, 0 0 40px #22c55e44, inset 0 0 12px #00000022',
-                  cursor: playDisabled ? 'not-allowed' : 'pointer',
+                  color: '#4ade80',
+                  textShadow: '0 0 6px #22c55e88, 0 0 18px #22c55e33',
+                  fontSize: 'clamp(1.25rem, 3.5vw, 2rem)',
+                  minHeight: '3rem',
+                  lineHeight: 1.4,
                 }}
               >
-                &gt; PLAY
-              </button>
+                {typed}
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'inline-block',
+                    marginLeft: '0.15ch',
+                    width: '0.6ch',
+                    animation: 'argusCursorBlink 1s steps(1) infinite',
+                  }}
+                >
+                  █
+                </span>
+              </div>
+
+              <style>{`
+                @keyframes argusCursorBlink {
+                  50% { opacity: 0; }
+                }
+              `}</style>
+
+              {/* Buttons fade in once typing is done. */}
+              <div
+                className="mt-10 flex w-full max-w-xs flex-col items-stretch gap-3"
+                style={{
+                  opacity: typingDone ? 1 : 0,
+                  transition: 'opacity 0.4s ease-in',
+                  pointerEvents: typingDone ? 'auto' : 'none',
+                }}
+              >
+                <button
+                  ref={yesRef}
+                  onClick={handleYes}
+                  className="font-display tracking-[0.3em] focus:outline-none"
+                  style={{
+                    color: '#030c06',
+                    background: '#4ade80',
+                    border: '2px solid #22c55e',
+                    padding: '0.9rem 1.25rem',
+                    fontSize: '1.5rem',
+                    borderRadius: '3px',
+                    boxShadow: '0 0 14px #22c55eaa, 0 0 32px #22c55e44, inset 0 0 8px #00000022',
+                    cursor: 'pointer',
+                  }}
+                >
+                  [ YES ]
+                </button>
+                <button
+                  onClick={handleNo}
+                  className="font-display tracking-[0.3em] focus:outline-none"
+                  style={{
+                    color: '#4ade80',
+                    background: 'transparent',
+                    border: '2px solid #1a6632',
+                    padding: '0.9rem 1.25rem',
+                    fontSize: '1.5rem',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  [ NO ]
+                </button>
+              </div>
             </div>
           )}
 
-          {state === 'revealed' && result && (
+          {/* ───── POST-ANSWER (reveal / results / error) ───── */}
+          {answered && (
             <>
-              <div className="mt-6 font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
-                DETECTED:
+              <div className="mt-5 space-y-1 font-mono text-xs tracking-widest">
+                <div>
+                  <span style={{ color: '#1a6632' }}>STATUS:&nbsp;&nbsp;</span>
+                  <span style={{ color: statusColor }}>{statusLabel}</span>
+                </div>
+                {state === 'revealed' && (
+                  <div>
+                    <span style={{ color: '#1a6632' }}>SCANNED: </span>
+                    <span>{scannedAt}</span>
+                  </div>
+                )}
+                {state === 'error' && error && (
+                  <div style={{ color: '#f87171' }}>ERROR: {error}</div>
+                )}
               </div>
-              <SignalList signals={signals} />
-              <RawScanPanel signals={signals} sessionId={result.sessionId} />
-            </>
-          )}
 
-          {/* Actions — shown after reveal or on error */}
-          {(state === 'revealed' || state === 'error') && (
-            <div className="mt-7 flex flex-wrap gap-2">
-              <button
-                onClick={() => scanAgain()}
-                className="font-mono text-xs tracking-widest"
-                style={{
-                  color: '#4ade80',
-                  border: '1px solid #1a6632',
-                  background: 'transparent',
-                  padding: '0.55rem 1rem',
-                  borderRadius: '2px',
-                }}
-              >
-                [ RUN AGAIN ]
-              </button>
-              <Link
-                to="/"
-                className="font-mono text-xs tracking-widest"
-                style={{
-                  color: '#4ade80',
-                  border: '1px solid #1a6632',
-                  background: 'transparent',
-                  padding: '0.55rem 1rem',
-                  borderRadius: '2px',
-                  textDecoration: 'none',
-                }}
-              >
-                [ BACK ]
-              </Link>
-            </div>
+              {state === 'revealed' && result && (
+                <>
+                  <div
+                    className="mt-6 font-mono text-xs tracking-widest"
+                    style={{ color: '#1a6632' }}
+                  >
+                    DETECTED:
+                  </div>
+                  <SignalList signals={signals} />
+                  <RawScanPanel signals={signals} sessionId={result.sessionId} />
+                </>
+              )}
+
+              {(state === 'revealed' || state === 'error') && (
+                <div className="mt-7 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => scanAgain()}
+                    className="font-mono text-xs tracking-widest"
+                    style={{
+                      color: '#4ade80',
+                      border: '1px solid #1a6632',
+                      background: 'transparent',
+                      padding: '0.55rem 1rem',
+                      borderRadius: '2px',
+                    }}
+                  >
+                    [ RUN AGAIN ]
+                  </button>
+                  <Link
+                    to="/"
+                    className="font-mono text-xs tracking-widest"
+                    style={{
+                      color: '#4ade80',
+                      border: '1px solid #1a6632',
+                      background: 'transparent',
+                      padding: '0.55rem 1rem',
+                      borderRadius: '2px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    [ BACK ]
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
