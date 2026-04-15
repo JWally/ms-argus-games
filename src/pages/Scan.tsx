@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useScan } from '../hooks/useScan';
-import { classifyScan, type IntegrityLike } from '../utils/classifyScan';
+import { classifyScan, type IntegrityLike, type MerchantSafeResponse } from '../utils/classifyScan';
 import { SignalList } from './scan/SignalList';
 
 const BORDER = '1px solid #0f2a18';
 const PROMPT_TEXT = 'Would you like to play a game...?';
+const INLINE_BLOCK = 'inline-block' as const;
 
 /** Animate dots for transient loading states (ANALYZING...). */
 function useLoadingDots() {
@@ -24,13 +25,48 @@ function useLoadingDots() {
  * where ms-argus-api's sigint hydration writes them. Best-effort — any
  * missing piece just renders as "—".
  */
-function getObserved(integrity: unknown): {
+interface ObservedMetadataFields {
   ip: string;
   asn: string;
   location: string;
   coords: string;
   timezone: string;
-} {
+  webrtcIp: string;
+  webrtcVerified: string;
+  webrtcVerifiedColor: string;
+}
+
+interface WebrtcStatus {
+  label: string;
+  color: string;
+}
+
+/**
+ * Derive the human label + color for the WEBRTC AUTH row from the
+ * server-side decoded webrtc_sigint block. Pulled out of getObserved to
+ * keep that function below the complexity cap.
+ */
+function deriveWebrtcStatus(sig: {
+  status?: string;
+  mac_valid?: boolean;
+  fresh?: boolean;
+}): WebrtcStatus {
+  if (sig.status === 'ok' && sig.mac_valid && sig.fresh) {
+    return { label: '✓ VERIFIED (HMAC + fresh)', color: '#4ade80' };
+  }
+  if (sig.status && sig.mac_valid === false) {
+    return { label: '✗ FORGED (HMAC fail)', color: '#f87171' };
+  }
+  if (sig.status === 'multi_candidates') {
+    return { label: '⚠ MULTI-EGRESS (skipped)', color: '#f59e0b' };
+  }
+  if (sig.status) {
+    return { label: sig.status, color: '#f59e0b' };
+  }
+  return { label: '—', color: '#4ade80' };
+}
+
+function getObserved(integrity: unknown): ObservedMetadataFields {
   const rec = (integrity ?? {}) as Record<string, unknown>;
   const sigint = (rec.sigint ?? {}) as Record<string, unknown>;
   const cfRaw = (sigint.aws_cf ?? {}) as Record<string, unknown>;
@@ -57,36 +93,163 @@ function getObserved(integrity: unknown): {
   const coords = lat && lon ? `${lat}, ${lon}` : '—';
   const timezone = pick('tz') ?? '—';
 
-  return { ip: ipStr, asn, location, coords, timezone };
+  // WebRTC sigint: decoded STUN attestation. Populated when the client
+  // submitted a MAC-verified srflx candidate.
+  const sig = (analysis.webrtc_sigint ?? {}) as {
+    status?: string;
+    ip?: string;
+    mac_valid?: boolean;
+    fresh?: boolean;
+  };
+  const status = deriveWebrtcStatus(sig);
+
+  return {
+    ip: ipStr,
+    asn,
+    location,
+    coords,
+    timezone,
+    webrtcIp: sig.ip ?? '—',
+    webrtcVerified: status.label,
+    webrtcVerifiedColor: status.color,
+  };
 }
 
 function ObservedMetadata({ integrity }: { integrity: unknown }) {
-  const { ip, asn, location, coords, timezone } = getObserved(integrity);
-  const rows: [string, string][] = [
-    ['IP', ip],
-    ['ASN', asn],
-    ['LOCATION', location],
-    ['COORDS', coords],
-    ['TIMEZONE', timezone],
+  const o = getObserved(integrity);
+  const rows: Array<[string, string, string?]> = [
+    ['IP', o.ip],
+    ['ASN', o.asn],
+    ['LOCATION', o.location],
+    ['COORDS', o.coords],
+    ['TIMEZONE', o.timezone],
+    ['WEBRTC IP', o.webrtcIp],
+    ['WEBRTC AUTH', o.webrtcVerified, o.webrtcVerifiedColor],
   ];
   return (
     <div className="mt-6 font-mono text-xs tracking-widest">
       <div style={{ color: '#1a6632' }}>OBSERVED:</div>
       <div className="mt-2 space-y-0.5">
-        {rows.map(([label, value]) => (
+        {rows.map(([label, value, colorOverride]) => (
           <div key={label} className="flex gap-2">
             <span
               style={{
                 color: '#1a6632',
-                minWidth: '5.5rem',
-                display: 'inline-block',
+                minWidth: '7rem',
+                display: INLINE_BLOCK,
               }}
             >
               {label}
             </span>
-            <span style={{ color: '#4ade80' }}>{value}</span>
+            <span style={{ color: colorOverride ?? '#4ade80' }}>{value}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Renders the merchant-safe projection returned by ms-argus-api at
+ * `result.integrity.merchant`. This is the exact shape a paying API
+ * consumer sees — categorical tags, bot enum, bucketed bot/risk — with
+ * no raw signal names or component scores. Rendering it here next to
+ * the raw diagnostic panels above makes the "what we see" vs. "what the
+ * merchant sees" distinction visible at a glance.
+ */
+// Tag → color. `cellular` is a positive classification (mobile user, not a
+// threat). `no_webrtc` is neutral/warning (merchant should correlate).
+// Everything else is an adversarial signal.
+function tagColor(tag: string): string {
+  if (tag === 'cellular') return '#4ade80';
+  if (tag === 'no_webrtc') return '#f59e0b';
+  return '#f87171';
+}
+
+function MerchantView({ merchant }: { merchant: MerchantSafeResponse }) {
+  const dash = (v: string | number | null | undefined): string =>
+    v === null || v === undefined || v === '' ? '—' : String(v);
+
+  const firstSeen = merchant.first_seen_at
+    ? new Date(merchant.first_seen_at).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
+    : '—';
+
+  const asnStr =
+    merchant.network.asn === null
+      ? '—'
+      : `AS${merchant.network.asn}${merchant.network.asn_org ? ` · ${merchant.network.asn_org}` : ''}`;
+
+  const botColor =
+    merchant.bot === 'confirmed' ? '#f87171' : merchant.bot === 'suspected' ? '#f59e0b' : '#4ade80';
+
+  // Integrity tier thresholds mirror server (helpers/merchant-projection.ts).
+  // Green: trusted (≥ 0.9). Yellow: in-/16 scatter / no webrtc (0.5–0.8).
+  // Red: /16 mismatch or forgery (< 0.5).
+  const integrity = merchant.network.integrity;
+  const integrityColor = integrity >= 0.9 ? '#4ade80' : integrity >= 0.5 ? '#f59e0b' : '#f87171';
+
+  const rows: Array<[string, string, string?]> = [
+    ['SESSION_ID', dash(merchant.session_id)],
+    ['DEVICE_ID', dash(merchant.device_id)],
+    ['IS_NEW_DEVICE', merchant.is_new_device ? 'true' : 'false'],
+    ['FIRST_SEEN_AT', firstSeen],
+    ['CONFIDENCE', merchant.confidence.toFixed(2)],
+    ['RISK_SCORE', merchant.risk_score.toFixed(2)],
+    ['BOT', merchant.bot.toUpperCase(), botColor],
+    ['NETWORK.ASN', asnStr],
+    ['NETWORK.COUNTRY', dash(merchant.network.country)],
+    ['NETWORK.INTEGRITY', integrity.toFixed(1), integrityColor],
+    ['NETWORK.IP', dash(merchant.network.ip)],
+    ['POLICY', merchant.policy === null ? '— (pending)' : String(merchant.policy)],
+    ['VELOCITY', merchant.velocity === null ? '— (pending)' : 'present'],
+  ];
+
+  return (
+    <div className="mt-6 font-mono text-xs tracking-widest">
+      <div style={{ color: '#94a3b8' }}>MERCHANT API RESPONSE:</div>
+      <div className="mt-2 space-y-0.5">
+        {rows.map(([label, value, colorOverride]) => (
+          <div key={label} className="flex gap-2">
+            <span
+              style={{
+                color: '#1a6632',
+                minWidth: '9rem',
+                display: INLINE_BLOCK,
+              }}
+            >
+              {label}
+            </span>
+            <span style={{ color: colorOverride ?? '#4ade80' }}>{value}</span>
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <span
+            style={{
+              color: '#1a6632',
+              minWidth: '9rem',
+              display: INLINE_BLOCK,
+            }}
+          >
+            TAGS
+          </span>
+          <span>
+            {merchant.tags.length === 0 ? (
+              <span style={{ color: '#4ade80' }}>[]</span>
+            ) : (
+              merchant.tags.map((t, i) => (
+                <span key={t}>
+                  {i > 0 ? ' ' : ''}
+                  <span style={{ color: tagColor(t) }}>[{t}]</span>
+                </span>
+              ))
+            )}
+          </span>
+        </div>
+      </div>
+      <div className="mt-3 text-[0.65rem]" style={{ color: '#1a6632', lineHeight: 1.5 }}>
+        ↑ this is the shape a paying API consumer sees. no raw signal names,
+        <br />
+        no component scores, no hamming distances. just categorical tags.
       </div>
     </div>
   );
@@ -257,7 +420,7 @@ export default function Scan(): ReactElement {
                 <span
                   aria-hidden
                   style={{
-                    display: 'inline-block',
+                    display: INLINE_BLOCK,
                     marginLeft: '0.15ch',
                     width: '0.6ch',
                     animation: 'argusCursorBlink 1s steps(1) infinite',
@@ -347,6 +510,9 @@ export default function Scan(): ReactElement {
                     DETECTED:
                   </div>
                   <SignalList signals={signals} />
+                  {(result.integrity as IntegrityLike).merchant && (
+                    <MerchantView merchant={(result.integrity as IntegrityLike).merchant!} />
+                  )}
                 </>
               )}
 

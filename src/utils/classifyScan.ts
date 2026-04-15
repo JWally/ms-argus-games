@@ -42,7 +42,32 @@ export interface IntegrityLike {
     };
     ip?: {
       asn?: { category?: string; number?: string; org?: string | null };
+      /** Discrete 0.0–1.0 network-trust score. See ms-argus-api analyze-ip-consistency. */
+      integrity?: number;
+      /** Representative client IP (null at integrity < 0.5). */
+      ip?: string | null;
+      ips?: {
+        api?: string | null;
+        tls?: string | null;
+        tcp?: string | null;
+        webrtc?: string | null;
+      };
       signals?: RawSignal[];
+    };
+    /**
+     * Decoded STUN attestation. `status` is "ok" | "multi_candidates" |
+     * "parse_fail" | "decode_fail"; when "ok", `ip` + `mac_valid` + `fresh`
+     * are populated from the Feistel-decrypted XOR-MAPPED-ADDRESS.
+     */
+    webrtc_sigint?: {
+      status?: string;
+      candidate_count?: number;
+      ip?: string;
+      epoch?: number;
+      age_sec?: number;
+      nonce?: string;
+      mac_valid?: boolean;
+      fresh?: boolean;
     };
     timezone?: { signals?: RawSignal[] };
     worker?: {
@@ -61,6 +86,49 @@ export interface IntegrityLike {
       stealthRating?: number;
     };
   };
+  /**
+   * Merchant-safe projection attached server-side (ms-argus-api). This is
+   * the shape a paying customer's API consumer sees — categorical tags
+   * only, no raw signal names, no component scores. See ms-argus-api's
+   * src/helpers/merchant-projection.ts for the canonical definition.
+   */
+  merchant?: MerchantSafeResponse;
+}
+
+/** Merchant-safe tag vocabulary — must stay in sync with server. */
+export type MerchantTag =
+  | 'vpn'
+  | 'proxy'
+  | 'hyperscaler'
+  | 'corporate_shield'
+  | 'browser_tampering'
+  | 'automation'
+  | 'incognito'
+  | 'cellular'
+  | 'no_webrtc';
+
+export type BotStatus = 'none' | 'suspected' | 'confirmed';
+
+export interface MerchantSafeResponse {
+  session_id: string;
+  device_id: string | null;
+  is_new_device: boolean;
+  first_seen_at: number | null;
+  confidence: number;
+  risk_score: number;
+  bot: BotStatus;
+  tags: MerchantTag[];
+  network: {
+    asn: number | null;
+    asn_org: string | null;
+    country: string | null;
+    /** Discrete 0.0–1.0 network-trust score. */
+    integrity: number;
+    /** Representative client IP; null when integrity < 0.5. */
+    ip: string | null;
+  };
+  policy: null;
+  velocity: null;
 }
 
 /**
