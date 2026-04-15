@@ -43,25 +43,27 @@ interface WebrtcStatus {
 
 /**
  * Derive the human label + color for the WEBRTC AUTH row from the
- * server-side decoded webrtc_sigint block. Pulled out of getObserved to
- * keep that function below the complexity cap.
+ * server-side decoded webrtc_sigint block. `candidate_count > 1` is
+ * normal for multi-NIC hosts (Ubuntu, dual-stack, VPN); we surface the
+ * count without downgrading, because any MAC-verified candidate is
+ * authentic evidence of that egress.
  */
 function deriveWebrtcStatus(sig: {
   status?: string;
+  candidate_count?: number;
   mac_valid?: boolean;
   fresh?: boolean;
 }): WebrtcStatus {
+  const countSuffix =
+    sig.candidate_count && sig.candidate_count > 1 ? ` (${sig.candidate_count} submitted)` : '';
   if (sig.status === 'ok' && sig.mac_valid && sig.fresh) {
-    return { label: '✓ VERIFIED (HMAC + fresh)', color: '#4ade80' };
+    return { label: `✓ VERIFIED (HMAC + fresh)${countSuffix}`, color: '#4ade80' };
   }
-  if (sig.status && sig.mac_valid === false) {
-    return { label: '✗ FORGED (HMAC fail)', color: '#f87171' };
-  }
-  if (sig.status === 'multi_candidates') {
-    return { label: '⚠ MULTI-EGRESS (skipped)', color: '#f59e0b' };
+  if (sig.status === 'forgery') {
+    return { label: `✗ FORGED (HMAC fail)${countSuffix}`, color: '#f87171' };
   }
   if (sig.status) {
-    return { label: sig.status, color: '#f59e0b' };
+    return { label: sig.status + countSuffix, color: '#f59e0b' };
   }
   return { label: '—', color: '#4ade80' };
 }
@@ -97,6 +99,7 @@ function getObserved(integrity: unknown): ObservedMetadataFields {
   // submitted a MAC-verified srflx candidate.
   const sig = (analysis.webrtc_sigint ?? {}) as {
     status?: string;
+    candidate_count?: number;
     ip?: string;
     mac_valid?: boolean;
     fresh?: boolean;
