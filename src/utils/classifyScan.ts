@@ -1,98 +1,30 @@
 /**
- * Maps a raw integrity result into the public-facing signal list shown on
- * /scan. Keeps wording category-level (PROXY / VPN / HYPERSCALER / CORPORATE
- * SHIELD / BROWSER TAMPERING / AUTOMATION) without exposing which specific
- * checks fired — sophisticated evaders shouldn't be able to tune against
- * exact thresholds from this page alone.
+ * Maps the merchant-safe API response into the public-facing signal list
+ * shown on /scan. This is the SAME data a paying customer sees — we
+ * deliberately render nothing beyond what the merchant API returns, so
+ * the scan page is an honest preview of the product.
  *
- * Confidence tiers (HIGH / MEDIUM / LOW) only apply to BROWSER TAMPERING and
- * AUTOMATION. Everything else is binary detection.
- *
- * Threshold calibration comes from the empirical batches in
- * memory/project_sigint_detector_findings.md.
+ * Signal vocabulary stays category-level (PROXY / VPN / HYPERSCALER /
+ * CORPORATE SHIELD / BROWSER TAMPERING / AUTOMATION / INCOGNITO) without
+ * surfacing internal check names. Confidence tiers mirror the server's
+ * bucketed confidence on vpn/proxy; binary detections (hyperscaler,
+ * corp shield, tampering, incognito) just render DETECTED.
  */
 
 export type SignalKind =
+  | 'VPN'
   | 'PROXY'
   | 'HYPERSCALER'
   | 'CORPORATE SHIELD'
   | 'BROWSER TAMPERING'
-  | 'AUTOMATION';
+  | 'AUTOMATION'
+  | 'INCOGNITO';
 
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
-
-export interface RawSignal {
-  code: string;
-  severity: number;
-  evidence: string;
-}
 
 export interface ClassifiedSignal {
   kind: SignalKind;
   confidence?: Confidence;
-  rawSignals: RawSignal[];
-}
-
-export interface IntegrityLike {
-  analysis?: {
-    network?: {
-      /** Continuous merchant-facing score [0,1] (noisy-OR of proxy + vpn). */
-      proxy_score?: number;
-      signals?: RawSignal[];
-    };
-    ip?: {
-      asn?: { category?: string; number?: string; org?: string | null };
-      /** Discrete 0.0–1.0 network-trust score. See ms-argus-api analyze-ip-consistency. */
-      integrity?: number;
-      /** Representative client IP (null at integrity < 0.5). */
-      ip?: string | null;
-      ips?: {
-        api?: string | null;
-        tls?: string | null;
-        tcp?: string | null;
-        webrtc?: string | null;
-      };
-      signals?: RawSignal[];
-    };
-    /**
-     * Decoded STUN attestation. `status` is "ok" | "multi_candidates" |
-     * "parse_fail" | "decode_fail"; when "ok", `ip` + `mac_valid` + `fresh`
-     * are populated from the Feistel-decrypted XOR-MAPPED-ADDRESS.
-     */
-    webrtc_sigint?: {
-      status?: string;
-      candidate_count?: number;
-      ip?: string;
-      epoch?: number;
-      age_sec?: number;
-      nonce?: string;
-      mac_valid?: boolean;
-      fresh?: boolean;
-    };
-    timezone?: { signals?: RawSignal[] };
-    worker?: {
-      lied?: boolean;
-      divergences?: Array<{ field: string }>;
-      signals?: RawSignal[];
-    };
-    ja4_ua?: { signals?: RawSignal[] };
-  };
-  vm_signals?: string[];
-  device?: {
-    lies?: { totalLies?: number };
-    headless?: {
-      webDriverIsOn?: boolean;
-      likeHeadlessRating?: number;
-      stealthRating?: number;
-    };
-  };
-  /**
-   * Merchant-safe projection attached server-side (ms-argus-api). This is
-   * the shape a paying customer's API consumer sees — categorical tags
-   * only, no raw signal names, no component scores. See ms-argus-api's
-   * src/helpers/merchant-projection.ts for the canonical definition.
-   */
-  merchant?: MerchantSafeResponse;
 }
 
 /** Merchant-safe tag vocabulary — must stay in sync with server. */
@@ -107,182 +39,134 @@ export type MerchantTag =
   | 'cellular'
   | 'no_webrtc';
 
-export type BotStatus = 'none' | 'suspected' | 'confirmed';
+export interface BrowserDetails {
+  browserName: string | null;
+  browserVersion: string | null;
+  os: string | null;
+  osVersion: string | null;
+  device: string | null;
+  userAgent: string | null;
+}
 
-export interface MerchantSafeResponse {
-  session_id: string;
+export interface MerchantIdentification {
   device_id: string | null;
   is_new_device: boolean;
   first_seen_at: number | null;
-  confidence: number;
-  risk_score: number;
-  bot: BotStatus;
-  tags: MerchantTag[];
-  network: {
-    asn: number | null;
-    asn_org: string | null;
-    country: string | null;
-    /** Discrete 0.0–1.0 network-trust score. */
-    integrity: number;
-    /** Representative client IP; null when integrity < 0.5. */
-    ip: string | null;
+  last_seen_at: number | null;
+  confidence: { score: number };
+  crypto_device_id: string | null;
+  crypto_verified: boolean | null;
+  /** CloudFront-stamped third-party cookie id. Null on absence or fail. */
+  tpc_id: string | null;
+  /** Unix seconds when the cookie was minted. Null on absence or fail. */
+  tpc_created: number | null;
+  /** "pass" on verified match, "fail" on tamper/mismatch, null on absence. */
+  tpc_verified: 'pass' | 'fail' | null;
+  browserDetails: BrowserDetails;
+}
+
+export interface MerchantRequestHeaders {
+  headers: Record<string, string>;
+  cookie_names: string[];
+}
+
+export interface MerchantIpLocation {
+  city: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string | null;
+}
+
+export interface MerchantIpInfo {
+  asn: {
+    number: number | null;
+    organization: string | null;
+    category: string | null;
   };
+  datacenter: { result: boolean };
+}
+
+/**
+ * Canonical client-side mirror of the merchant-safe API response. Must
+ * stay in sync with ms-argus-api's src/helpers/merchant-projection.ts.
+ */
+export interface MerchantSafeResponse {
+  session_id: string;
+  created_at: number | null;
+  ttl: number | null;
+  identification: MerchantIdentification;
+  ip: string | null;
+  ipLocation: MerchantIpLocation;
+  ipInfo: MerchantIpInfo;
+  /** Probabilistic detectors — percentage 0..100, rounded to nearest 5. */
+  bot: { probability: number };
+  vpn: { probability: number };
+  proxy: { probability: number };
+  tampering: { probability: number };
+  /** Direct observation (not probabilistic). */
+  incognito: { result: boolean };
+  networkIntegrity: { score: number };
+  /** Null when no risk model has run (integrity-only flow, unmatched session). */
+  suspectScore: { result: number | null };
+  tags: MerchantTag[];
+  requestHeaders: MerchantRequestHeaders | null;
   policy: null;
   velocity: null;
 }
 
-/**
- * Kinds that use the confidence bucket (HIGH/MEDIUM/LOW) instead of a
- * binary DETECTED tag. PROXY now uses confidence since the score is
- * continuous; HYPERSCALER / CORPORATE SHIELD remain binary (ASN-based
- * category lookup, no gradient).
- */
-const BINARY_KINDS: readonly SignalKind[] = ['HYPERSCALER', 'CORPORATE SHIELD'];
+const BINARY_KINDS: readonly SignalKind[] = ['HYPERSCALER', 'CORPORATE SHIELD', 'INCOGNITO'];
 
 const RED = '#f87171';
 const YELLOW = '#f59e0b';
 const GREEN = '#4ade80';
 
-// --- Per-category detectors (each returns 0 or 1 ClassifiedSignal) ---
+function probabilityToConfidence(p: number): Confidence {
+  if (p >= 80) return 'HIGH';
+  if (p >= 50) return 'MEDIUM';
+  return 'LOW';
+}
 
 /**
- * Single PROXY detector reading the continuous, noisy-OR'd
- * `proxy_score` from the server analyzer. No more separate VPN tag —
- * the score already fuses MSS + RTT evidence. Thresholds:
- *   < 0.2 → no tag (score too low to surface)
- *   0.2–0.5 → LOW
- *   0.5–0.8 → MEDIUM
- *   >= 0.8 → HIGH
- * Thresholds are merchant-UX choices, not detection thresholds — the
- * underlying score is continuous and not exposed in this component's
- * rawSignals (no mechanic leak).
+ * Derive the UI signal list directly from the merchant response. Fires
+ * at probability >= 50 to match the server's tag threshold; binary
+ * detectors (hyperscaler, corp shield, incognito) fire on their bool.
  */
-function detectProxy(i: IntegrityLike): ClassifiedSignal | null {
-  const score = i.analysis?.network?.proxy_score ?? 0;
-  if (score < 0.2) return null;
-  const confidence: Confidence = score >= 0.8 ? 'HIGH' : score >= 0.5 ? 'MEDIUM' : 'LOW';
-  return { kind: 'PROXY', confidence, rawSignals: [] };
-}
+export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[] {
+  const signals: ClassifiedSignal[] = [];
 
-function detectAsnCategory(i: IntegrityLike): ClassifiedSignal | null {
-  const asn = i.analysis?.ip?.asn;
-  const cat = asn?.category;
-  if (cat !== 'datacenter' && cat !== 'corporate_proxy') return null;
-  const evidence: RawSignal = {
-    code: 'asn',
-    severity: 1,
-    evidence: asn?.org ?? asn?.number ?? cat,
-  };
-  return {
-    kind: cat === 'datacenter' ? 'HYPERSCALER' : 'CORPORATE SHIELD',
-    rawSignals: [evidence],
-  };
-}
-
-function hasJa4UaMismatch(i: IntegrityLike): boolean {
-  const all = [...(i.analysis?.ja4_ua?.signals ?? []), ...(i.analysis?.worker?.signals ?? [])];
-  return all.some((s) => s.code === 'JA4_UA_BROWSER_MISMATCH');
-}
-
-function countRelevantDivergences(i: IntegrityLike): number {
-  return (i.analysis?.worker?.divergences ?? []).filter((d) =>
-    /navigator|css|screen/i.test(d.field)
-  ).length;
-}
-
-function tamperConfidence(
-  lies: number,
-  ja4Mismatch: boolean,
-  divergences: number
-): Confidence | null {
-  if (lies >= 20 || ja4Mismatch || divergences >= 3) return 'HIGH';
-  if (lies >= 5 || divergences >= 1) return 'MEDIUM';
-  if (lies >= 1) return 'LOW';
-  return null;
-}
-
-function buildTamperRawSignals(
-  lies: number,
-  ja4Mismatch: boolean,
-  divergences: number
-): RawSignal[] {
-  const raw: RawSignal[] = [];
-  if (lies > 0) {
-    raw.push({
-      code: 'lies.totalLies',
-      severity: Math.min(lies / 20, 1),
-      evidence: `${lies} prototype/API lies`,
+  if (merchant.vpn.probability >= 50) {
+    signals.push({ kind: 'VPN', confidence: probabilityToConfidence(merchant.vpn.probability) });
+  }
+  if (merchant.proxy.probability >= 50) {
+    signals.push({
+      kind: 'PROXY',
+      confidence: probabilityToConfidence(merchant.proxy.probability),
     });
   }
-  if (ja4Mismatch) {
-    raw.push({
-      code: 'JA4_UA_BROWSER_MISMATCH',
-      severity: 0.95,
-      evidence: 'TLS fingerprint inconsistent with claimed UA',
+  if (merchant.ipInfo.asn.category === 'datacenter') {
+    signals.push({ kind: 'HYPERSCALER' });
+  }
+  if (merchant.ipInfo.asn.category === 'corporate_proxy') {
+    signals.push({ kind: 'CORPORATE SHIELD' });
+  }
+  if (merchant.tampering.probability >= 50) {
+    signals.push({
+      kind: 'BROWSER TAMPERING',
+      confidence: probabilityToConfidence(merchant.tampering.probability),
     });
   }
-  if (divergences > 0) {
-    raw.push({
-      code: 'worker.divergences',
-      severity: 0.5,
-      evidence: `${divergences} fields differ between scopes`,
+  if (merchant.incognito.result) {
+    signals.push({ kind: 'INCOGNITO' });
+  }
+  if (merchant.bot.probability >= 50) {
+    signals.push({
+      kind: 'AUTOMATION',
+      confidence: probabilityToConfidence(merchant.bot.probability),
     });
   }
-  return raw;
-}
 
-function detectTampering(i: IntegrityLike): ClassifiedSignal | null {
-  const lies = i.device?.lies?.totalLies ?? 0;
-  const ja4 = hasJa4UaMismatch(i);
-  const divergences = countRelevantDivergences(i);
-  const confidence = tamperConfidence(lies, ja4, divergences);
-  if (!confidence) return null;
-  return {
-    kind: 'BROWSER TAMPERING',
-    confidence,
-    rawSignals: buildTamperRawSignals(lies, ja4, divergences),
-  };
-}
-
-function automationConfidence(
-  webdriver: boolean,
-  likeH: number,
-  stealth: number,
-  vmSigCount: number
-): Confidence | null {
-  if (webdriver || likeH >= 50) return 'HIGH';
-  if (likeH >= 20 || stealth > 0 || vmSigCount >= 2) return 'MEDIUM';
-  if (vmSigCount >= 1 || likeH > 0) return 'LOW';
-  return null;
-}
-
-function detectAutomation(i: IntegrityLike): ClassifiedSignal | null {
-  const h = i.device?.headless ?? {};
-  const webdriver = h.webDriverIsOn === true;
-  const likeH = h.likeHeadlessRating ?? 0;
-  const stealth = h.stealthRating ?? 0;
-  const vmSigs = (i.vm_signals ?? []).filter((s) =>
-    /worker_lied|no_taskbar|webdriver|no_chrome/.test(s)
-  );
-  const confidence = automationConfidence(webdriver, likeH, stealth, vmSigs.length);
-  if (!confidence) return null;
-  const raw: RawSignal[] = [];
-  if (likeH > 0 || webdriver) {
-    raw.push({
-      code: 'headless',
-      severity: likeH / 100,
-      evidence: `rating=${likeH}${webdriver ? ', webdriver=on' : ''}`,
-    });
-  }
-  for (const s of vmSigs) {
-    raw.push({ code: s, severity: 0.4, evidence: s });
-  }
-  return { kind: 'AUTOMATION', confidence, rawSignals: raw };
-}
-
-export function classifyScan(integrity: IntegrityLike): ClassifiedSignal[] {
-  const detectors = [detectProxy, detectAsnCategory, detectTampering, detectAutomation];
-  return detectors.map((fn) => fn(integrity)).filter((s): s is ClassifiedSignal => s !== null);
+  return signals;
 }
 
 export function confidenceColor(sig: ClassifiedSignal): typeof RED | typeof YELLOW | typeof GREEN {

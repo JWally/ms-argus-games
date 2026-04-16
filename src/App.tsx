@@ -1,8 +1,12 @@
 import { type ReactNode, lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Hub from './pages/Hub';
 import CaptchaGate from './components/CaptchaGate';
 import { useIntegrityGuard } from './hooks/useIntegrityGuard';
+
+// Routes that run their own integrity scan — the app-wide guard should
+// skip them so we don't double-POST to /v1/integrity-collect.
+const SELF_SCANNED_ROUTES = new Set(['/bot-buster']);
 
 const Ataxx = lazy(() => import('./pages/Ataxx'));
 const Breakout = lazy(() => import('./pages/Breakout'));
@@ -29,7 +33,8 @@ function Gated({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  useIntegrityGuard();
+  const { pathname } = useLocation();
+  useIntegrityGuard({ enabled: !SELF_SCANNED_ROUTES.has(pathname) });
 
   return (
     <Suspense fallback={null}>

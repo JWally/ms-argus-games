@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MerchantSafeResponse } from '../utils/classifyScan';
 
 // Loader URL — replaces the direct argus-integrity.iife.js library
 // include. The loader creates a srcdoc iframe, injects the integrity
@@ -31,7 +32,8 @@ export interface ScanResult {
   /** UUID the integrity VM generated; key into server's integrity-results table */
   sessionId: string;
   scannedAt: string;
-  integrity: unknown; // full server response — consumers pull fields they need
+  /** The merchant-safe API response — identical to what a paying customer sees. */
+  merchant: MerchantSafeResponse;
 }
 
 interface ArgusLoader {
@@ -158,13 +160,12 @@ export function useScan() {
       });
       if (!res.ok) throw new Error(`Check endpoint returned ${res.status}`);
 
-      const data = await res.json();
-      const integrity = data.integrity ?? data;
+      const merchant = (await res.json()) as MerchantSafeResponse;
 
       setResult({
         sessionId: p.sessionId,
         scannedAt: new Date().toISOString(),
-        integrity,
+        merchant,
       });
       setState('revealed');
     } catch (err) {

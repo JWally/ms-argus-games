@@ -41,7 +41,17 @@ export default [
   js.configs.recommended,
   prettier,
   {
-    ignores: ['node_modules/', 'dist/', 'cdk.out/', '*.js', '*.cjs', '*.min.js'],
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'cdk.out/',
+      '*.js',
+      '*.cjs',
+      '*.min.js',
+      // Standalone Node.js tool scripts (not shipped with the app) —
+      // exercise-only; they intentionally use `process` and `console`.
+      'scripts/',
+    ],
   },
   {
     files: ['src/**/*.ts', 'src/**/*.tsx'],

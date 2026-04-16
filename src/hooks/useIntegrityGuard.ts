@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import type { MerchantSafeResponse } from '../utils/classifyScan';
 
 const INTEGRITY_CHECK_URL = '/api/integrity/check';
 const INTEGRITY_SCRIPT_URL = 'https://static-integrity-dev-jw.argus.pw/argus-integrity.iife.js';
@@ -37,11 +38,11 @@ function whenIdle(): Promise<void> {
  * critical path. Must run before argus-bio to avoid lie-detector interference,
  * which is guaranteed because bio is triggered by user interaction (CAPTCHA).
  */
-export function useIntegrityGuard() {
+export function useIntegrityGuard({ enabled = true }: { enabled?: boolean } = {}) {
   const [blocked, setBlocked] = useState(false);
   const [signals, setSignals] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const ran = useRef(false);
 
   const check = useCallback(async () => {
@@ -90,12 +91,14 @@ export function useIntegrityGuard() {
         return;
       }
 
-      const data = await res.json();
-      const integrity = data.integrity;
+      const merchant = (await res.json()) as MerchantSafeResponse;
 
-      if (integrity?.tampered) {
+      // Block on tampering or confirmed bot. Probability >= 50 matches the
+      // server's tag threshold for tampering; bot gets a tighter 90 so we
+      // don't block on "suspected" ratings alone.
+      if (merchant.tampering.probability >= 50 || merchant.bot.probability >= 90) {
         setBlocked(true);
-        setSignals(integrity.vm_signals ?? []);
+        setSignals(merchant.tags);
       }
     } catch (err) {
       // Fail open — integrity errors shouldn't block users
@@ -106,8 +109,9 @@ export function useIntegrityGuard() {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     check();
-  }, [check]);
+  }, [check, enabled]);
 
   return { blocked, signals, sessionId, loading };
 }
