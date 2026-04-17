@@ -157,7 +157,7 @@ function Section({
   label,
   count,
   children,
-  defaultOpen = false,
+  defaultOpen = true,
 }: {
   label: string;
   count?: number;
