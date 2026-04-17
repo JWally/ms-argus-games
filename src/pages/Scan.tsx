@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useScan } from '../hooks/useScan';
 import { classifyScan, type MerchantSafeResponse } from '../utils/classifyScan';
@@ -100,7 +100,7 @@ function Row({
 }): ReactElement {
   return (
     <div
-      className="flex flex-col gap-0 sm:flex-row sm:gap-2"
+      className="flex flex-col gap-0 border-b border-[#0f2a18] py-[0.2rem] last:border-b-0 sm:flex-row sm:gap-2"
       style={{ paddingLeft: `${indent}rem` }}
     >
       <span className="shrink-0 sm:min-w-[11rem]" style={{ color: MUTED }}>
@@ -147,32 +147,26 @@ function VerifyBadge({ status }: { status: 'pass' | 'fail' | null }): ReactEleme
   );
 }
 
-function SectionHeader({ label }: { label: string }): ReactElement {
-  return (
-    <div className="mt-4 mb-1" style={{ color: '#94a3b8' }}>
-      {label}
-    </div>
-  );
-}
-
 /**
- * Collapsible raw-dump row. Used for the captured request headers so the
- * identification grid stays readable on first glance but the per-header
- * detail is still inspectable on demand.
+ * Collapsible section. Default closed per the Bot-Buster review — the
+ * at-a-glance signals (SignalList above MerchantView) are the money shot;
+ * this full-payload view is reference detail the user opens on demand.
+ * `count` appears next to the label when set (used for request_headers).
  */
-function HeadersAccordion({
-  headers,
-  cookieNames,
+function Section({
+  label,
+  count,
+  children,
+  defaultOpen = false,
 }: {
-  headers: Record<string, string>;
-  cookieNames: string[];
+  label: string;
+  count?: number;
+  children: ReactNode;
+  defaultOpen?: boolean;
 }): ReactElement {
-  const [open, setOpen] = useState(false);
-  const entries = Object.entries(headers);
-  const count = entries.length + (cookieNames.length > 0 ? 1 : 0);
-
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="mt-4">
+    <div className="mt-5">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -185,23 +179,10 @@ function HeadersAccordion({
           cursor: 'pointer',
         }}
       >
-        {open ? '[-]' : '[+]'} request_headers ({count})
+        {open ? '[-]' : '[+]'} {label}
+        {count !== undefined ? ` (${count})` : ''}
       </button>
-      {open && (
-        <div className="mt-1 space-y-0.5">
-          {entries.map(([name, value]) => (
-            <Row key={name} label={name} value={value} indent={1} />
-          ))}
-          {cookieNames.length > 0 && (
-            <Row label="cookies (names only)" value={cookieNames.join(', ')} indent={1} />
-          )}
-          {entries.length === 0 && cookieNames.length === 0 && (
-            <div className="ml-4 font-mono text-xs tracking-widest" style={{ color: MUTED }}>
-              {DASH}
-            </div>
-          )}
-        </div>
-      )}
+      {open && <div className="mt-2">{children}</div>}
     </div>
   );
 }
@@ -224,15 +205,23 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
       : `AS${asn.number}${asn.organization ? ` · ${asn.organization}` : ''}`;
   const netIntegrity = merchant.networkIntegrity.score;
 
+  const headerEntries = merchant.requestHeaders
+    ? Object.entries(merchant.requestHeaders.headers)
+    : [];
+  const cookieNames = merchant.requestHeaders?.cookie_names ?? [];
+  const headersCount = headerEntries.length + (cookieNames.length > 0 ? 1 : 0);
+
   return (
     <div className="mt-6 font-mono text-xs tracking-widest">
-      <div style={{ color: '#94a3b8' }}>MERCHANT API RESPONSE:</div>
-      <div className="mt-2 space-y-0.5">
-        <Row label="session_id" value={fmt(merchant.session_id)} />
-        <Row label="created_at" value={fmtEpoch(merchant.created_at)} />
-        <Row label="ttl" value={fmtTtl(merchant.ttl)} />
+      <div style={{ color: '#94a3b8' }}>API RESPONSE:</div>
 
-        <SectionHeader label="identification" />
+      <Section label="session">
+        <Row label="session_id" value={fmt(merchant.session_id)} indent={1} />
+        <Row label="created_at" value={fmtEpoch(merchant.created_at)} indent={1} />
+        <Row label="ttl" value={fmtTtl(merchant.ttl)} indent={1} />
+      </Section>
+
+      <Section label="identification">
         <Row label="device_id" value={fmt(id.device_id)} indent={1} />
         <Row label="is_new_device" value={fmt(id.is_new_device)} indent={1} />
         <Row label="first_seen_at" value={fmtEpoch(id.first_seen_at)} indent={1} />
@@ -265,17 +254,19 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           value={id.tpc_created === null ? DASH : fmtEpoch(id.tpc_created * 1000)}
           indent={1}
         />
+      </Section>
 
-        <SectionHeader label="identification.browserDetails" />
+      <Section label="identification.browserDetails">
         <Row label="browserName" value={fmt(b.browserName)} indent={1} />
         <Row label="browserVersion" value={fmt(b.browserVersion)} indent={1} />
         <Row label="os" value={fmt(b.os)} indent={1} />
         <Row label="osVersion" value={fmt(b.osVersion)} indent={1} />
         <Row label="device" value={fmt(b.device)} indent={1} />
         <Row label="userAgent" value={fmt(b.userAgent)} indent={1} />
+      </Section>
 
-        <SectionHeader label="network" />
-        <Row label="ip" value={fmt(merchant.ip)} />
+      <Section label="network">
+        <Row label="ip" value={fmt(merchant.ip)} indent={1} />
         <Row label="ipLocation.city" value={fmt(loc.city)} indent={1} />
         <Row label="ipLocation.country" value={fmt(loc.country)} indent={1} />
         <Row label="ipLocation.coords" value={coords} indent={1} />
@@ -294,8 +285,9 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           colorOverride={integrityColor(netIntegrity)}
           indent={1}
         />
+      </Section>
 
-        <SectionHeader label="detectors" />
+      <Section label="detectors">
         <Row
           label="bot.probability"
           value={pctStr(merchant.bot.probability)}
@@ -336,9 +328,13 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           }
           indent={1}
         />
+      </Section>
 
-        <SectionHeader label="tags" />
-        <div className="flex flex-col gap-0 sm:flex-row sm:gap-2">
+      <Section label="tags">
+        <div
+          className="flex flex-col gap-0 border-b border-[#0f2a18] py-[0.2rem] last:border-b-0 sm:flex-row sm:gap-2"
+          style={{ paddingLeft: '1rem' }}
+        >
           <span className="shrink-0 sm:min-w-[11rem]" style={{ color: MUTED }}>
             tags
           </span>
@@ -355,15 +351,25 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
             )}
           </span>
         </div>
+      </Section>
 
-        {merchant.requestHeaders && (
-          <HeadersAccordion
-            headers={merchant.requestHeaders.headers}
-            cookieNames={merchant.requestHeaders.cookie_names}
-          />
-        )}
+      {merchant.requestHeaders && (
+        <Section label="request_headers" count={headersCount}>
+          {headerEntries.map(([name, value]) => (
+            <Row key={name} label={name} value={value} indent={1} />
+          ))}
+          {cookieNames.length > 0 && (
+            <Row label="cookies (names only)" value={cookieNames.join(', ')} indent={1} />
+          )}
+          {headerEntries.length === 0 && cookieNames.length === 0 && (
+            <div className="ml-4 font-mono text-xs tracking-widest" style={{ color: MUTED }}>
+              {DASH}
+            </div>
+          )}
+        </Section>
+      )}
 
-        <SectionHeader label="forward-compat" />
+      <Section label="forward-compat">
         <Row
           label="policy"
           value={merchant.policy === null ? `${DASH} (pending)` : String(merchant.policy)}
@@ -374,8 +380,9 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           value={merchant.velocity === null ? `${DASH} (pending)` : 'present'}
           indent={1}
         />
-      </div>
-      <div className="mt-3 text-[0.65rem]" style={{ color: MUTED, lineHeight: 1.5 }}>
+      </Section>
+
+      <div className="mt-6 text-[0.65rem]" style={{ color: MUTED, lineHeight: 1.5 }}>
         ↑ every field above is what a paying API consumer receives —
         <br />
         no raw signal names, no component scores, no hamming distances.
