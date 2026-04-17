@@ -6,7 +6,6 @@ import { SignalList } from './scan/SignalList';
 
 const BORDER = '1px solid #0f2a18';
 const PROMPT_TEXT = 'Would you like to play a game...?';
-const INLINE_BLOCK = 'inline-block' as const;
 
 /** Animate dots for transient loading states (ANALYZING...). */
 function useLoadingDots() {
@@ -79,8 +78,14 @@ function pctStr(p: number): string {
 }
 
 /**
- * Renders a two-column label/value row. `colorOverride` drives the value
- * color; unset defaults to GREEN.
+ * Renders a label/value row. Stacks label above value on narrow viewports;
+ * switches to two-column layout at `sm` breakpoint where the label's fixed
+ * 11rem width leaves meaningful room for the value. `colorOverride` drives
+ * the value color; unset defaults to GREEN.
+ *
+ * `value` accepts a ReactNode so callers can append a verification badge
+ * (e.g. a green check after the id); when it's a plain string the row
+ * renders it as text with word-wrap.
  */
 function Row({
   label,
@@ -89,24 +94,56 @@ function Row({
   indent = 0,
 }: {
   label: string;
-  value: string;
+  value: string | ReactElement;
   colorOverride?: string;
   indent?: number;
 }): ReactElement {
   return (
-    <div className="flex gap-2">
-      <span
-        style={{
-          color: MUTED,
-          minWidth: '11rem',
-          paddingLeft: `${indent}rem`,
-          display: INLINE_BLOCK,
-        }}
-      >
+    <div
+      className="flex flex-col gap-0 sm:flex-row sm:gap-2"
+      style={{ paddingLeft: `${indent}rem` }}
+    >
+      <span className="shrink-0 sm:min-w-[11rem]" style={{ color: MUTED }}>
         {label}
       </span>
-      <span style={{ color: colorOverride ?? GREEN }}>{value}</span>
+      <span
+        className="break-words"
+        style={{ color: colorOverride ?? GREEN, overflowWrap: 'anywhere' }}
+      >
+        {value}
+      </span>
     </div>
+  );
+}
+
+/**
+ * Verification badge — appended after an id value to indicate whether the
+ * server cryptographically verified it.
+ *   pass  → green ✓
+ *   fail  → red   ✗
+ *   null  → yellow ? (check didn't run, e.g. no sigint token available)
+ */
+function VerifyBadge({ status }: { status: 'pass' | 'fail' | null }): ReactElement {
+  let glyph = '?';
+  let color = YELLOW;
+  let label = 'not verified';
+  if (status === 'pass') {
+    glyph = '✓';
+    color = GREEN;
+    label = 'verified';
+  } else if (status === 'fail') {
+    glyph = '✗';
+    color = RED;
+    label = 'verification failed';
+  }
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      style={{ color, marginLeft: '0.5rem', fontWeight: 'bold' }}
+    >
+      {glyph}
+    </span>
   );
 }
 
@@ -201,27 +238,31 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row label="first_seen_at" value={fmtEpoch(id.first_seen_at)} indent={1} />
         <Row label="last_seen_at" value={fmtEpoch(id.last_seen_at)} indent={1} />
         <Row label="confidence.score" value={id.confidence.score.toFixed(2)} indent={1} />
-        <Row label="crypto_device_id" value={fmt(id.crypto_device_id)} indent={1} />
         <Row
-          label="crypto_verified"
-          value={id.crypto_verified === null ? DASH : fmt(id.crypto_verified)}
-          colorOverride={
-            id.crypto_verified === true ? GREEN : id.crypto_verified === false ? RED : GREEN
+          label="crypto_device_id"
+          value={
+            <>
+              {fmt(id.crypto_device_id)}
+              <VerifyBadge
+                status={id.crypto_verified === null ? null : id.crypto_verified ? 'pass' : 'fail'}
+              />
+            </>
           }
           indent={1}
         />
-        <Row label="tpc_id" value={fmt(id.tpc_id)} indent={1} />
+        <Row
+          label="tpc_id"
+          value={
+            <>
+              {fmt(id.tpc_id)}
+              <VerifyBadge status={id.tpc_verified} />
+            </>
+          }
+          indent={1}
+        />
         <Row
           label="tpc_created"
           value={id.tpc_created === null ? DASH : fmtEpoch(id.tpc_created * 1000)}
-          indent={1}
-        />
-        <Row
-          label="tpc_verified"
-          value={id.tpc_verified === null ? DASH : id.tpc_verified}
-          colorOverride={
-            id.tpc_verified === 'pass' ? GREEN : id.tpc_verified === 'fail' ? RED : GREEN
-          }
           indent={1}
         />
 
@@ -297,9 +338,11 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         />
 
         <SectionHeader label="tags" />
-        <div className="flex gap-2">
-          <span style={{ color: MUTED, minWidth: '11rem', display: INLINE_BLOCK }}>tags</span>
-          <span>
+        <div className="flex flex-col gap-0 sm:flex-row sm:gap-2">
+          <span className="shrink-0 sm:min-w-[11rem]" style={{ color: MUTED }}>
+            tags
+          </span>
+          <span className="break-words" style={{ overflowWrap: 'anywhere' }}>
             {merchant.tags.length === 0 ? (
               <span style={{ color: GREEN }}>[]</span>
             ) : (
@@ -500,7 +543,7 @@ export default function Scan(): ReactElement {
                 <span
                   aria-hidden
                   style={{
-                    display: INLINE_BLOCK,
+                    display: 'inline-block',
                     marginLeft: '0.15ch',
                     width: '0.6ch',
                     animation: 'argusCursorBlink 1s steps(1) infinite',
