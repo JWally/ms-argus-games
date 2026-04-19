@@ -92,11 +92,13 @@ function Row({
   value,
   colorOverride,
   indent = 0,
+  rightAlignValue = false,
 }: {
   label: string;
   value: string | ReactElement;
   colorOverride?: string;
   indent?: number;
+  rightAlignValue?: boolean;
 }): ReactElement {
   return (
     <div
@@ -107,7 +109,7 @@ function Row({
         {label}
       </span>
       <span
-        className="break-words"
+        className={`break-words ${rightAlignValue ? 'sm:flex-1 sm:text-right' : ''}`}
         style={{ color: colorOverride ?? GREEN, overflowWrap: 'anywhere' }}
       >
         {value}
@@ -221,12 +223,41 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row label="ttl" value={fmtTtl(merchant.ttl)} indent={1} />
       </Section>
 
+      <Section label="network">
+        <Row label="ip" value={fmt(merchant.ip)} indent={1} />
+        <Row label="city" value={fmt(loc.city)} indent={1} />
+        <Row label="country" value={fmt(loc.country)} indent={1} />
+        <Row label="coords" value={coords} indent={1} />
+        <Row label="timezone" value={fmt(loc.timezone)} indent={1} />
+        <Row label="asn" value={asnStr} indent={1} />
+        <Row label="category" value={fmt(asn.category)} indent={1} />
+        <Row
+          label="datacenter"
+          value={fmt(merchant.ipInfo.datacenter.result)}
+          colorOverride={resultColor(merchant.ipInfo.datacenter.result)}
+          indent={1}
+        />
+        <Row
+          label="score"
+          value={netIntegrity.toFixed(2)}
+          colorOverride={integrityColor(netIntegrity)}
+          indent={1}
+        />
+        <Row
+          label="vpn"
+          value={pctStr(merchant.vpn.probability)}
+          colorOverride={probabilityColor(merchant.vpn.probability)}
+          indent={1}
+        />
+        <Row
+          label="proxy"
+          value={pctStr(merchant.proxy.probability)}
+          colorOverride={probabilityColor(merchant.proxy.probability)}
+          indent={1}
+        />
+      </Section>
+
       <Section label="identification">
-        <Row label="device_id" value={fmt(id.device_id)} indent={1} />
-        <Row label="is_new_device" value={fmt(id.is_new_device)} indent={1} />
-        <Row label="first_seen_at" value={fmtEpoch(id.first_seen_at)} indent={1} />
-        <Row label="last_seen_at" value={fmtEpoch(id.last_seen_at)} indent={1} />
-        <Row label="confidence.score" value={id.confidence.score.toFixed(2)} indent={1} />
         <Row
           label="crypto_device_id"
           value={
@@ -239,6 +270,7 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           }
           indent={1}
         />
+        <Row label="client_uuid" value={fmt(id.client_uuid)} indent={1} />
         <Row
           label="tpc_id"
           value={
@@ -263,26 +295,16 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row label="osVersion" value={fmt(b.osVersion)} indent={1} />
         <Row label="device" value={fmt(b.device)} indent={1} />
         <Row label="userAgent" value={fmt(b.userAgent)} indent={1} />
-      </Section>
-
-      <Section label="network">
-        <Row label="ip" value={fmt(merchant.ip)} indent={1} />
-        <Row label="ipLocation.city" value={fmt(loc.city)} indent={1} />
-        <Row label="ipLocation.country" value={fmt(loc.country)} indent={1} />
-        <Row label="ipLocation.coords" value={coords} indent={1} />
-        <Row label="ipLocation.timezone" value={fmt(loc.timezone)} indent={1} />
-        <Row label="ipInfo.asn" value={asnStr} indent={1} />
-        <Row label="ipInfo.asn.category" value={fmt(asn.category)} indent={1} />
         <Row
-          label="ipInfo.datacenter"
-          value={fmt(merchant.ipInfo.datacenter.result)}
-          colorOverride={resultColor(merchant.ipInfo.datacenter.result)}
+          label="tampering"
+          value={pctStr(merchant.tampering.probability)}
+          colorOverride={probabilityColor(merchant.tampering.probability)}
           indent={1}
         />
         <Row
-          label="networkIntegrity.score"
-          value={netIntegrity.toFixed(2)}
-          colorOverride={integrityColor(netIntegrity)}
+          label="incognito"
+          value={fmt(merchant.incognito.result)}
+          colorOverride={resultColor(merchant.incognito.result)}
           indent={1}
         />
       </Section>
@@ -292,30 +314,6 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           label="bot.probability"
           value={pctStr(merchant.bot.probability)}
           colorOverride={probabilityColor(merchant.bot.probability)}
-          indent={1}
-        />
-        <Row
-          label="vpn.probability"
-          value={pctStr(merchant.vpn.probability)}
-          colorOverride={probabilityColor(merchant.vpn.probability)}
-          indent={1}
-        />
-        <Row
-          label="proxy.probability"
-          value={pctStr(merchant.proxy.probability)}
-          colorOverride={probabilityColor(merchant.proxy.probability)}
-          indent={1}
-        />
-        <Row
-          label="tampering.probability"
-          value={pctStr(merchant.tampering.probability)}
-          colorOverride={probabilityColor(merchant.tampering.probability)}
-          indent={1}
-        />
-        <Row
-          label="incognito.result"
-          value={fmt(merchant.incognito.result)}
-          colorOverride={resultColor(merchant.incognito.result)}
           indent={1}
         />
         <Row
@@ -354,12 +352,17 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
       </Section>
 
       {merchant.requestHeaders && (
-        <Section label="request_headers" count={headersCount}>
+        <Section label="request_headers" count={headersCount} defaultOpen={false}>
           {headerEntries.map(([name, value]) => (
-            <Row key={name} label={name} value={value} indent={1} />
+            <Row key={name} label={name} value={value} indent={1} rightAlignValue />
           ))}
           {cookieNames.length > 0 && (
-            <Row label="cookies (names only)" value={cookieNames.join(', ')} indent={1} />
+            <Row
+              label="cookies (names only)"
+              value={cookieNames.join(', ')}
+              indent={1}
+              rightAlignValue
+            />
           )}
           {headerEntries.length === 0 && cookieNames.length === 0 && (
             <div className="ml-4 font-mono text-xs tracking-widest" style={{ color: MUTED }}>
@@ -368,19 +371,6 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           )}
         </Section>
       )}
-
-      <Section label="forward-compat">
-        <Row
-          label="policy"
-          value={merchant.policy === null ? `${DASH} (pending)` : String(merchant.policy)}
-          indent={1}
-        />
-        <Row
-          label="velocity"
-          value={merchant.velocity === null ? `${DASH} (pending)` : 'present'}
-          indent={1}
-        />
-      </Section>
 
       <div className="mt-6 text-[0.65rem]" style={{ color: MUTED, lineHeight: 1.5 }}>
         ↑ every field above is what a paying API consumer receives —

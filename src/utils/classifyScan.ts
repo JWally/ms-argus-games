@@ -49,13 +49,12 @@ export interface BrowserDetails {
 }
 
 export interface MerchantIdentification {
-  device_id: string | null;
-  is_new_device: boolean;
-  first_seen_at: number | null;
-  last_seen_at: number | null;
-  confidence: { score: number };
   crypto_device_id: string | null;
   crypto_verified: boolean | null;
+  /** Three-store client UUID (IDB + localStorage + first-party cookie),
+   *  respawned across stores so it survives any single-store clear.
+   *  Null when every store failed. */
+  client_uuid: string | null;
   /** CloudFront-stamped third-party cookie id. Null on absence or fail. */
   tpc_id: string | null;
   /** Unix seconds when the cookie was minted. Null on absence or fail. */
@@ -111,8 +110,6 @@ export interface MerchantSafeResponse {
   suspectScore: { result: number | null };
   tags: MerchantTag[];
   requestHeaders: MerchantRequestHeaders | null;
-  policy: null;
-  velocity: null;
 }
 
 const BINARY_KINDS: readonly SignalKind[] = ['HYPERSCALER', 'CORPORATE SHIELD', 'INCOGNITO'];
