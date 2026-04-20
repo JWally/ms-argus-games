@@ -38,6 +38,7 @@ interface GamesStackProps extends cdk.StackProps {
   bioApiSecret: string;
   integrityApiUrl?: string;
   integrityApiKey?: string;
+  fpjsServerApiKey?: string;
 }
 
 export class GamesStack extends cdk.Stack {
@@ -52,6 +53,7 @@ export class GamesStack extends cdk.Stack {
       bioApiSecret,
       integrityApiUrl,
       integrityApiKey,
+      fpjsServerApiKey,
     } = props;
     const domainName = subdomain ? `${subdomain}.${rootDomain}` : rootDomain;
 
@@ -129,6 +131,24 @@ export class GamesStack extends cdk.Stack {
       });
     }
 
+    // ── FPJS Proxy Lambda ─────────────────────────────────────────────
+    let fpjsFn: lambda.NodejsFunction | undefined;
+    if (fpjsServerApiKey) {
+      fpjsFn = new lambda.NodejsFunction(this, 'FpjsProxy', {
+        entry: path.join(__dirname, 'fpjs-proxy.ts'),
+        handler: 'handler',
+        runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+        architecture: lambdaRuntime.Architecture.ARM_64,
+        memorySize: 512,
+        timeout: cdk.Duration.seconds(10),
+        environment: {
+          FPJS_SERVER_API_KEY: fpjsServerApiKey,
+        },
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        bundling: { minify: true, sourceMap: false, target: 'node22' },
+      });
+    }
+
     // ── API Gateway ──────────────────────────────────────────────────────
     const api = new apigatewayv2.HttpApi(this, 'Api', {
       corsPreflight: {
@@ -162,6 +182,15 @@ export class GamesStack extends cdk.Stack {
         path: '/api/integrity/check',
         methods: [apigatewayv2.HttpMethod.POST],
         integration: integrityIntegration,
+      });
+    }
+
+    if (fpjsFn) {
+      const fpjsIntegration = new integrations.HttpLambdaIntegration('FpjsIntegration', fpjsFn);
+      api.addRoutes({
+        path: '/api/fpjs/event',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: fpjsIntegration,
       });
     }
 

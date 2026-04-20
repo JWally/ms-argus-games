@@ -9,6 +9,7 @@ const account = process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID ||
 const bioApiSecret = app.node.tryGetContext('bioApiSecret') as string;
 const integrityApiUrl = app.node.tryGetContext('integrityApiUrl') as string | undefined;
 const integrityApiKey = app.node.tryGetContext('integrityApiKey') as string | undefined;
+const fpjsServerApiKey = app.node.tryGetContext('fpjsServerApiKey') as string | undefined;
 
 if (!bioApiSecret) {
   throw new Error(
@@ -32,6 +33,7 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   bioApiSecret,
   integrityApiUrl,
   integrityApiKey,
+  fpjsServerApiKey,
   synthesizer: new CliCredentialsStackSynthesizer(),
 });
 

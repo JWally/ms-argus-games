@@ -6,7 +6,7 @@ import { useIntegrityGuard } from './hooks/useIntegrityGuard';
 
 // Routes that run their own integrity scan — the app-wide guard should
 // skip them so we don't double-POST to /v1/integrity-collect.
-const SELF_SCANNED_ROUTES = new Set(['/bot-buster']);
+const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/fpjs']);
 
 const Ataxx = lazy(() => import('./pages/Ataxx'));
 const Breakout = lazy(() => import('./pages/Breakout'));
@@ -27,6 +27,7 @@ const HanoiHilton = lazy(() => import('./pages/HanoiHilton'));
 const Wayfinder = lazy(() => import('./pages/Wayfinder'));
 const Amaze = lazy(() => import('./pages/Amaze'));
 const Scan = lazy(() => import('./pages/Scan'));
+const Fpjs = lazy(() => import('./pages/Fpjs'));
 
 function Gated({ children }: { children: ReactNode }) {
   return <CaptchaGate>{children}</CaptchaGate>;
@@ -185,6 +186,7 @@ export default function App() {
           }
         />
         <Route path="/bot-buster" element={<Scan />} />
+        <Route path="/fpjs" element={<Fpjs />} />
       </Routes>
     </Suspense>
   );

@@ -92,13 +92,11 @@ function Row({
   value,
   colorOverride,
   indent = 0,
-  rightAlignValue = false,
 }: {
   label: string;
   value: string | ReactElement;
   colorOverride?: string;
   indent?: number;
-  rightAlignValue?: boolean;
 }): ReactElement {
   return (
     <div
@@ -109,7 +107,7 @@ function Row({
         {label}
       </span>
       <span
-        className={`break-words ${rightAlignValue ? 'sm:flex-1 sm:text-right' : ''}`}
+        className="break-words sm:flex-1 sm:text-right"
         style={{ color: colorOverride ?? GREEN, overflowWrap: 'anywhere' }}
       >
         {value}
@@ -251,8 +249,8 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         />
         <Row
           label="proxy"
-          value={pctStr(merchant.proxy.probability)}
-          colorOverride={probabilityColor(merchant.proxy.probability)}
+          value={pctStr(merchant.proxy.threat)}
+          colorOverride={probabilityColor(merchant.proxy.threat)}
           indent={1}
         />
       </Section>
@@ -336,7 +334,10 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           <span className="shrink-0 sm:min-w-[11rem]" style={{ color: MUTED }}>
             tags
           </span>
-          <span className="break-words" style={{ overflowWrap: 'anywhere' }}>
+          <span
+            className="break-words sm:flex-1 sm:text-right"
+            style={{ overflowWrap: 'anywhere' }}
+          >
             {merchant.tags.length === 0 ? (
               <span style={{ color: GREEN }}>[]</span>
             ) : (
@@ -354,15 +355,10 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
       {merchant.requestHeaders && (
         <Section label="request_headers" count={headersCount} defaultOpen={false}>
           {headerEntries.map(([name, value]) => (
-            <Row key={name} label={name} value={value} indent={1} rightAlignValue />
+            <Row key={name} label={name} value={value} indent={1} />
           ))}
           {cookieNames.length > 0 && (
-            <Row
-              label="cookies (names only)"
-              value={cookieNames.join(', ')}
-              indent={1}
-              rightAlignValue
-            />
+            <Row label="cookies (names only)" value={cookieNames.join(', ')} indent={1} />
           )}
           {headerEntries.length === 0 && cookieNames.length === 0 && (
             <div className="ml-4 font-mono text-xs tracking-widest" style={{ color: MUTED }}>

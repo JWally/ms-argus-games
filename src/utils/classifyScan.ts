@@ -101,7 +101,11 @@ export interface MerchantSafeResponse {
   /** Probabilistic detectors — percentage 0..100, rounded to nearest 5. */
   bot: { probability: number };
   vpn: { probability: number };
-  proxy: { probability: number };
+  /**
+   * Proxy threat score 0..100 from the proxy-detection waterfall.
+   * 0 = clean, 100 = confirmed threat, mid = ambiguous.
+   */
+  proxy: { threat: number };
   tampering: { probability: number };
   /** Direct observation (not probabilistic). */
   incognito: { result: boolean };
@@ -135,10 +139,10 @@ export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[]
   if (merchant.vpn.probability >= 50) {
     signals.push({ kind: 'VPN', confidence: probabilityToConfidence(merchant.vpn.probability) });
   }
-  if (merchant.proxy.probability >= 50) {
+  if (merchant.proxy.threat >= 50) {
     signals.push({
       kind: 'PROXY',
-      confidence: probabilityToConfidence(merchant.proxy.probability),
+      confidence: probabilityToConfidence(merchant.proxy.threat),
     });
   }
   if (merchant.ipInfo.asn.category === 'datacenter') {
