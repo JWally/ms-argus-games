@@ -236,12 +236,6 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           indent={1}
         />
         <Row
-          label="score"
-          value={netIntegrity.toFixed(2)}
-          colorOverride={integrityColor(netIntegrity)}
-          indent={1}
-        />
-        <Row
           label="vpn"
           value={pctStr(merchant.vpn.probability)}
           colorOverride={probabilityColor(merchant.vpn.probability)}
@@ -251,6 +245,13 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           label="proxy"
           value={pctStr(merchant.proxy.threat)}
           colorOverride={probabilityColor(merchant.proxy.threat)}
+          indent={1}
+        />
+        <div style={{ borderTop: BORDER, margin: '6px 0' }} />
+        <Row
+          label="score"
+          value={pctStr(Math.round(netIntegrity * 100))}
+          colorOverride={integrityColor(netIntegrity)}
           indent={1}
         />
       </Section>
