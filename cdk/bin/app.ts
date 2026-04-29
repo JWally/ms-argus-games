@@ -7,8 +7,9 @@ const app = new App();
 
 const account = process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID || '';
 const bioApiSecret = app.node.tryGetContext('bioApiSecret') as string;
-const integrityApiUrl = app.node.tryGetContext('integrityApiUrl') as string | undefined;
-const integrityApiKey = app.node.tryGetContext('integrityApiKey') as string | undefined;
+const merchantApiUrl = app.node.tryGetContext('merchantApiUrl') as string | undefined;
+const merchantApiCredential = app.node.tryGetContext('merchantApiCredential') as string | undefined;
+const merchantCpi = app.node.tryGetContext('merchantCpi') as string | undefined;
 const fpjsServerApiKey = app.node.tryGetContext('fpjsServerApiKey') as string | undefined;
 
 if (!bioApiSecret) {
@@ -17,10 +18,14 @@ if (!bioApiSecret) {
   );
 }
 
-if (integrityApiUrl ? !integrityApiKey : integrityApiKey) {
+const merchantConfigured = !!(merchantApiUrl && merchantApiCredential && merchantCpi);
+const merchantPartial =
+  !merchantConfigured && !!(merchantApiUrl || merchantApiCredential || merchantCpi);
+if (merchantPartial) {
   throw new Error(
-    'integrityApiUrl and integrityApiKey must both be provided or both omitted. ' +
-      'Deploy with: -c integrityApiUrl=https://... -c integrityApiKey=ak_...'
+    'merchantApiUrl, merchantApiCredential, and merchantCpi must all be provided ' +
+      'or all omitted. Deploy with: -c merchantApiUrl=https://merchant-…argus.pw ' +
+      '-c merchantApiCredential=argus_sk_…<credential> -c merchantCpi=argus_cpi_…'
   );
 }
 
@@ -31,8 +36,9 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   rootDomain: 'arcades.click',
   bioApiUrl: 'https://api-bio-dev-jw.argus.pw',
   bioApiSecret,
-  integrityApiUrl,
-  integrityApiKey,
+  merchantApiUrl,
+  merchantApiCredential,
+  merchantCpi,
   fpjsServerApiKey,
   synthesizer: new CliCredentialsStackSynthesizer(),
 });

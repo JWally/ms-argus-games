@@ -36,8 +36,23 @@ interface GamesStackProps extends cdk.StackProps {
   subdomain?: string;
   bioApiUrl: string;
   bioApiSecret: string;
-  integrityApiUrl?: string;
-  integrityApiKey?: string;
+  /**
+   * Merchant-facing REST API base URL (e.g. https://merchant-dev-jw.argus.pw).
+   * Combined with merchantCpi to call GET /v1/session/{cpi}/{session_id}.
+   */
+  merchantApiUrl?: string;
+  /**
+   * Combined dual-key credential issued by ms-argus-platform — shape
+   * `<keyId>.<base64-claims>.<base64-signature>`. Lambda splits at the
+   * first dot before forwarding as x-api-key + x-argus-token.
+   */
+  merchantApiCredential?: string;
+  /**
+   * Public client id for this site (e.g. `argus_cpi_test_…`). Public-safe
+   * — also baked into the Vite build so the browser SDK can forward it
+   * on integrity-collect via the `x-argus-cpi` header.
+   */
+  merchantCpi?: string;
   fpjsServerApiKey?: string;
 }
 
@@ -51,8 +66,9 @@ export class GamesStack extends cdk.Stack {
       subdomain,
       bioApiUrl,
       bioApiSecret,
-      integrityApiUrl,
-      integrityApiKey,
+      merchantApiUrl,
+      merchantApiCredential,
+      merchantCpi,
       fpjsServerApiKey,
     } = props;
     const domainName = subdomain ? `${subdomain}.${rootDomain}` : rootDomain;
@@ -109,7 +125,7 @@ export class GamesStack extends cdk.Stack {
 
     // ── Integrity Proxy Lambda ─────────────────────────────────────────
     let integrityFn: lambda.NodejsFunction | undefined;
-    if (integrityApiUrl && integrityApiKey) {
+    if (merchantApiUrl && merchantApiCredential && merchantCpi) {
       integrityFn = new lambda.NodejsFunction(this, 'IntegrityProxy', {
         entry: path.join(__dirname, 'integrity-proxy.ts'),
         handler: 'handler',
@@ -118,8 +134,9 @@ export class GamesStack extends cdk.Stack {
         memorySize: 512,
         timeout: cdk.Duration.seconds(10),
         environment: {
-          INTEGRITY_API_URL: integrityApiUrl,
-          INTEGRITY_API_KEY: integrityApiKey,
+          MERCHANT_API_URL: merchantApiUrl,
+          MERCHANT_API_CREDENTIAL: merchantApiCredential,
+          MERCHANT_CPI: merchantCpi,
         },
         logRetention: logs.RetentionDays.ONE_WEEK,
         bundling: { minify: true, sourceMap: false, target: 'node22' },
