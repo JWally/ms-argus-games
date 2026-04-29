@@ -61,6 +61,19 @@ export interface MerchantIdentification {
   tpc_created: number | null;
   /** "pass" on verified match, "fail" on tamper/mismatch, null on absence. */
   tpc_verified: 'pass' | 'fail' | null;
+  /**
+   * Network-derived stable ID. Backup identifier for fraud prevention when
+   * crypto_device_id and tpc_id aren't available. 16-hex characters when
+   * derivable; null on mobile/proxy/datacenter populations where IP+UA
+   * hashing collapses too many strangers together. */
+  network_id: string | null;
+  /**
+   * Provenance for `network_id`:
+   *   - "category_residential": hash(category|ip_/24|ua) — high trust
+   *   - "asn_fallback": hash(asn|ip_/24|ua) for unrecognized ASN — lower trust
+   *   - "none": no usable ID derivable from network signals
+   */
+  network_id_source: 'category_residential' | 'asn_fallback' | 'none';
   browserDetails: BrowserDetails;
 }
 
@@ -82,8 +95,19 @@ export interface MerchantIpInfo {
     number: number | null;
     organization: string | null;
     category: string | null;
+    /**
+     * Granular network class derived from the IPtoASN dataset + CIDR overlay
+     * (mobile / residential / datacenter / vpn_proxy / hosting_proxy / cdn /
+     * satellite / privacy_relay / security_filter / business / education /
+     * government). Disambiguates within mixed-use ASNs (notably AT&T 7018:
+     * mobility cellular vs U-Verse residential). Null when the ASN isn't in
+     * the dataset and no CIDR overlay matches.
+     */
+    network_class: string | null;
   };
   datacenter: { result: boolean };
+  /** Convenience boolean — true when network_class === "mobile". */
+  mobile: { result: boolean };
 }
 
 /**

@@ -225,8 +225,4 @@ export function isCenterRegion(i: number): boolean {
 }
 
 // Star points on a 9×9 board (0-indexed)
-export const STAR_POINTS = new Set([
-  idx(2, 2), idx(2, 6),
-  idx(6, 2), idx(6, 6),
-  idx(4, 4),
-]);
+export const STAR_POINTS = new Set([idx(2, 2), idx(2, 6), idx(6, 2), idx(6, 6), idx(4, 4)]);
