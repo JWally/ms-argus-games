@@ -28,6 +28,7 @@ const Wayfinder = lazy(() => import('./pages/Wayfinder'));
 const Amaze = lazy(() => import('./pages/Amaze'));
 const Scan = lazy(() => import('./pages/Scan'));
 const Fpjs = lazy(() => import('./pages/Fpjs'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Gated({ children }: { children: ReactNode }) {
   return <CaptchaGate>{children}</CaptchaGate>;
@@ -187,6 +188,7 @@ export default function App() {
         />
         <Route path="/bot-buster" element={<Scan />} />
         <Route path="/fpjs" element={<Fpjs />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

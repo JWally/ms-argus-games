@@ -10,8 +10,14 @@ import type { MerchantSafeResponse } from '../utils/classifyScan';
 // this page.
 const LOADER_SCRIPT_URL = 'https://static-integrity-dev-jw.argus.pw/argus-loader.iife.js';
 
-// Our own backend proxy — fetches the stored integrity record from
-// argus-api's /v1/integrity-session/{id} with the merchant API key.
+// Public client id (cpi) baked at build time. Forwarded to argus.run() so
+// the iframe attaches `x-argus-cpi` to its integrity-collect POST — the
+// resulting record lands in the (cpi, session_id) partition that the
+// merchant API will read back on /api/integrity/check. Public-safe.
+const MERCHANT_CPI = import.meta.env.VITE_MERCHANT_CPI as string | undefined;
+
+// Our own backend proxy — fetches the stored integrity record from the
+// merchant REST API using the dual-key credential held server-side.
 const INTEGRITY_CHECK_URL = '/api/integrity/check';
 
 // Timeout passed to argus.run(). 20s is generous for the full pipeline:
@@ -37,7 +43,7 @@ export interface ScanResult {
 }
 
 interface ArgusLoader {
-  run(opts?: { sessionId?: string; timeoutMs?: number }): Promise<{
+  run(opts?: { sessionId?: string; cpi?: string; timeoutMs?: number }): Promise<{
     sessionId: string | null;
     argusSessionId: string;
     durationMs: number;
@@ -103,7 +109,10 @@ export function useScan() {
         if (!argus || typeof argus.run !== 'function') {
           throw new Error('argus loader unavailable — did the script load?');
         }
-        const runResult = await argus.run({ timeoutMs: RUN_TIMEOUT_MS });
+        const runResult = await argus.run({
+          cpi: MERCHANT_CPI,
+          timeoutMs: RUN_TIMEOUT_MS,
+        });
         const sessionId = runResult.argusSessionId;
         if (!sessionId) throw new Error('loader returned empty session id');
         return { ok: true as const, sessionId };

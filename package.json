@@ -16,7 +16,7 @@
     "dead-code": "knip",
     "duplication": "jscpd src/",
     "cdk:synth": "npx cdk synth",
-    "deploy": "npm run build && source .env && npx cdk deploy --all -c bioApiSecret=\"$BIO_API_SECRET\" -c integrityApiUrl=\"$INTEGRITY_API_URL\" -c integrityApiKey=\"$INTEGRITY_API_KEY\" -c fpjsServerApiKey=\"$FPJS_SERVER_API_KEY\" --require-approval never",
+    "deploy": "source .env && npm run build && npx cdk deploy --all -c bioApiSecret=\"$BIO_API_SECRET\" -c merchantApiUrl=\"$MERCHANT_API_URL\" -c merchantApiCredential=\"$MERCHANT_API_CREDENTIAL\" -c merchantCpi=\"$MERCHANT_CPI\" -c fpjsServerApiKey=\"$FPJS_SERVER_API_KEY\" --require-approval never",
     "cdk:deploy": "npm run build && npx cdk deploy",
     "cdk:diff": "npx cdk diff"
   },

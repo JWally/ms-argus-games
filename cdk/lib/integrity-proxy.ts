@@ -1,13 +1,28 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 
-const INTEGRITY_API_URL = process.env.INTEGRITY_API_URL!;
-const INTEGRITY_API_KEY = process.env.INTEGRITY_API_KEY!;
+const MERCHANT_API_URL = process.env.MERCHANT_API_URL!;
+const MERCHANT_API_CREDENTIAL = process.env.MERCHANT_API_CREDENTIAL!;
+const MERCHANT_CPI = process.env.MERCHANT_CPI!;
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'POST, OPTIONS',
   'access-control-allow-headers': 'content-type',
 };
+
+// Split the merchant credential into its two halves once at cold start.
+//   <keyId>.<base64-claims>.<base64-signature>
+// First segment goes to APIGW (`x-api-key`); the rest goes to the verifier
+// Lambda (`x-argus-token`). Argus issues this combined string in the
+// dashboard's "Create New Key" dialog.
+function splitCredential(credential: string): { keyId: string; token: string } {
+  const idx = credential.indexOf('.');
+  if (idx <= 0) throw new Error('credential malformed: missing keyId.token separator');
+  return {
+    keyId: credential.slice(0, idx),
+    token: credential.slice(idx + 1),
+  };
+}
 
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   // Warmer ping
@@ -32,7 +47,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   };
 }
 
-// CloudFront's SPA error responses intercept 403/404 globally — remap to 400
+// CloudFront's SPA error responses intercept 403/404 globally — remap to 400.
 function safeStatus(status: number): number {
   return status === 403 || status === 404 ? 400 : status;
 }
@@ -41,8 +56,13 @@ function safeStatus(status: number): number {
  * POST /api/integrity/check
  * Body: { sessionId: string }
  *
- * Proxies to argus-api GET /v1/session/{sessionId} with the merchant API key.
- * Returns the integrity results to the frontend.
+ * Proxies to the merchant REST API:
+ *   GET ${MERCHANT_API_URL}/v1/session/${MERCHANT_CPI}/${sessionId}
+ *
+ * The merchant credential lives only here (Lambda env), never in the
+ * browser. The browser-side SDK still embeds MERCHANT_CPI (it's public),
+ * which it forwards to the integrity-collect endpoint via `x-argus-cpi`.
+ * That makes the eventual record retrievable at this composite key.
  */
 async function checkIntegrity(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   try {
@@ -55,10 +75,14 @@ async function checkIntegrity(event: APIGatewayProxyEventV2): Promise<APIGateway
       };
     }
 
-    const res = await fetch(`${INTEGRITY_API_URL}/v1/integrity-session/${body.sessionId}`, {
+    const { keyId, token } = splitCredential(MERCHANT_API_CREDENTIAL);
+    const url = `${MERCHANT_API_URL}/v1/session/${encodeURIComponent(MERCHANT_CPI)}/${encodeURIComponent(body.sessionId)}`;
+
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
-        'X-Api-Key': INTEGRITY_API_KEY,
+        'x-api-key': keyId,
+        'x-argus-token': token,
       },
     });
 

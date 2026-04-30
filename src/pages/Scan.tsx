@@ -50,6 +50,31 @@ function tagColor(tag: string): string {
   return RED;
 }
 
+/**
+ * Color a network_class value by its risk profile. Datacenter, vpn_proxy,
+ * hosting_proxy, privacy_relay are real adversarial signals → red.
+ * Mobile, residential, satellite, business, education, government, security_filter
+ * are benign categorizations → green. Unknown is muted.
+ */
+function networkClassColor(cls: string | null): string {
+  if (cls === null) return MUTED;
+  if (cls === 'datacenter' || cls === 'vpn_proxy' || cls === 'hosting_proxy') return RED;
+  if (cls === 'privacy_relay') return YELLOW;
+  return GREEN;
+}
+
+/**
+ * Color a network_id_source by its trust tier. Category-residential is the
+ * highest-confidence ID we derive from network signals; ASN-fallback is
+ * usable but lower trust; "none" means no IP-based ID was derivable for
+ * this population (mobile / proxy / etc. — by design).
+ */
+function networkIdSourceColor(src: string | null): string {
+  if (src === 'category_residential') return GREEN;
+  if (src === 'asn_fallback') return YELLOW;
+  return MUTED;
+}
+
 function resultColor(result: boolean): string {
   return result ? RED : GREEN;
 }
@@ -230,6 +255,18 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row label="asn" value={asnStr} indent={1} />
         <Row label="category" value={fmt(asn.category)} indent={1} />
         <Row
+          label="network_class"
+          value={fmt(asn.network_class)}
+          colorOverride={networkClassColor(asn.network_class)}
+          indent={1}
+        />
+        <Row
+          label="mobile"
+          value={fmt(merchant.ipInfo.mobile.result)}
+          colorOverride={merchant.ipInfo.mobile.result ? GREEN : MUTED}
+          indent={1}
+        />
+        <Row
           label="datacenter"
           value={fmt(merchant.ipInfo.datacenter.result)}
           colorOverride={resultColor(merchant.ipInfo.datacenter.result)}
@@ -283,6 +320,18 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row
           label="tpc_created"
           value={id.tpc_created === null ? DASH : fmtEpoch(id.tpc_created * 1000)}
+          indent={1}
+        />
+        <Row
+          label="network_id"
+          value={fmt(id.network_id)}
+          colorOverride={id.network_id ? GREEN : MUTED}
+          indent={1}
+        />
+        <Row
+          label="network_id_source"
+          value={fmt(id.network_id_source)}
+          colorOverride={networkIdSourceColor(id.network_id_source)}
           indent={1}
         />
       </Section>
