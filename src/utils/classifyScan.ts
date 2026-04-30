@@ -110,32 +110,31 @@ export interface MerchantIpInfo {
   mobile: { result: boolean };
 }
 
+export type Verdict = 'clean' | 'suspect' | 'block';
+
 /**
  * Canonical client-side mirror of the merchant-safe API response. Must
  * stay in sync with ms-argus-api's src/helpers/merchant-projection.ts.
+ *
+ * Three threat axes — all 0–100, lower-is-better:
+ *   - automation        — automation framework detected (headless, CDP)
+ *   - device_tampering  — device lying about itself (lies, CH-UA / JA4 / H2)
+ *   - network_tampering — network path being masked (VPN, proxy, geo)
  */
 export interface MerchantSafeResponse {
   session_id: string;
   created_at: number | null;
   ttl: number | null;
+  automation: number;
+  device_tampering: number;
+  network_tampering: number;
+  verdict: Verdict;
   identification: MerchantIdentification;
   ip: string | null;
   ipLocation: MerchantIpLocation;
   ipInfo: MerchantIpInfo;
-  /** Probabilistic detectors — percentage 0..100, rounded to nearest 5. */
-  bot: { probability: number };
-  vpn: { probability: number };
-  /**
-   * Proxy threat score 0..100 from the proxy-detection waterfall.
-   * 0 = clean, 100 = confirmed threat, mid = ambiguous.
-   */
-  proxy: { threat: number };
-  tampering: { probability: number };
-  /** Direct observation (not probabilistic). */
   incognito: { result: boolean };
-  networkIntegrity: { score: number };
-  /** Null when no risk model has run (integrity-only flow, unmatched session). */
-  suspectScore: { result: number | null };
+  developer_tools: { result: boolean };
   tags: MerchantTag[];
   requestHeaders: MerchantRequestHeaders | null;
 }
@@ -153,20 +152,25 @@ function probabilityToConfidence(p: number): Confidence {
 }
 
 /**
- * Derive the UI signal list directly from the merchant response. Fires
- * at probability >= 50 to match the server's tag threshold; binary
- * detectors (hyperscaler, corp shield, incognito) fire on their bool.
+ * Derive the UI signal list from the merchant response. Drives off the
+ * server's tags array (already category-level) for VPN / PROXY / browser-
+ * tampering / automation, with confidence read from the matching axis
+ * score. ASN-category and incognito stay as direct boolean checks.
  */
 export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[] {
   const signals: ClassifiedSignal[] = [];
+  const tags = new Set(merchant.tags);
 
-  if (merchant.vpn.probability >= 50) {
-    signals.push({ kind: 'VPN', confidence: probabilityToConfidence(merchant.vpn.probability) });
+  if (tags.has('vpn')) {
+    signals.push({
+      kind: 'VPN',
+      confidence: probabilityToConfidence(merchant.network_tampering),
+    });
   }
-  if (merchant.proxy.threat >= 50) {
+  if (tags.has('proxy')) {
     signals.push({
       kind: 'PROXY',
-      confidence: probabilityToConfidence(merchant.proxy.threat),
+      confidence: probabilityToConfidence(merchant.network_tampering),
     });
   }
   if (merchant.ipInfo.asn.category === 'datacenter') {
@@ -175,19 +179,19 @@ export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[]
   if (merchant.ipInfo.asn.category === 'corporate_proxy') {
     signals.push({ kind: 'CORPORATE SHIELD' });
   }
-  if (merchant.tampering.probability >= 50) {
+  if (tags.has('browser_tampering')) {
     signals.push({
       kind: 'BROWSER TAMPERING',
-      confidence: probabilityToConfidence(merchant.tampering.probability),
+      confidence: probabilityToConfidence(merchant.device_tampering),
     });
   }
   if (merchant.incognito.result) {
     signals.push({ kind: 'INCOGNITO' });
   }
-  if (merchant.bot.probability >= 50) {
+  if (tags.has('automation')) {
     signals.push({
       kind: 'AUTOMATION',
-      confidence: probabilityToConfidence(merchant.bot.probability),
+      confidence: probabilityToConfidence(merchant.automation),
     });
   }
 
