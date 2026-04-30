@@ -93,10 +93,12 @@ export function useIntegrityGuard({ enabled = true }: { enabled?: boolean } = {}
 
       const merchant = (await res.json()) as MerchantSafeResponse;
 
-      // Block on tampering or confirmed bot. Probability >= 50 matches the
-      // server's tag threshold for tampering; bot gets a tighter 90 so we
-      // don't block on "suspected" ratings alone.
-      if (merchant.tampering.probability >= 50 || merchant.bot.probability >= 90) {
+      // Block on the server's verdict. The verdict already rolls up the
+      // three threat axes (automation / device_tampering / network_tampering)
+      // through the same thresholds the server picks for routing — keeping
+      // the gate aligned with what the server tags as "block" avoids
+      // policy drift between client and server.
+      if (merchant.verdict === 'block') {
         setBlocked(true);
         setSignals(merchant.tags);
       }

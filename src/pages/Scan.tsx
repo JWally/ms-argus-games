@@ -86,16 +86,10 @@ function probabilityColor(p: number): string {
   return GREEN;
 }
 
-function integrityColor(score: number): string {
-  return score >= 0.9 ? GREEN : score >= 0.5 ? YELLOW : RED;
-}
-
-// 0 is treated as a suspicious "perfectly clean" reading from an active
-// risk model. Null (model didn't run) is handled at the call-site — this
-// function never sees null.
-function riskColor(score: number): string {
-  if (score === 0) return RED;
-  return score >= 0.7 ? RED : score >= 0.4 ? YELLOW : GREEN;
+function verdictColor(v: 'clean' | 'suspect' | 'block'): string {
+  if (v === 'block') return RED;
+  if (v === 'suspect') return YELLOW;
+  return GREEN;
 }
 
 function pctStr(p: number): string {
@@ -228,7 +222,6 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
     asn.number === null
       ? DASH
       : `AS${asn.number}${asn.organization ? ` · ${asn.organization}` : ''}`;
-  const netIntegrity = merchant.networkIntegrity.score;
 
   const headerEntries = merchant.requestHeaders
     ? Object.entries(merchant.requestHeaders.headers)
@@ -272,23 +265,11 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           colorOverride={resultColor(merchant.ipInfo.datacenter.result)}
           indent={1}
         />
-        <Row
-          label="vpn"
-          value={pctStr(merchant.vpn.probability)}
-          colorOverride={probabilityColor(merchant.vpn.probability)}
-          indent={1}
-        />
-        <Row
-          label="proxy"
-          value={pctStr(merchant.proxy.threat)}
-          colorOverride={probabilityColor(merchant.proxy.threat)}
-          indent={1}
-        />
         <div style={{ borderTop: BORDER, margin: '6px 0' }} />
         <Row
-          label="score"
-          value={pctStr(Math.round(netIntegrity * 100))}
-          colorOverride={integrityColor(netIntegrity)}
+          label="network_tampering"
+          value={pctStr(merchant.network_tampering)}
+          colorOverride={probabilityColor(merchant.network_tampering)}
           indent={1}
         />
       </Section>
@@ -344,9 +325,9 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row label="device" value={fmt(b.device)} indent={1} />
         <Row label="userAgent" value={fmt(b.userAgent)} indent={1} />
         <Row
-          label="tampering"
-          value={pctStr(merchant.tampering.probability)}
-          colorOverride={probabilityColor(merchant.tampering.probability)}
+          label="device_tampering"
+          value={pctStr(merchant.device_tampering)}
+          colorOverride={probabilityColor(merchant.device_tampering)}
           indent={1}
         />
         <Row
@@ -355,23 +336,25 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           colorOverride={resultColor(merchant.incognito.result)}
           indent={1}
         />
+        <Row
+          label="developer_tools"
+          value={fmt(merchant.developer_tools.result)}
+          colorOverride={resultColor(merchant.developer_tools.result)}
+          indent={1}
+        />
       </Section>
 
       <Section label="detectors">
         <Row
-          label="bot.probability"
-          value={pctStr(merchant.bot.probability)}
-          colorOverride={probabilityColor(merchant.bot.probability)}
+          label="automation"
+          value={pctStr(merchant.automation)}
+          colorOverride={probabilityColor(merchant.automation)}
           indent={1}
         />
         <Row
-          label="suspectScore.result"
-          value={
-            merchant.suspectScore.result === null ? DASH : merchant.suspectScore.result.toFixed(2)
-          }
-          colorOverride={
-            merchant.suspectScore.result === null ? MUTED : riskColor(merchant.suspectScore.result)
-          }
+          label="verdict"
+          value={merchant.verdict.toUpperCase()}
+          colorOverride={verdictColor(merchant.verdict)}
           indent={1}
         />
       </Section>
