@@ -1,10 +1,9 @@
-import { type ReactNode, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Hub from './pages/Hub';
-import CaptchaGate from './components/CaptchaGate';
 import { useIntegrityGuard } from './hooks/useIntegrityGuard';
 
-// Routes that run their own integrity scan — the app-wide guard should
+// Routes that run their own integrity scan — the app-wide collector should
 // skip them so we don't double-POST to /v1/integrity-collect.
 const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/fpjs']);
 
@@ -30,10 +29,6 @@ const Scan = lazy(() => import('./pages/Scan'));
 const Fpjs = lazy(() => import('./pages/Fpjs'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-function Gated({ children }: { children: ReactNode }) {
-  return <CaptchaGate>{children}</CaptchaGate>;
-}
-
 export default function App() {
   const { pathname } = useLocation();
   useIntegrityGuard({ enabled: !SELF_SCANNED_ROUTES.has(pathname) });
@@ -42,150 +37,24 @@ export default function App() {
     <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<Hub />} />
-        <Route
-          path="/ataxx"
-          element={
-            <Gated>
-              <Ataxx />
-            </Gated>
-          }
-        />
-        <Route
-          path="/breakout"
-          element={
-            <Gated>
-              <Breakout />
-            </Gated>
-          }
-        />
-        <Route
-          path="/checkers"
-          element={
-            <Gated>
-              <Checkers />
-            </Gated>
-          }
-        />
-        <Route
-          path="/color-flood"
-          element={
-            <Gated>
-              <ColorFlood />
-            </Gated>
-          }
-        />
-        <Route
-          path="/connect-4"
-          element={
-            <Gated>
-              <Connect4 />
-            </Gated>
-          }
-        />
-        <Route
-          path="/flappy"
-          element={
-            <Gated>
-              <Flappy />
-            </Gated>
-          }
-        />
-        <Route
-          path="/multiply"
-          element={
-            <Gated>
-              <Multiply />
-            </Gated>
-          }
-        />
-        <Route
-          path="/peg-solitaire"
-          element={
-            <Gated>
-              <PegSolitaire />
-            </Gated>
-          }
-        />
-        <Route
-          path="/spelling-bee"
-          element={
-            <Gated>
-              <SpellingBee />
-            </Gated>
-          }
-        />
-        <Route
-          path="/card-counter"
-          element={
-            <Gated>
-              <CardCounter />
-            </Gated>
-          }
-        />
-        <Route
-          path="/rps"
-          element={
-            <Gated>
-              <RockPaperScissors />
-            </Gated>
-          }
-        />
-        <Route
-          path="/battleship"
-          element={
-            <Gated>
-              <Battleship />
-            </Gated>
-          }
-        />
-        <Route
-          path="/ball-sort"
-          element={
-            <Gated>
-              <BallSort />
-            </Gated>
-          }
-        />
-        <Route
-          path="/go"
-          element={
-            <Gated>
-              <Go />
-            </Gated>
-          }
-        />
-        <Route
-          path="/tic-tac-toe"
-          element={
-            <Gated>
-              <TicTacToe />
-            </Gated>
-          }
-        />
-        <Route
-          path="/hanoi-hilton"
-          element={
-            <Gated>
-              <HanoiHilton />
-            </Gated>
-          }
-        />
-        <Route
-          path="/wayfinder"
-          element={
-            <Gated>
-              <Wayfinder />
-            </Gated>
-          }
-        />
-        <Route
-          path="/amaze"
-          element={
-            <Gated>
-              <Amaze />
-            </Gated>
-          }
-        />
+        <Route path="/ataxx" element={<Ataxx />} />
+        <Route path="/breakout" element={<Breakout />} />
+        <Route path="/checkers" element={<Checkers />} />
+        <Route path="/color-flood" element={<ColorFlood />} />
+        <Route path="/connect-4" element={<Connect4 />} />
+        <Route path="/flappy" element={<Flappy />} />
+        <Route path="/multiply" element={<Multiply />} />
+        <Route path="/peg-solitaire" element={<PegSolitaire />} />
+        <Route path="/spelling-bee" element={<SpellingBee />} />
+        <Route path="/card-counter" element={<CardCounter />} />
+        <Route path="/rps" element={<RockPaperScissors />} />
+        <Route path="/battleship" element={<Battleship />} />
+        <Route path="/ball-sort" element={<BallSort />} />
+        <Route path="/go" element={<Go />} />
+        <Route path="/tic-tac-toe" element={<TicTacToe />} />
+        <Route path="/hanoi-hilton" element={<HanoiHilton />} />
+        <Route path="/wayfinder" element={<Wayfinder />} />
+        <Route path="/amaze" element={<Amaze />} />
         <Route path="/bot-buster" element={<Scan />} />
         <Route path="/fpjs" element={<Fpjs />} />
         <Route path="*" element={<NotFound />} />

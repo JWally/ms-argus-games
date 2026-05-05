@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, type ReactElement, type ReactNode } from 'react';
-import { useCaptchaGate } from '../hooks/useCaptchaGate';
 import { ScanIcon } from './scan/icons/ScanIcon';
 
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
@@ -387,7 +386,6 @@ const BORDER = '1px solid #0f2a18';
 
 export default function Hub() {
   const navigate = useNavigate();
-  const { loading, error, requestAccess } = useCaptchaGate();
   const [activeTag, setActiveTag] = useState<'All' | TagKey>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -403,15 +401,8 @@ export default function Hub() {
     return matchTag && matchSearch;
   });
 
-  const handlePlay = async (game: Game) => {
-    // Diagnostic tiles (SCAN) bypass the CAPTCHA — the fingerprint IS the
-    // interaction. Every other tile still goes through verification.
-    if (game.tag === 'Diagnostic') {
-      navigate(game.path);
-      return;
-    }
-    const verified = await requestAccess();
-    if (verified) navigate(game.path);
+  const handlePlay = (game: Game) => {
+    navigate(game.path);
   };
 
   return (
@@ -617,18 +608,6 @@ export default function Hub() {
         )}
       </nav>
 
-      {/* Error banner */}
-      {error && (
-        <div className="mx-auto w-full max-w-5xl px-4 pt-2">
-          <div
-            className="px-4 py-2 text-xs font-mono"
-            style={{ background: '#1c0607', border: '1px solid #7f1d1d', color: '#f87171' }}
-          >
-            ⚠ {error}
-          </div>
-        </div>
-      )}
-
       {/* Game grid */}
       <main className="mx-auto w-full max-w-5xl flex-1 px-3 pb-6 pt-4 sm:px-6">
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
@@ -639,8 +618,7 @@ export default function Hub() {
                 key={game.id}
                 aria-label={`Play ${game.name}`}
                 onClick={() => handlePlay(game)}
-                disabled={loading}
-                className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98] disabled:opacity-50"
+                className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98]"
               >
                 {/* Icon art area */}
                 <div
@@ -744,15 +722,6 @@ export default function Hub() {
             );
           })}
         </div>
-
-        {loading && (
-          <p
-            className="mt-4 text-center font-mono text-xs tracking-widest"
-            style={{ color: '#166534' }}
-          >
-            VERIFYING CREDENTIALS...
-          </p>
-        )}
       </main>
 
       {/* Footer */}
@@ -760,17 +729,7 @@ export default function Hub() {
         className="px-4 py-4 text-center font-mono text-xs tracking-wider"
         style={{ borderTop: BORDER, color: '#0f3018' }}
       >
-        POWERED BY{' '}
-        <a
-          href="https://bio-dev-jw.argus.pw"
-          className="hover:underline"
-          style={{ color: '#166534' }}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          ARGUS BIO
-        </a>{' '}
-        · AUTHORIZED ACCESS ONLY
+        AUTHORIZED ACCESS ONLY
       </footer>
     </div>
   );

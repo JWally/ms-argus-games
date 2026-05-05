@@ -1,28 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MerchantSafeResponse } from '../utils/classifyScan';
-
-// Loader URL — replaces the direct argus-integrity.iife.js library
-// include. The loader creates a srcdoc iframe, injects the integrity
-// bundle into a pristine realm, and returns only the opaque session id
-// via postMessage. The full fingerprint never touches this page's JS
-// context. API endpoints are baked into the inner bundle at build time
-// based on its stage (dev-jw here) — they're not configurable from
-// this page.
-const LOADER_SCRIPT_URL = 'https://static-integrity-dev-jw.argus.pw/argus-loader.iife.js';
-
-// Public client id (cpi) baked at build time. Forwarded to argus.run() so
-// the iframe attaches `x-argus-cpi` to its integrity-collect POST — the
-// resulting record lands in the (cpi, session_id) partition that the
-// merchant API will read back on /api/integrity/check. Public-safe.
-const MERCHANT_CPI = import.meta.env.VITE_MERCHANT_CPI as string | undefined;
+import {
+  MERCHANT_CPI,
+  RUN_TIMEOUT_MS,
+  getArgusLoader,
+  loadArgusLoader,
+} from '../utils/argusLoader';
 
 // Our own backend proxy — fetches the stored integrity record from the
 // merchant REST API using the dual-key credential held server-side.
 const INTEGRITY_CHECK_URL = '/api/integrity/check';
-
-// Timeout passed to argus.run(). 20s is generous for the full pipeline:
-// iframe creation, sigint probes, ECDH handshake, POST.
-const RUN_TIMEOUT_MS = 20_000;
 
 /**
  * State machine for the BOT-BUSTER page:
@@ -40,34 +27,6 @@ export interface ScanResult {
   scannedAt: string;
   /** The merchant-safe API response — identical to what a paying customer sees. */
   merchant: MerchantSafeResponse;
-}
-
-interface ArgusLoader {
-  run(opts?: { sessionId?: string; cpi?: string; timeoutMs?: number }): Promise<{
-    sessionId: string | null;
-    argusSessionId: string;
-    durationMs: number;
-  }>;
-  destroy(): void;
-}
-
-let scriptPromise: Promise<void> | null = null;
-
-function loadScriptOnce(src: string): Promise<void> {
-  if (scriptPromise) return scriptPromise;
-  if (typeof window !== 'undefined' && (window as unknown as { argus?: unknown }).argus) {
-    scriptPromise = Promise.resolve();
-    return scriptPromise;
-  }
-  scriptPromise = new Promise<void>((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(s);
-  });
-  return scriptPromise;
 }
 
 /**
@@ -104,8 +63,8 @@ export function useScan() {
     setError(null);
     profilePromise.current = (async () => {
       try {
-        await loadScriptOnce(LOADER_SCRIPT_URL);
-        const argus = (window as unknown as { argus?: ArgusLoader }).argus;
+        await loadArgusLoader();
+        const argus = getArgusLoader();
         if (!argus || typeof argus.run !== 'function') {
           throw new Error('argus loader unavailable — did the script load?');
         }

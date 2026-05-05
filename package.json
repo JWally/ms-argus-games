@@ -1,7 +1,7 @@
 {
   "name": "ms-argus-games",
   "version": "0.0.1",
-  "description": "Argus game arcade — CAPTCHA-gated browser games",
+  "description": "Argus game arcade — retro browser games",
   "private": true,
   "scripts": {
     "prepare": "lefthook install",
@@ -16,7 +16,7 @@
     "dead-code": "knip",
     "duplication": "jscpd src/",
     "cdk:synth": "npx cdk synth",
-    "deploy": "source .env && npm run build && npx cdk deploy --all -c bioApiSecret=\"$BIO_API_SECRET\" -c merchantApiUrl=\"$MERCHANT_API_URL\" -c merchantApiCredential=\"$MERCHANT_API_CREDENTIAL\" -c merchantCpi=\"$MERCHANT_CPI\" -c fpjsServerApiKey=\"$FPJS_SERVER_API_KEY\" --require-approval never",
+    "deploy": "source .env && npm run build && npx cdk deploy --all -c merchantApiUrl=\"$MERCHANT_API_URL\" -c merchantApiCredential=\"$MERCHANT_API_CREDENTIAL\" -c merchantCpi=\"$MERCHANT_CPI\" -c fpjsServerApiKey=\"$FPJS_SERVER_API_KEY\" --require-approval never",
     "cdk:deploy": "npm run build && npx cdk deploy",
     "cdk:diff": "npx cdk diff"
   },

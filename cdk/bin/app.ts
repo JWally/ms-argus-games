@@ -6,17 +6,10 @@ import { RedirectStack } from '../lib/redirect-stack';
 const app = new App();
 
 const account = process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID || '';
-const bioApiSecret = app.node.tryGetContext('bioApiSecret') as string;
 const merchantApiUrl = app.node.tryGetContext('merchantApiUrl') as string | undefined;
 const merchantApiCredential = app.node.tryGetContext('merchantApiCredential') as string | undefined;
 const merchantCpi = app.node.tryGetContext('merchantCpi') as string | undefined;
 const fpjsServerApiKey = app.node.tryGetContext('fpjsServerApiKey') as string | undefined;
-
-if (!bioApiSecret) {
-  throw new Error(
-    'Missing bioApiSecret context. Deploy with: npx cdk deploy -c bioApiSecret=ak_live_...'
-  );
-}
 
 const merchantConfigured = !!(merchantApiUrl && merchantApiCredential && merchantCpi);
 const merchantPartial =
@@ -34,8 +27,6 @@ new GamesStack(app, 'ms-argus-games-dev-jw', {
   stackName: 'ms-argus-games-dev-jw',
   stage: 'dev-jw',
   rootDomain: 'arcades.click',
-  bioApiUrl: 'https://api-bio-dev-jw.argus.pw',
-  bioApiSecret,
   merchantApiUrl,
   merchantApiCredential,
   merchantCpi,

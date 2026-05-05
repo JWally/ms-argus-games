@@ -34,8 +34,6 @@ interface GamesStackProps extends cdk.StackProps {
   stage: string;
   rootDomain: string;
   subdomain?: string;
-  bioApiUrl: string;
-  bioApiSecret: string;
   /**
    * Merchant-facing REST API base URL (e.g. https://merchant-dev-jw.argus.pw).
    * Combined with merchantCpi to call GET /v1/session/{cpi}/{session_id}.
@@ -64,8 +62,6 @@ export class GamesStack extends cdk.Stack {
       stage,
       rootDomain,
       subdomain,
-      bioApiUrl,
-      bioApiSecret,
       merchantApiUrl,
       merchantApiCredential,
       merchantCpi,
@@ -98,29 +94,6 @@ export class GamesStack extends cdk.Stack {
     const certificate = new Certificate(this, 'SiteCertificate', {
       domainName,
       validation: CertificateValidation.fromDns(zone),
-    });
-
-    // ── API Proxy Lambda ─────────────────────────────────────────────────
-    const proxyFn = new lambda.NodejsFunction(this, 'ApiProxy', {
-      entry: path.join(__dirname, 'api-proxy.ts'),
-      handler: 'handler',
-      runtime: lambdaRuntime.Runtime.NODEJS_22_X,
-      architecture: lambdaRuntime.Architecture.ARM_64,
-      memorySize: 1024,
-      timeout: cdk.Duration.seconds(10),
-      environment: {
-        BIO_API_URL: bioApiUrl,
-        BIO_API_SECRET: bioApiSecret,
-        RETURN_URL: `https://${domainName}`,
-      },
-      logRetention: logs.RetentionDays.ONE_WEEK,
-      bundling: { minify: true, sourceMap: false, target: 'node22' },
-    });
-
-    // Warmer — keep Lambda warm
-    new events.Rule(this, 'WarmerRule', {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-      targets: [new eventTargets.LambdaFunction(proxyFn)],
     });
 
     // ── Integrity Proxy Lambda ─────────────────────────────────────────
@@ -173,20 +146,6 @@ export class GamesStack extends cdk.Stack {
         allowMethods: [apigatewayv2.CorsHttpMethod.GET, apigatewayv2.CorsHttpMethod.POST],
         allowHeaders: ['content-type', 'authorization'],
       },
-    });
-
-    const lambdaIntegration = new integrations.HttpLambdaIntegration('ProxyIntegration', proxyFn);
-
-    api.addRoutes({
-      path: '/api/session',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: lambdaIntegration,
-    });
-
-    api.addRoutes({
-      path: '/api/verify',
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: lambdaIntegration,
     });
 
     // Integrity proxy route

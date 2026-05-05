@@ -7,15 +7,17 @@ Arcade site deployed to **https://arcades.click** plus a redirect from **https:/
 - Node 22.x (the project uses Vite 6; any Node ≥ 20.19 works, but 22 is the verified version)
 - AWS credentials loaded in the shell — run `aws sts get-caller-identity` and confirm account `263318538229`, region `us-east-1`
 - Bash available (the `deploy` script uses `source`, which does not exist in `sh`)
-- `.env` at the repo root with the three required secrets:
+- `.env` at the repo root with the merchant + fpjs secrets:
 
   ```
-  BIO_API_SECRET=<bio api shared secret>
-  INTEGRITY_API_URL=https://api-dev-jw.argus.pw
-  INTEGRITY_API_KEY=<integrity api key>
+  MERCHANT_API_URL=https://merchant-dev-jw.argus.pw
+  MERCHANT_API_CREDENTIAL=<dual-key credential issued by ms-argus-platform>
+  MERCHANT_CPI=<public client id>
+  VITE_MERCHANT_CPI=<same public client id, baked into the build>
+  FPJS_SERVER_API_KEY=<fpjs server api key>
   ```
 
-  The values can be pulled from AWS Secrets Manager (`argus/dev-jw/bio-api-secret`, etc.) or from your team's password manager. `.env` is gitignored — never commit it.
+  The values can be pulled from AWS Secrets Manager or from your team's password manager. `.env` is gitignored — never commit it.
 
 ## Deploy
 
@@ -25,24 +27,12 @@ Standard deploy:
 npm run deploy
 ```
 
-This runs `npm run build && source .env && npx cdk deploy --all -c bioApiSecret=$BIO_API_SECRET -c integrityApiUrl=$INTEGRITY_API_URL -c integrityApiKey=$INTEGRITY_API_KEY --require-approval never`.
+This runs `source .env && npm run build && npx cdk deploy --all -c merchantApiUrl=$MERCHANT_API_URL -c merchantApiCredential=$MERCHANT_API_CREDENTIAL -c merchantCpi=$MERCHANT_CPI -c fpjsServerApiKey=$FPJS_SERVER_API_KEY --require-approval never`.
 
 If your default shell is `sh` (not bash) — for example inside some CI runners — `source .env` errors with `source: not found`. Fall back to:
 
 ```bash
 bash -c 'source .env && npm run deploy'
-```
-
-…or invoke the underlying commands manually:
-
-```bash
-npm run build
-set -a; source .env; set +a
-npx cdk deploy --all \
-  -c bioApiSecret="$BIO_API_SECRET" \
-  -c integrityApiUrl="$INTEGRITY_API_URL" \
-  -c integrityApiKey="$INTEGRITY_API_KEY" \
-  --require-approval never
 ```
 
 ## What gets deployed
@@ -76,7 +66,8 @@ If a push is rejected, the failing hook's output tells you what broke. **Never**
 
 - https://arcades.click — hub should render 20 tiles (19 games + SCAN)
 - Filter by `DIA` — SCAN tile should appear
-- https://arcades.click/scan — runs the integrity diagnostic without CAPTCHA
+- https://arcades.click/bot-buster — runs the integrity diagnostic
+- All other game tiles should open immediately without any verification gate
 - https://games.wolcott.io — should 301 → https://arcades.click
 
 ## Troubleshooting
