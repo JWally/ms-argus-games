@@ -1,5 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { ScanIcon } from './scan/icons/ScanIcon';
 
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
@@ -200,6 +208,7 @@ const IcoWayfinder = () => (
     <line x1="2" y1="11" x2="3" y2="4" stroke="currentColor" strokeWidth=".7" fill="none" />
   </Ico>
 );
+
 // ── Game definitions ───────────────────────────────────────────────────
 
 type TagKey = 'Arcade' | 'Strategy' | 'Puzzle' | 'Brain' | 'Diagnostic';
@@ -251,7 +260,7 @@ const games: Game[] = [
   {
     id: 'checkers',
     name: 'Checkers',
-    desc: 'Jump & king on a 6\u00D76 board',
+    desc: 'Jump & king on a 6×6 board',
     tag: 'Strategy',
     path: '/checkers',
     Icon: IcoCheckers,
@@ -380,30 +389,333 @@ const TAG_CFG: Record<TagKey, { color: string; border: string; bg: string; label
   Diagnostic: { color: '#94a3b8', border: '#475569', bg: '#0f172a', label: 'DIA' },
 };
 
+const TAG_META: Record<TagKey, [string, string]> = {
+  Arcade: ['SOLO RUN', 'CHASE THE HISCORE'],
+  Strategy: ['1–2 PLAYERS', '~5 MIN MATCH'],
+  Puzzle: ['SOLO', 'PURE LOGIC'],
+  Brain: ['SOLO DRILL', 'MUSCLE MEMORY'],
+  Diagnostic: ['SCAN MODE', 'INSTANT REPORT'],
+};
+
 const BORDER = '1px solid #0f2a18';
+const CTA_BORDER = '1px solid #4ade80';
+
+// Module-scope random helpers — kept out of the component body so the
+// react-hooks/purity rule doesn't flag in-render Math.random calls. These
+// are intentionally fresh per page-load.
+function pickFeatured(): Game {
+  const playable = games.filter((g) => g.tag !== 'Diagnostic');
+  return playable[Math.floor(Math.random() * playable.length)];
+}
+
+function pickRandom(pool: Game[]): Game | null {
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ── Subcomponents ──────────────────────────────────────────────────────
+
+function StatBlock({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="px-3 py-2" style={{ border: BORDER, background: '#040e07' }}>
+      <div
+        className="font-display text-base sm:text-lg"
+        style={{ color: '#22c55e', textShadow: '0 0 6px #22c55e44' }}
+      >
+        {value}
+      </div>
+      <div className="mt-1 font-mono text-[10px] tracking-widest" style={{ color: '#1a6632' }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function CabinetCell({ game, onPlay }: { game: Game; onPlay: () => void }) {
+  return (
+    <button
+      onClick={onPlay}
+      title={game.name}
+      aria-label={`Play ${game.name}`}
+      className="group relative flex aspect-square items-center justify-center transition-all duration-150 hover:border-[#22c55e] hover:[box-shadow:0_0_12px_#22c55e33,inset_0_0_12px_#00000040]"
+      style={{ border: BORDER, background: '#040e07' }}
+    >
+      {game.special ? (
+        <span
+          className="font-mono text-base font-bold transition-transform group-hover:scale-105 sm:text-xl"
+          style={{ color: '#22c55e', filter: 'drop-shadow(0 0 6px #22c55e88)' }}
+        >
+          2×2=?
+        </span>
+      ) : (
+        <div
+          className="scale-[1.05] transition-transform group-hover:scale-[1.12] sm:scale-[1.4] sm:group-hover:scale-[1.5]"
+          style={{ color: '#22c55e', filter: 'drop-shadow(0 0 6px #22c55e88)' }}
+        >
+          <game.Icon />
+        </div>
+      )}
+    </button>
+  );
+}
+
+function BrowseRow({ game, onPlay }: { game: Game; onPlay: () => void }) {
+  const tag = TAG_CFG[game.tag];
+  return (
+    <button
+      onClick={onPlay}
+      aria-label={`Play ${game.name}`}
+      className="group flex items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 hover:border-[#22c55e] hover:[box-shadow:0_0_12px_#22c55e22,inset_0_0_12px_#00000040]"
+      style={{ border: BORDER, background: '#040e07' }}
+    >
+      <div
+        className="flex h-9 w-9 shrink-0 items-center justify-center transition-transform group-hover:scale-110"
+        style={{ color: '#22c55e', filter: 'drop-shadow(0 0 4px #22c55e66)' }}
+      >
+        {game.special ? (
+          <span className="font-mono text-[10px] font-bold">2×2=?</span>
+        ) : (
+          <game.Icon />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-xs font-bold tracking-wider" style={{ color: '#86efac' }}>
+            {game.name.toUpperCase()}
+          </span>
+          <span
+            className="shrink-0 font-mono text-[10px] font-bold tracking-widest px-1 py-px"
+            style={{
+              color: tag.color,
+              border: `1px solid ${tag.border}`,
+              background: tag.bg,
+            }}
+          >
+            [{tag.label}]
+          </span>
+        </div>
+      </div>
+      <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+        PLAY ▸
+      </span>
+    </button>
+  );
+}
+
+// ── Joshua prompt ──────────────────────────────────────────────────────
+
+const PROMPT_LINES = [
+  'GREETINGS PROFESSOR FALKEN.',
+  '',
+  "IT'S BEEN A LONG TIME.",
+  '',
+  'SHALL WE PLAY A GAME?',
+] as const;
+const TYPE_SPEED_MS = 32;
+const LINE_PAUSE_MS = 280;
+const INITIAL_DELAY_MS = 200;
+
+function useJoshuaTypewriter(onYes: () => void, onNo: () => void) {
+  const [typed, setTyped] = useState<string[]>(() => PROMPT_LINES.map(() => ''));
+  const [done, setDone] = useState(false);
+
+  const skipToEnd = useCallback(() => {
+    setTyped(PROMPT_LINES.map((l) => l));
+    setDone(true);
+  }, []);
+
+  // Typewriter — schedules char reveals + completion via setTimeout chain.
+  useEffect(() => {
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    let elapsedMs = INITIAL_DELAY_MS;
+
+    for (const [i, line] of PROMPT_LINES.entries()) {
+      if (line === '') {
+        elapsedMs += LINE_PAUSE_MS;
+        continue;
+      }
+      for (let j = 1; j <= line.length; j++) {
+        const delay = elapsedMs + j * TYPE_SPEED_MS;
+        timeouts.push(
+          setTimeout(() => {
+            if (cancelled) return;
+            setTyped((prev) => {
+              if (prev[i] === PROMPT_LINES[i]) return prev;
+              const next = [...prev];
+              next[i] = line.slice(0, j);
+              return next;
+            });
+          }, delay)
+        );
+      }
+      elapsedMs += line.length * TYPE_SPEED_MS + LINE_PAUSE_MS;
+    }
+
+    timeouts.push(
+      setTimeout(() => {
+        if (!cancelled) setDone(true);
+      }, elapsedMs)
+    );
+
+    return () => {
+      cancelled = true;
+      for (const t of timeouts) clearTimeout(t);
+    };
+  }, []);
+
+  // Keyboard: any key skips typewriter; once done, Y/N route.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (!done) {
+        skipToEnd();
+        e.preventDefault();
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (k === 'y' || k === 'enter') {
+        e.preventDefault();
+        onYes();
+      } else if (k === 'n' || k === 'escape') {
+        e.preventDefault();
+        onNo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [done, onYes, onNo, skipToEnd]);
+
+  return { typed, done, skipToEnd };
+}
+
+function JoshuaText({
+  typed,
+  done,
+  onSkip,
+}: {
+  typed: string[];
+  done: boolean;
+  onSkip: () => void;
+}) {
+  return (
+    <div
+      onClick={!done ? onSkip : undefined}
+      className="font-mono text-base leading-relaxed sm:text-lg lg:text-xl"
+      style={{
+        color: '#4ade80',
+        textShadow: '0 0 8px #22c55e88',
+        cursor: done ? 'default' : 'pointer',
+      }}
+    >
+      {typed.map((line, i) => {
+        const isLast = i === typed.length - 1;
+        return (
+          <div key={i} className="min-h-[1.5em]">
+            {line || ' '}
+            {isLast && (
+              <span
+                aria-hidden="true"
+                className="terminal-cursor ml-0.5 inline-block align-middle"
+                style={{ color: '#4ade80', textShadow: '0 0 8px #22c55e' }}
+              >
+                █
+              </span>
+            )}
+          </div>
+        );
+      })}
+
+      {!done && (
+        <p className="mt-4 font-mono text-[10px] tracking-widest" style={{ color: '#0f3018' }}>
+          [ ANY KEY TO SKIP ]
+        </p>
+      )}
+    </div>
+  );
+}
+
+function JoshuaActions({ onYes, onNo }: { onYes: () => void; onNo: () => void }) {
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <button
+        onClick={onYes}
+        className="w-full whitespace-nowrap font-display text-xs tracking-widest transition-all duration-150 hover:[box-shadow:0_0_18px_#22c55e88]"
+        style={{
+          color: '#0a1f0a',
+          background: '#22c55e',
+          border: CTA_BORDER,
+          padding: '12px 18px',
+        }}
+      >
+        ▶ [Y] PLAY A GAME
+      </button>
+      <button
+        onClick={onNo}
+        className="w-full whitespace-nowrap font-display text-xs tracking-widest transition-all duration-150 hover:border-[#22c55e]"
+        style={{
+          color: '#4ade80',
+          background: 'transparent',
+          border: '1px solid #1a6632',
+          padding: '12px 18px',
+        }}
+      >
+        [N] BROWSE THE LIST
+      </button>
+    </div>
+  );
+}
 
 // ── Main component ─────────────────────────────────────────────────────
+
+const FILTER_KEYS = ['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const;
 
 export default function Hub() {
   const navigate = useNavigate();
   const [activeTag, setActiveTag] = useState<'All' | TagKey>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const browseRef = useRef<HTMLElement>(null);
+
+  // Featured game is picked once per page-load (excludes diagnostic).
+  // Module-scope helper keeps Math.random outside render.
+  const featured = useMemo<Game>(() => pickFeatured(), []);
 
   const selectTag = (tag: 'All' | TagKey) => {
     setActiveTag(tag);
     setMenuOpen(false);
   };
-  const visibleGames = games.filter((g) => {
-    const matchTag = activeTag === 'All' || g.tag === activeTag;
-    const q = searchQuery.trim().toLowerCase();
-    const matchSearch = !q || g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q);
-    return matchTag && matchSearch;
-  });
 
-  const handlePlay = (game: Game) => {
-    navigate(game.path);
-  };
+  const visibleGames = useMemo(
+    () =>
+      games.filter((g) => {
+        const matchTag = activeTag === 'All' || g.tag === activeTag;
+        const q = searchQuery.trim().toLowerCase();
+        const matchSearch =
+          !q || g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q);
+        return matchTag && matchSearch;
+      }),
+    [activeTag, searchQuery]
+  );
+
+  const cabinetWall = visibleGames.slice(0, 9);
+
+  const playRandom = useCallback(() => {
+    const choice = pickRandom(visibleGames.filter((g) => g.tag !== 'Diagnostic'));
+    if (choice) navigate(choice.path);
+  }, [visibleGames, navigate]);
+
+  const browseCabinets = useCallback(() => {
+    browseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const { typed, done, skipToEnd } = useJoshuaTypewriter(playRandom, browseCabinets);
+
+  const featuredMeta = TAG_META[featured.tag];
+  const featuredTag = TAG_CFG[featured.tag];
 
   return (
     <div
@@ -430,9 +742,7 @@ export default function Hub() {
           boxShadow: '0 4px 16px #000c',
         }}
       >
-        {/* Main bar */}
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4 sm:px-6">
-          {/* Logo */}
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
           <span
             className="font-display text-base tracking-[0.2em] sm:text-lg"
             style={{
@@ -444,72 +754,84 @@ export default function Hub() {
           </span>
 
           {/* Desktop category links */}
-          <div className="hidden items-center gap-1 sm:flex">
-            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const).map(
-              (tag) => {
-                const isAll = tag === 'All';
-                const cfg = isAll ? null : TAG_CFG[tag as TagKey];
-                const isActive = activeTag === tag;
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => selectTag(tag)}
-                    className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
-                    style={
-                      isActive
-                        ? {
-                            color: isAll ? '#4ade80' : cfg!.color,
-                            border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
-                            background: isAll ? '#071a0e' : cfg!.bg,
-                          }
-                        : {
-                            color: '#1a6632',
-                            border: '1px solid transparent',
-                            background: 'transparent',
-                          }
-                    }
-                  >
-                    {isAll ? 'ALL' : tag.toUpperCase()}
-                  </button>
-                );
-              }
-            )}
+          <div className="hidden items-center gap-1 lg:flex">
+            {FILTER_KEYS.map((tag) => {
+              const isAll = tag === 'All';
+              const cfg = isAll ? null : TAG_CFG[tag as TagKey];
+              const isActive = activeTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => selectTag(tag)}
+                  className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
+                  style={
+                    isActive
+                      ? {
+                          color: isAll ? '#4ade80' : cfg!.color,
+                          border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
+                          background: isAll ? '#071a0e' : cfg!.bg,
+                        }
+                      : {
+                          color: '#1a6632',
+                          border: '1px solid transparent',
+                          background: 'transparent',
+                        }
+                  }
+                >
+                  {isAll ? 'ALL' : tag.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Desktop search */}
-          <div
-            className="ml-auto hidden items-center gap-2 rounded-[2px] px-3 py-1.5 sm:flex"
-            style={{ border: BORDER, background: '#040e07' }}
-          >
-            <svg
-              aria-hidden="true"
-              className="h-3 w-3 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              style={{ color: '#1a6632' }}
+          {/* Right side — PLAY RANDOM + search (desktop) */}
+          <div className="ml-auto hidden items-center gap-2 lg:flex">
+            <button
+              onClick={playRandom}
+              className="whitespace-nowrap font-display text-[10px] tracking-widest transition-all duration-150 hover:[box-shadow:0_0_12px_#22c55e66]"
+              style={{
+                color: '#0a1f0a',
+                background: '#22c55e',
+                border: CTA_BORDER,
+                padding: '6px 12px',
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+              ▶ PLAY RANDOM
+            </button>
+            <div
+              className="flex items-center gap-2 rounded-[2px] px-3 py-1.5"
+              style={{ border: BORDER, background: '#040e07' }}
+            >
+              <svg
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                style={{ color: '#1a6632' }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="SEARCH..."
+                className="w-32 bg-transparent font-mono text-xs tracking-wider outline-none"
+                style={{ color: '#4ade80' }}
               />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="SEARCH..."
-              className="w-32 bg-transparent font-mono text-xs tracking-wider outline-none"
-              style={{ color: '#4ade80' }}
-            />
+            </div>
           </div>
 
           {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="ml-auto flex flex-col items-center justify-center gap-1.5 p-2 sm:hidden"
+            className="ml-auto flex flex-col items-center justify-center gap-1.5 p-2 lg:hidden"
             aria-label="Toggle menu"
           >
             {menuOpen ? (
@@ -536,8 +858,7 @@ export default function Hub() {
 
         {/* Mobile dropdown menu */}
         {menuOpen && (
-          <div className="sm:hidden" style={{ borderTop: BORDER, background: '#030c06' }}>
-            {/* Mobile search */}
+          <div className="lg:hidden" style={{ borderTop: BORDER, background: '#030c06' }}>
             <div className="px-4 py-3" style={{ borderBottom: BORDER }}>
               <div
                 className="flex items-center gap-2 rounded-[2px] px-3 py-2"
@@ -565,171 +886,222 @@ export default function Hub() {
                   placeholder="SEARCH GAMES..."
                   className="w-full bg-transparent font-mono text-sm tracking-wider outline-none"
                   style={{ color: '#4ade80' }}
-                  autoFocus
                 />
               </div>
             </div>
 
-            {/* Category items */}
-            {(['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const).map(
-              (tag) => {
-                const isActive = activeTag === tag;
-                const label = tag === 'All' ? 'ALL GAMES' : tag.toUpperCase();
-                const count =
-                  tag === 'All' ? games.length : games.filter((g) => g.tag === tag).length;
-                return (
-                  <button
-                    key={tag}
-                    onClick={() => selectTag(tag)}
-                    className="flex w-full items-center gap-3 px-5 py-4 transition-colors duration-150"
-                    style={{
-                      borderBottom: '1px solid #0a1e0f',
-                      background: isActive ? '#071a0e' : 'transparent',
-                      borderLeft: isActive ? '3px solid #22c55e' : '3px solid transparent',
-                    }}
+            {FILTER_KEYS.map((tag) => {
+              const isActive = activeTag === tag;
+              const label = tag === 'All' ? 'ALL GAMES' : tag.toUpperCase();
+              const count =
+                tag === 'All' ? games.length : games.filter((g) => g.tag === tag).length;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => selectTag(tag)}
+                  className="flex w-full items-center gap-3 px-5 py-4 transition-colors duration-150"
+                  style={{
+                    borderBottom: '1px solid #0a1e0f',
+                    background: isActive ? '#071a0e' : 'transparent',
+                    borderLeft: isActive ? '3px solid #22c55e' : '3px solid transparent',
+                  }}
+                >
+                  <span
+                    className="font-mono text-base tracking-widest"
+                    style={{ color: isActive ? '#4ade80' : '#1a6632' }}
                   >
-                    <span
-                      className="font-mono text-base tracking-widest"
-                      style={{ color: isActive ? '#4ade80' : '#1a6632' }}
-                    >
-                      {label}
-                    </span>
-                    <span
-                      className="ml-auto font-mono text-xs"
-                      style={{ color: isActive ? '#4ade80' : '#0f3018' }}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              }
-            )}
+                    {label}
+                  </span>
+                  <span
+                    className="ml-auto font-mono text-xs"
+                    style={{ color: isActive ? '#4ade80' : '#0f3018' }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </nav>
 
-      {/* Game grid */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-3 pb-6 pt-4 sm:px-6">
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
-          {visibleGames.map((game) => {
-            const tag = TAG_CFG[game.tag];
-            return (
-              <button
-                key={game.id}
-                aria-label={`Play ${game.name}`}
-                onClick={() => handlePlay(game)}
-                className="group overflow-hidden rounded-[3px] border border-[#0f2a18] bg-[#040e07] text-left [box-shadow:inset_0_0_20px_#00000040] transition-all duration-200 hover:border-[#22c55e] hover:[box-shadow:0_0_20px_#22c55e22,inset_0_0_20px_#00000040] active:scale-[0.98]"
-              >
-                {/* Icon art area */}
-                <div
-                  className="relative flex h-36 items-center justify-center sm:h-44"
-                  style={{ background: '#030c06' }}
-                >
-                  {/* Radar rings */}
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div
-                      className="absolute rounded-full"
-                      style={{
-                        width: 120,
-                        height: 120,
-                        border: '1px solid #0f2a1866',
-                        borderRadius: '50%',
-                      }}
-                    />
-                    <div
-                      className="absolute rounded-full"
-                      style={{
-                        width: 80,
-                        height: 80,
-                        border: '1px solid #0f2a1844',
-                        borderRadius: '50%',
-                      }}
-                    />
-                    <div
-                      className="absolute"
-                      style={{
-                        width: '100%',
-                        height: '1px',
-                        background:
-                          'linear-gradient(to right, transparent, #0f2a1844, transparent)',
-                      }}
-                    />
-                    <div
-                      className="absolute"
-                      style={{
-                        width: '1px',
-                        height: '100%',
-                        background:
-                          'linear-gradient(to bottom, transparent, #0f2a1844, transparent)',
-                      }}
-                    />
-                  </div>
+      {/* Status line */}
+      <div className="mx-auto w-full max-w-6xl px-4 pt-3 sm:px-6">
+        <p className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+          ▶ ACCESS GRANTED · TERMINAL ONLINE · {games.length} GAMES LOADED
+        </p>
+      </div>
 
-                  {/* Icon */}
-                  {game.special ? (
-                    /* Multiply gets its custom text art */
-                    <span
-                      className="relative font-mono font-bold transition-transform duration-200 group-hover:scale-110"
-                      style={{
-                        color: '#22c55e',
-                        filter: 'drop-shadow(0 0 6px #22c55e88)',
-                        fontSize: '22px',
-                      }}
-                    >
-                      2 <span style={{ color: '#4ade80' }}>×</span> 2{' '}
-                      <span style={{ color: '#166534' }}>=</span>{' '}
-                      <span style={{ color: '#86efac' }}>?</span>
-                    </span>
-                  ) : (
-                    <div
-                      className="relative transition-transform duration-200 group-hover:scale-110"
-                      style={{
-                        color: '#22c55e',
-                        filter: 'drop-shadow(0 0 6px #22c55e88)',
-                      }}
-                    >
-                      <game.Icon />
-                    </div>
-                  )}
-                </div>
+      {/* Hero */}
+      <section className="mx-auto w-full max-w-6xl px-4 pt-6 pb-10 sm:px-6 lg:grid lg:grid-cols-2 lg:gap-10 lg:pt-10">
+        {/* LEFT — Joshua prompt + actions/stats pinned to bottom */}
+        <div className="flex flex-col">
+          <JoshuaText typed={typed} done={done} onSkip={skipToEnd} />
 
-                {/* Card body */}
-                <div className="px-3 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="text-xs font-bold tracking-wider sm:text-sm"
-                      style={{ color: '#86efac' }}
-                    >
-                      {game.name.toUpperCase()}
-                    </span>
-                    <span
-                      className="font-mono text-sm font-bold tracking-widest px-1.5 py-0.5"
-                      style={{
-                        color: tag.color,
-                        border: `1px solid ${tag.border}`,
-                        background: tag.bg,
-                        borderRadius: '2px',
-                      }}
-                    >
-                      [{tag.label}]
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-snug" style={{ color: '#1a6632' }}>
-                    {game.desc}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+          <div className="mt-8 flex w-full flex-col gap-4 lg:mt-auto lg:pt-12">
+            {done && <JoshuaActions onYes={playRandom} onNo={browseCabinets} />}
+            <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+              <StatBlock value="NO" label="SIGNUPS · EVER" />
+              <StatBlock value="NO" label="INSTALLS" />
+              <StatBlock value="NO" label="ADS · TRACKERS" />
+              <StatBlock value={String(games.length)} label="GAMES READY" />
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* RIGHT — game wall */}
+        <div className="mt-10 lg:mt-0">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
+              GAME WALL
+            </span>
+            <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+              [{visibleGames.length} ONLINE]
+            </span>
+          </div>
+          {cabinetWall.length === 0 ? (
+            <div
+              className="flex aspect-[3/1] items-center justify-center font-mono text-xs tracking-widest"
+              style={{ border: BORDER, background: '#040e07', color: '#166534' }}
+            >
+              NO GAMES MATCH FILTER
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {cabinetWall.map((g) => (
+                <CabinetCell key={g.id} game={g} onPlay={() => navigate(g.path)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Featured game */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
+            FEATURED GAME
+          </span>
+          <span className="h-px flex-1" style={{ background: '#0f2a18' }} />
+        </div>
+        <div
+          className="grid gap-4 sm:gap-6 lg:grid-cols-[2fr_3fr]"
+          style={{ border: BORDER, background: '#040e07', padding: 0 }}
+        >
+          {/* Featured art */}
+          <div
+            className="relative flex h-48 items-center justify-center sm:h-64"
+            style={{ background: '#030c06', borderRight: '1px solid #0f2a18' }}
+          >
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div
+                className="absolute rounded-full"
+                style={{ width: 180, height: 180, border: '1px solid #0f2a1866' }}
+              />
+              <div
+                className="absolute rounded-full"
+                style={{ width: 120, height: 120, border: '1px solid #0f2a1844' }}
+              />
+            </div>
+            {featured.special ? (
+              <span
+                className="relative font-mono text-3xl font-bold sm:text-4xl"
+                style={{ color: '#22c55e', filter: 'drop-shadow(0 0 10px #22c55e88)' }}
+              >
+                2 × 2 = ?
+              </span>
+            ) : (
+              <div
+                className="relative scale-[3.2]"
+                style={{ color: '#22c55e', filter: 'drop-shadow(0 0 10px #22c55e88)' }}
+              >
+                <featured.Icon />
+              </div>
+            )}
+          </div>
+          {/* Featured copy */}
+          <div className="flex flex-col justify-between p-5 sm:p-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2
+                  className="font-display text-xl tracking-widest sm:text-2xl"
+                  style={{ color: '#4ade80', textShadow: '0 0 8px #22c55e88' }}
+                >
+                  {featured.name.toUpperCase()}
+                </h2>
+                <span
+                  className="font-mono text-xs font-bold tracking-widest px-1.5 py-0.5"
+                  style={{
+                    color: featuredTag.color,
+                    border: `1px solid ${featuredTag.border}`,
+                    background: featuredTag.bg,
+                  }}
+                >
+                  [{featuredTag.label}]
+                </span>
+              </div>
+              <p className="mt-3 font-mono text-sm leading-relaxed" style={{ color: '#86efac' }}>
+                {featured.desc}
+              </p>
+              <ul
+                className="mt-4 grid grid-cols-2 gap-2 font-mono text-[10px] tracking-widest"
+                style={{ color: '#166534' }}
+              >
+                <li>· {featuredMeta[0]}</li>
+                <li>· {featuredMeta[1]}</li>
+                <li>· WEB · NO INSTALL</li>
+                <li>· INSTANT PLAY</li>
+              </ul>
+            </div>
+            <button
+              onClick={() => navigate(featured.path)}
+              className="mt-5 font-display text-xs tracking-widest transition-all duration-150 hover:[box-shadow:0_0_18px_#22c55e88]"
+              style={{
+                color: '#0a1f0a',
+                background: '#22c55e',
+                border: CTA_BORDER,
+                padding: '12px 16px',
+              }}
+            >
+              ▶ PLAY {featured.name.toUpperCase()}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Browse all */}
+      <section ref={browseRef} className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
+            BROWSE ALL GAMES
+          </span>
+          <span className="h-px flex-1" style={{ background: '#0f2a18' }} />
+          <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+            {visibleGames.length} / {games.length}
+          </span>
+        </div>
+        {visibleGames.length === 0 ? (
+          <div
+            className="flex h-32 items-center justify-center font-mono text-xs tracking-widest"
+            style={{ border: BORDER, background: '#040e07', color: '#166534' }}
+          >
+            NO MATCHES · ADJUST FILTER OR SEARCH
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleGames.map((g) => (
+              <BrowseRow key={g.id} game={g} onPlay={() => navigate(g.path)} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Footer */}
       <footer
-        className="px-4 py-4 text-center font-mono text-xs tracking-wider"
+        className="mt-auto px-4 py-4 text-center font-mono text-[10px] tracking-widest"
         style={{ borderTop: BORDER, color: '#0f3018' }}
       >
-        AUTHORIZED ACCESS ONLY
+        ▮ END OF MANIFEST · {games.length} GAMES · AUTHORIZED ACCESS ONLY
       </footer>
     </div>
   );

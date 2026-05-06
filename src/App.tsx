@@ -31,7 +31,10 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 export default function App() {
   const { pathname } = useLocation();
-  useIntegrityGuard({ enabled: !SELF_SCANNED_ROUTES.has(pathname) });
+  useIntegrityGuard({
+    enabled: !SELF_SCANNED_ROUTES.has(pathname),
+    trigger: pathname,
+  });
 
   return (
     <Suspense fallback={null}>
