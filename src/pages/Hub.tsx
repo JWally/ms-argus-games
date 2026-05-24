@@ -193,6 +193,19 @@ const IcoAmaze = () => (
     <circle cx="2.8" cy="2.8" r="1.3" fill="currentColor" />
   </Ico>
 );
+const IcoFpjs = () => (
+  <Ico>
+    <path
+      d="M8 0a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V5a5 5 0 0 0-5-5m-2.6 4.5a3.6 3.6 0 0 1 7 1.5v.5a.5.5 0 0 1-1 0v-.5a2.6 2.6 0 0 0-5.1-.6.5.5 0 0 1-1-.2zM4 6a4 4 0 0 1 8 0v2.5a.5.5 0 0 1-1 0V6a3 3 0 0 0-6 0v3a.5.5 0 0 1-1 0zm2 0a2 2 0 0 1 4 0v3.5a.5.5 0 0 1-1 0V6a1 1 0 1 0-2 0v4.5a.5.5 0 0 1-1 0zm1.5 1a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-1 0V7.5a.5.5 0 0 1 .5-.5"
+      fill="currentColor"
+    />
+  </Ico>
+);
+const IcoPair = () => (
+  <Ico>
+    <path d="M3 1h4v4H3zM9 1h4v4H9zM3 7h4v4H3zM9 7h2v2H9zM12 9h2v2h-2zM10 11h2v2h-2z" />
+  </Ico>
+);
 const IcoWayfinder = () => (
   <Ico>
     <circle cx="3" cy="4" r="1.6" fill="currentColor" />
@@ -221,9 +234,18 @@ interface Game {
   path: string;
   Icon: () => ReactElement;
   special?: boolean; // render custom art instead of icon
+  external?: boolean; // path is an absolute URL; open via window.location
 }
 
 const games: Game[] = [
+  {
+    id: 'fpjs',
+    name: 'FPJS PROBE',
+    desc: 'Run FingerprintJS · see what they see',
+    tag: 'Diagnostic',
+    path: '/fpjs',
+    Icon: IcoFpjs,
+  },
   {
     id: 'ataxx',
     name: 'Ataxx',
@@ -376,6 +398,15 @@ const games: Game[] = [
     tag: 'Diagnostic',
     path: '/bot-buster',
     Icon: ScanIcon,
+  },
+  {
+    id: 'pair',
+    name: 'PHONE PAIR',
+    desc: 'Scan a QR · pair your phone · prove you are human',
+    tag: 'Diagnostic',
+    path: 'https://captcha-dev-jw.argus.pw',
+    Icon: IcoPair,
+    external: true,
   },
 ];
 
@@ -703,7 +734,20 @@ export default function Hub() {
 
   const cabinetWall = visibleGames.slice(0, 9);
 
+  const playGame = useCallback(
+    (g: Game) => {
+      if (g.external) {
+        window.location.href = g.path;
+      } else {
+        navigate(g.path);
+      }
+    },
+    [navigate]
+  );
+
   const playRandom = useCallback(() => {
+    // pickRandom's pool already excludes Diagnostic, so external games
+    // (only Pair is currently external) are never reached here.
     const choice = pickRandom(visibleGames.filter((g) => g.tag !== 'Diagnostic'));
     if (choice) navigate(choice.path);
   }, [visibleGames, navigate]);
@@ -969,7 +1013,7 @@ export default function Hub() {
           ) : (
             <div className="grid grid-cols-3 gap-2">
               {cabinetWall.map((g) => (
-                <CabinetCell key={g.id} game={g} onPlay={() => navigate(g.path)} />
+                <CabinetCell key={g.id} game={g} onPlay={() => playGame(g)} />
               ))}
             </div>
           )}
@@ -1090,7 +1134,7 @@ export default function Hub() {
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {visibleGames.map((g) => (
-              <BrowseRow key={g.id} game={g} onPlay={() => navigate(g.path)} />
+              <BrowseRow key={g.id} game={g} onPlay={() => playGame(g)} />
             ))}
           </div>
         )}
