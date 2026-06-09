@@ -7,9 +7,35 @@ import {
   loadArgusLoader,
 } from '../utils/argusLoader';
 
-// Our own backend proxy — fetches the stored integrity record from the
-// merchant REST API using the dual-key credential held server-side.
-const INTEGRITY_CHECK_URL = '/api/integrity/check';
+// Bot-buster submit endpoint. Fetches the merchant projection internally,
+// runs duplicate-detection + tampering thresholds, persists the entry,
+// returns the verdict in one shot. See cdk/lib/integrity-proxy.ts.
+const LEADERBOARD_ENTRY_URL = '/api/leaderboard-entry';
+
+export type BotBusterOutcome = 'SUCCESS' | 'BLOCKED';
+
+export type BotBusterReason =
+  | 'TAMPERING_AUTOMATION'
+  | 'TAMPERING_DEVICE'
+  | 'TAMPERING_NETWORK'
+  | 'INCOGNITO'
+  | 'DUPLICATE_CRYPTO'
+  | 'DUPLICATE_TPC'
+  | 'DUPLICATE_UUID'
+  | 'DUPLICATE_NETWORK_1H'
+  | null;
+
+export interface BotBusterVerdict {
+  outcome: BotBusterOutcome;
+  reason: BotBusterReason;
+  /** session_id of the prior SUCCESS that this submission duplicated. Null
+   *  when no duplicate (i.e., outcome=SUCCESS or reason=TAMPERING_*). */
+  duplicateOf: string | null;
+  /** Epoch ms when the prior duplicate was recorded. Renders as "seen N
+   *  ago" in the verdict screen so blocked users know how recent the
+   *  collision was. Null when no duplicate. */
+  duplicateAt: number | null;
+}
 
 /**
  * State machine for the BOT-BUSTER page:
@@ -27,6 +53,8 @@ export interface ScanResult {
   scannedAt: string;
   /** The merchant-safe API response — identical to what a paying customer sees. */
   merchant: MerchantSafeResponse;
+  /** Bot-buster game verdict computed by the leaderboard-entry endpoint. */
+  verdict: BotBusterVerdict;
 }
 
 /**
@@ -98,49 +126,64 @@ export function useScan() {
     startProfile();
   }, [startProfile]);
 
-  const reveal = useCallback(async () => {
-    // Already revealed — nothing to do. Re-triggering from the UI
-    // would be odd; but harmless.
-    if (state === 'revealing' || state === 'revealed') return;
+  const reveal = useCallback(
+    async (attribution: string = '') => {
+      // Already revealed — nothing to do. Re-triggering from the UI
+      // would be odd; but harmless.
+      if (state === 'revealing' || state === 'revealed') return;
 
-    // If profile errored, restart it before revealing.
-    let profile = profilePromise.current;
-    if (!profile || state === 'error') {
-      startProfile();
-      profile = profilePromise.current!;
-    }
+      // If profile errored, restart it before revealing.
+      let profile = profilePromise.current;
+      if (!profile || state === 'error') {
+        startProfile();
+        profile = profilePromise.current!;
+      }
 
-    setState('revealing');
-    setError(null);
+      setState('revealing');
+      setError(null);
 
-    const p = await profile;
-    if (!p.ok) {
-      setError(p.error);
-      setState('error');
-      return;
-    }
+      const p = await profile;
+      if (!p.ok) {
+        setError(p.error);
+        setState('error');
+        return;
+      }
 
-    try {
-      const res = await fetch(INTEGRITY_CHECK_URL, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sessionId: p.sessionId }),
-      });
-      if (!res.ok) throw new Error(`Check endpoint returned ${res.status}`);
+      try {
+        const res = await fetch(LEADERBOARD_ENTRY_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ sessionId: p.sessionId, attribution }),
+        });
+        if (!res.ok) throw new Error(`Leaderboard endpoint returned ${res.status}`);
 
-      const merchant = (await res.json()) as MerchantSafeResponse;
+        const body = (await res.json()) as {
+          outcome: BotBusterOutcome;
+          reason: BotBusterReason;
+          duplicate_of: string | null;
+          duplicate_at: number | null;
+          merchant: MerchantSafeResponse;
+        };
 
-      setResult({
-        sessionId: p.sessionId,
-        scannedAt: new Date().toISOString(),
-        merchant,
-      });
-      setState('revealed');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setState('error');
-    }
-  }, [state, startProfile]);
+        setResult({
+          sessionId: p.sessionId,
+          scannedAt: new Date().toISOString(),
+          merchant: body.merchant,
+          verdict: {
+            outcome: body.outcome,
+            reason: body.reason,
+            duplicateOf: body.duplicate_of,
+            duplicateAt: body.duplicate_at,
+          },
+        });
+        setState('revealed');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        setState('error');
+      }
+    },
+    [state, startProfile],
+  );
 
   /** Restart from scratch — re-profile and re-reveal. */
   const scanAgain = useCallback(() => {

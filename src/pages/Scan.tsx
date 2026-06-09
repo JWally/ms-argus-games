@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useScan } from '../hooks/useScan';
+import { useScan, type BotBusterReason } from '../hooks/useScan';
 import { classifyScan, type MerchantSafeResponse } from '../utils/classifyScan';
 import { SignalList } from './scan/SignalList';
+import { CheckoutForm, type CheckoutPayload } from './scan/CheckoutForm';
 
 const BORDER = '1px solid #0f2a18';
-const PROMPT_TEXT = 'Would you like to play a game...?';
 
 /** Animate dots for transient loading states (ANALYZING...). */
 function useLoadingDots() {
@@ -41,12 +41,25 @@ function fmtTtl(seconds: number | null): string {
   return new Date(seconds * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 }
 
-// Tag → color. `cellular` is a positive classification (mobile user, not a
-// threat). `no_webrtc` is neutral/warning (merchant should correlate).
-// Everything else is an adversarial signal.
+// Tag → color triage.
+//   GREEN  = positive identification (helpful for risk decisions, not adversarial)
+//   YELLOW = neutral / informational / privacy-relay traffic
+//   RED    = adversarial signal
 function tagColor(tag: string): string {
-  if (tag === 'cellular') return GREEN;
-  if (tag === 'no_webrtc') return YELLOW;
+  // Positive / informational classifications
+  if (tag === 'cellular' || tag === 'apple_attested' || tag === 'brave_ios') {
+    return GREEN;
+  }
+  // Neutral / merchant-correlation hints
+  if (
+    tag === 'no_webrtc' ||
+    tag === 'privacy_relay' ||
+    tag === 'apple_attestation_missing'
+  ) {
+    return YELLOW;
+  }
+  // Everything else (vpn/proxy/hyperscaler/corporate_shield/browser_tampering/
+  // automation/incognito/location_mismatch/language_mismatch) is adversarial.
   return RED;
 }
 
@@ -207,6 +220,145 @@ function Section({
 }
 
 /**
+ * RDAP + PeeringDB ASN enrichment rendered as compact green rows. Each
+ * field is sparse — present only when the lookup found something for the
+ * IP/ASN — so the function bails early when the bag is empty.
+ */
+function AsnMetadataRows({
+  metadata,
+}: {
+  metadata: MerchantSafeResponse['ipInfo']['asn']['metadata'];
+}): ReactElement | null {
+  if (!metadata || Object.keys(metadata).length === 0) return null;
+  const rows: Array<[string, string | number]> = [];
+  if (metadata.parent_org !== undefined) rows.push(['asn.parent_org', metadata.parent_org]);
+  if (metadata.customer_org !== undefined) rows.push(['asn.customer_org', metadata.customer_org]);
+  if (metadata.pdb_type !== undefined) rows.push(['asn.pdb_type', metadata.pdb_type]);
+  if (metadata.ix_count !== undefined) rows.push(['asn.ix_count', metadata.ix_count]);
+  return (
+    <>
+      {rows.map(([label, value]) => (
+        <Row key={label} label={label} value={fmt(value)} colorOverride="#86efac" indent={1} />
+      ))}
+    </>
+  );
+}
+
+/** Compact "Nm ago" / "Nh ago" / "Nd ago" formatter from a delta in ms. */
+function ago(deltaMs: number): string {
+  const s = Math.max(1, Math.round(deltaMs / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 48) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  if (d < 60) return `${d}d ago`;
+  const mo = Math.round(d / 30);
+  return `${mo}mo ago`;
+}
+
+/**
+ * Format a BotBusterReason into a human-readable sub-line for the
+ * SUCCESS/BLOCKED header. Tampering reasons include the actual score
+ * vs threshold; duplicate reasons include "seen N ago" when the prior
+ * timestamp is available.
+ */
+function formatReason(
+  reason: BotBusterReason,
+  merchant: MerchantSafeResponse | undefined,
+  duplicateAt: number | null,
+): string {
+  if (!reason) return '';
+  const T = 20; // matches integrity-proxy TAMPER_THRESHOLD
+  const seenAge = duplicateAt ? ` — seen ${ago(Date.now() - duplicateAt)}` : '';
+  switch (reason) {
+    case 'TAMPERING_AUTOMATION':
+      return `automation = ${merchant?.automation ?? '?'}% > ${T}% threshold`;
+    case 'TAMPERING_DEVICE':
+      return `device_tampering = ${merchant?.device_tampering ?? '?'}% > ${T}% threshold`;
+    case 'TAMPERING_NETWORK':
+      return `network_tampering = ${merchant?.network_tampering ?? '?'}% > ${T}% threshold`;
+    case 'INCOGNITO':
+      return `incognito / private-mode session — storage is sandboxed, no purchase eligibility`;
+    case 'DUPLICATE_CRYPTO':
+      return `crypto_device_id matches a prior successful submission${seenAge}`;
+    case 'DUPLICATE_TPC':
+      return `tpc_id (3rd-party cookie) matches a prior successful submission${seenAge}`;
+    case 'DUPLICATE_UUID':
+      return `client_uuid (3-store evercookie) matches a prior successful submission${seenAge}`;
+    case 'DUPLICATE_NETWORK_1H':
+      return `same IP + browser submitted within the last hour${seenAge}`;
+  }
+}
+
+/**
+ * Big-letter page header that swaps based on bot-buster verdict.
+ *   pre-submit: > BOT-BUSTER (green)
+ *   scanning:   > BOT-BUSTER (green, current — verdict not in yet)
+ *   SUCCESS:    > SUCCESS! (large green glow)
+ *   BLOCKED:    > BLOCKED! (large red glow + reason sub-line)
+ */
+function PageHeader({
+  outcome,
+  reason,
+  merchant,
+  duplicateAt,
+}: {
+  outcome: 'SUCCESS' | 'BLOCKED' | null;
+  reason: BotBusterReason;
+  merchant: MerchantSafeResponse | undefined;
+  duplicateAt: number | null;
+}): ReactElement {
+  if (outcome === 'SUCCESS') {
+    return (
+      <h1
+        className="font-display tracking-[0.25em]"
+        style={{
+          color: GREEN,
+          textShadow: '0 0 16px #22c55eaa, 0 0 36px #22c55e66',
+          fontSize: 'clamp(1.75rem, 5vw, 3rem)',
+        }}
+      >
+        &gt; SUCCESS!
+      </h1>
+    );
+  }
+  if (outcome === 'BLOCKED') {
+    return (
+      <>
+        <h1
+          className="font-display tracking-[0.25em]"
+          style={{
+            color: RED,
+            textShadow: '0 0 16px #f87171aa, 0 0 36px #f8717166',
+            fontSize: 'clamp(1.75rem, 5vw, 3rem)',
+          }}
+        >
+          &gt; BLOCKED!
+        </h1>
+        {reason && (
+          <div
+            className="mt-2 font-mono text-xs tracking-widest"
+            style={{ color: '#fca5a5' }}
+          >
+            reason: {reason} — {formatReason(reason, merchant, duplicateAt)}
+          </div>
+        )}
+      </>
+    );
+  }
+  return (
+    <h1
+      className="font-display text-lg tracking-[0.25em] sm:text-xl"
+      style={{ color: GREEN, textShadow: '0 0 8px #22c55e44' }}
+    >
+      &gt; BOT-BUSTER
+    </h1>
+  );
+}
+
+/**
  * Renders every field of the merchant-safe API response. This is the
  * full, verbatim shape a paying customer sees — identical data, identical
  * field names, no internal extras.
@@ -253,6 +405,8 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           colorOverride={networkClassColor(asn.network_class)}
           indent={1}
         />
+        <AsnMetadataRows metadata={asn.metadata} />
+        <div style={{ borderTop: BORDER, margin: '6px 0' }} />
         <Row
           label="mobile"
           value={fmt(merchant.ipInfo.mobile.result)}
@@ -260,9 +414,41 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
           indent={1}
         />
         <Row
+          label="residential"
+          value={fmt(merchant.ipInfo.residential.result)}
+          colorOverride={merchant.ipInfo.residential.result ? GREEN : MUTED}
+          indent={1}
+        />
+        <Row
           label="datacenter"
           value={fmt(merchant.ipInfo.datacenter.result)}
           colorOverride={resultColor(merchant.ipInfo.datacenter.result)}
+          indent={1}
+        />
+        <Row
+          label="vpn"
+          value={fmt(merchant.ipInfo.vpn.result)}
+          colorOverride={resultColor(merchant.ipInfo.vpn.result)}
+          indent={1}
+        />
+        <Row
+          label="hosting (resi-resale)"
+          value={fmt(merchant.ipInfo.hosting.result)}
+          colorOverride={resultColor(merchant.ipInfo.hosting.result)}
+          indent={1}
+        />
+        <Row
+          label="privacy_relay"
+          value={fmt(merchant.ipInfo.privacy_relay.result)}
+          colorOverride={merchant.ipInfo.privacy_relay.result ? YELLOW : MUTED}
+          indent={1}
+        />
+        <Row
+          label="corporate_shield"
+          value={fmt(merchant.ipInfo.corporate_shield.result)}
+          colorOverride={
+            merchant.ipInfo.corporate_shield.result ? YELLOW : MUTED
+          }
           indent={1}
         />
         <div style={{ borderTop: BORDER, margin: '6px 0' }} />
@@ -410,60 +596,32 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
   );
 }
 
-/**
- * Typewriter: reveals `text` one character at a time. Returns the
- * current substring and a `done` flag. `startDelay` gives users a
- * moment to register the cursor before characters start appearing.
- */
-function useTypewriter(text: string, speed = 55, startDelay = 350) {
-  const [typed, setTyped] = useState('');
-  useEffect(() => {
-    setTyped('');
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    const startId = setTimeout(() => {
-      let i = 0;
-      intervalId = setInterval(() => {
-        i++;
-        setTyped(text.slice(0, i));
-        if (i >= text.length && intervalId !== null) {
-          clearInterval(intervalId);
-        }
-      }, speed);
-    }, startDelay);
-    return () => {
-      clearTimeout(startId);
-      if (intervalId !== null) clearInterval(intervalId);
-    };
-  }, [text, speed, startDelay]);
-  return { typed, done: typed.length >= text.length };
-}
-
 export default function Scan(): ReactElement {
-  const navigate = useNavigate();
+  // Note: useNavigate kept for any future cancel-flow buttons; current
+  // checkout UI doesn't offer a NO path.
+  useNavigate();
   const { state, result, error, reveal } = useScan();
   const dots = useLoadingDots();
-  const { typed, done: typingDone } = useTypewriter(PROMPT_TEXT);
 
-  // Intro screen visibility. Flips once the user clicks YES (or NO).
-  // scanAgain() deliberately does NOT reset this — the intro is a
-  // first-visit moment; re-running from within results is a direct
+  // Intro screen visibility. Flips once the user submits the checkout
+  // form. scanAgain() deliberately does NOT reset this — the form is
+  // a first-visit moment; re-running from within results is a direct
   // re-profile + re-reveal without the theatrical prompt.
   const [answered, setAnswered] = useState(false);
 
-  const yesRef = useRef<HTMLButtonElement>(null);
+  // Attribution handle the user entered on the checkout form (email,
+  // handle, BTC addr, anything). Empty when they opted out. Rendered
+  // on the verdict screen so they can confirm what we stored.
+  const [attribution, setAttribution] = useState<string>('');
 
-  // Auto-focus the YES button once typing completes so Enter triggers it.
-  useEffect(() => {
-    if (typingDone && !answered) yesRef.current?.focus();
-  }, [typingDone, answered]);
-
-  const handleYes = () => {
+  const handleCheckoutSubmit = (payload: CheckoutPayload) => {
     setAnswered(true);
-    reveal();
-  };
-
-  const handleNo = () => {
-    navigate('/');
+    setAttribution(payload.attribution);
+    // reveal() now POSTs /api/leaderboard-entry with the attribution,
+    // which internally fetches the merchant projection, runs duplicate
+    // detection + tampering thresholds, persists to DDB, and returns
+    // both the verdict and the projection. No second call needed.
+    reveal(payload.attribution);
   };
 
   const signals = useMemo(() => (result ? classifyScan(result.merchant) : []), [result]);
@@ -542,92 +700,32 @@ export default function Scan(): ReactElement {
             boxShadow: 'inset 0 0 20px #00000040',
           }}
         >
-          <h1
-            className="font-display text-lg tracking-[0.25em] sm:text-xl"
-            style={{
-              color: GREEN,
-              textShadow: '0 0 8px #22c55e44',
-            }}
-          >
-            &gt; BOT-BUSTER
-          </h1>
+          <PageHeader
+            outcome={state === 'revealed' ? result?.verdict.outcome ?? null : null}
+            reason={result?.verdict.reason ?? null}
+            merchant={result?.merchant}
+            duplicateAt={result?.verdict.duplicateAt ?? null}
+          />
 
-          {/* ───── INTRO (typed prompt + YES/NO) ───── */}
+          {/* ───── INTRO (fake-checkout form) ───── */}
           {!answered && (
-            <div className="mt-10 mb-4 flex flex-col items-center">
+            <>
               <div
-                className="font-mono text-center tracking-wide"
-                style={{
-                  color: GREEN,
-                  textShadow: '0 0 6px #22c55e88, 0 0 18px #22c55e33',
-                  fontSize: 'clamp(1.25rem, 3.5vw, 2rem)',
-                  minHeight: '3rem',
-                  lineHeight: 1.4,
-                }}
+                className="mt-3 font-mono text-xs tracking-widest"
+                style={{ color: '#94a3b8', lineHeight: 1.6 }}
               >
-                {typed}
-                <span
-                  aria-hidden
-                  style={{
-                    display: 'inline-block',
-                    marginLeft: '0.15ch',
-                    width: '0.6ch',
-                    animation: 'argusCursorBlink 1s steps(1) infinite',
-                  }}
-                >
-                  █
+                Working on bot &amp; proxy detection. If you have a scraper or bot
+                and want to see if it gets caught &mdash; without burning the IP &mdash;
+                fill out the (free, fake) checkout below. Submitting reveals
+                your scorecard.
+                <br />
+                <span style={{ color: MUTED }}>
+                  First verified all-five-pass bypass wins the bounty. Leaderboard
+                  handle below.
                 </span>
               </div>
-
-              <style>{`
-                @keyframes argusCursorBlink {
-                  50% { opacity: 0; }
-                }
-              `}</style>
-
-              {/* Buttons fade in once typing is done. */}
-              <div
-                className="mt-10 flex w-full max-w-xs flex-col items-stretch gap-3"
-                style={{
-                  opacity: typingDone ? 1 : 0,
-                  transition: 'opacity 0.4s ease-in',
-                  pointerEvents: typingDone ? 'auto' : 'none',
-                }}
-              >
-                <button
-                  ref={yesRef}
-                  onClick={handleYes}
-                  className="font-display tracking-[0.3em] focus:outline-none"
-                  style={{
-                    color: '#030c06',
-                    background: GREEN,
-                    border: '2px solid #22c55e',
-                    padding: '0.9rem 1.25rem',
-                    fontSize: '1.5rem',
-                    borderRadius: '3px',
-                    boxShadow: '0 0 14px #22c55eaa, 0 0 32px #22c55e44, inset 0 0 8px #00000022',
-                    cursor: 'pointer',
-                  }}
-                >
-                  [ YES ]
-                </button>
-                <button
-                  onClick={handleNo}
-                  className="font-display tracking-[0.3em] focus:outline-none"
-                  style={{
-                    color: GREEN,
-                    background: 'transparent',
-                    border: '2px solid #1a6632',
-                    padding: '0.9rem 1.25rem',
-                    fontSize: '1.5rem',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  [ NO ]
-                </button>
-              </div>
-            </div>
+              <CheckoutForm onSubmit={handleCheckoutSubmit} />
+            </>
           )}
 
           {/* ───── POST-ANSWER (reveal / results / error) ───── */}
@@ -649,6 +747,25 @@ export default function Scan(): ReactElement {
 
               {state === 'revealed' && result && (
                 <>
+                  {attribution ? (
+                    <div
+                      className="mt-4 font-mono text-xs tracking-widest"
+                      style={{ color: '#86efac', lineHeight: 1.5 }}
+                    >
+                      <span style={{ color: MUTED }}>ENTERED AS: </span>
+                      <span style={{ overflowWrap: 'anywhere' }}>{attribution}</span>
+                      <div style={{ color: MUTED, marginTop: '0.25rem' }}>
+                        If you crack all five detectors, we&apos;ll reach you here.
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="mt-4 font-mono text-xs tracking-widest"
+                      style={{ color: MUTED, lineHeight: 1.5 }}
+                    >
+                      no leaderboard handle entered &mdash; score won&apos;t be associated with a contact
+                    </div>
+                  )}
                   <div className="mt-6 font-mono text-xs tracking-widest" style={{ color: MUTED }}>
                     DETECTED:
                   </div>

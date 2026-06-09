@@ -142,6 +142,7 @@ export default [
         console: 'readonly',
         __dirname: 'readonly',
         fetch: 'readonly',
+        Buffer: 'readonly',
       },
     },
     plugins: {

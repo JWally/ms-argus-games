@@ -5,7 +5,7 @@ import { useIntegrityGuard } from './hooks/useIntegrityGuard';
 
 // Routes that run their own integrity scan — the app-wide collector should
 // skip them so we don't double-POST to /v1/integrity-collect.
-const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/fpjs']);
+const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/fpjs', '/e2e']);
 
 const Ataxx = lazy(() => import('./pages/Ataxx'));
 const Breakout = lazy(() => import('./pages/Breakout'));
@@ -27,6 +27,7 @@ const Wayfinder = lazy(() => import('./pages/Wayfinder'));
 const Amaze = lazy(() => import('./pages/Amaze'));
 const Scan = lazy(() => import('./pages/Scan'));
 const Fpjs = lazy(() => import('./pages/Fpjs'));
+const E2e = lazy(() => import('./pages/E2e'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/amaze" element={<Amaze />} />
         <Route path="/bot-buster" element={<Scan />} />
         <Route path="/fpjs" element={<Fpjs />} />
+        <Route path="/e2e" element={<E2e />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
