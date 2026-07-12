@@ -31,6 +31,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as eventTargets from 'aws-cdk-lib/aws-events-targets';
 import * as ddb from 'aws-cdk-lib/aws-dynamodb';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 interface GamesStackProps extends cdk.StackProps {
   stage: string;
@@ -197,6 +198,55 @@ export class GamesStack extends cdk.Stack {
         allowHeaders: ['content-type', 'authorization'],
       },
     });
+
+    // ── Arcade captcha gate ─────────────────────────────────────────────
+    // A server-issued challenge is verified against Pair, then exchanged for
+    // a signed HttpOnly one-hour arcade grant. The cookie is stateless: no
+    // session table or redemption database sits on the game-entry path.
+    if (merchantCpi) {
+      const captchaCpi = /\.(?:fastpass|stepup|forceauth)$/.test(merchantCpi)
+        ? merchantCpi
+        : `${merchantCpi}.fastpass`;
+      const gateSecret = new secretsmanager.Secret(this, 'CaptchaGateSecret', {
+        description: 'HMAC key for short-lived Argus Arcade access grants',
+        generateSecretString: { passwordLength: 64, excludePunctuation: true },
+      });
+      const gateFn = new lambda.NodejsFunction(this, 'CaptchaGate', {
+        entry: path.join(__dirname, 'captcha-gate.ts'),
+        handler: 'handler',
+        runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+        architecture: lambdaRuntime.Architecture.ARM_64,
+        memorySize: 256,
+        timeout: cdk.Duration.seconds(10),
+        environment: {
+          CAPTCHA_GATE_SECRET_ARN: gateSecret.secretArn,
+          CAPTCHA_CPI: captchaCpi,
+          PAIR_VERIFY_URL: 'https://captcha-dev-jw.argus.pw/api/verify',
+        },
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        bundling: { minify: true, sourceMap: false, target: 'node22' },
+      });
+      gateSecret.grantRead(gateFn);
+      const gateIntegration = new integrations.HttpLambdaIntegration(
+        'CaptchaGateIntegration',
+        gateFn
+      );
+      api.addRoutes({
+        path: '/api/captcha/challenge',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: gateIntegration,
+      });
+      api.addRoutes({
+        path: '/api/captcha/verify',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: gateIntegration,
+      });
+      api.addRoutes({
+        path: '/api/captcha/status',
+        methods: [apigatewayv2.HttpMethod.GET],
+        integration: gateIntegration,
+      });
+    }
 
     // Integrity proxy route
     if (integrityFn) {

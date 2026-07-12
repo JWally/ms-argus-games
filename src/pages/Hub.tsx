@@ -81,6 +81,26 @@ const IcoSpellingBee = () => (
     />
   </Ico>
 );
+const IcoSemanticLockpick = () => (
+  <Ico>
+    <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth=".8" />
+    <circle
+      cx="8"
+      cy="8"
+      r="3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth=".6"
+      opacity=".65"
+    />
+    <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+    <circle cx="4.2" cy="5" r="1.1" fill="currentColor" opacity=".45" />
+    <circle cx="11.8" cy="4.6" r="1.1" fill="currentColor" opacity=".75" />
+    <circle cx="12.2" cy="11.5" r="1.1" fill="currentColor" opacity=".55" />
+    <circle cx="4.4" cy="11.2" r="1.1" fill="currentColor" opacity=".35" />
+    <line x1="8" y1="8" x2="11.8" y2="4.6" stroke="currentColor" strokeWidth=".7" />
+  </Ico>
+);
 const IcoCardCounter = () => (
   <Ico>
     <path d="M7.184 11.246A3.5 3.5 0 0 1 1 9c0-1.602 1.14-2.633 2.66-4.008C4.986 3.792 6.602 2.33 8 0c1.398 2.33 3.014 3.792 4.34 4.992C13.86 6.367 15 7.398 15 9a3.5 3.5 0 0 1-6.184 2.246 20 20 0 0 0 1.582 2.907c.231.35-.02.847-.438.847H6.04c-.419 0-.67-.497-.438-.847a20 20 0 0 0 1.582-2.907" />
@@ -318,6 +338,14 @@ const games: Game[] = [
     tag: 'Brain',
     path: '/spelling-bee',
     Icon: IcoSpellingBee,
+  },
+  {
+    id: 'semantic-lockpick',
+    name: 'Semantic Lockpick',
+    desc: 'Guess the vector-nearest word',
+    tag: 'Brain',
+    path: '/semantic-lockpick',
+    Icon: IcoSemanticLockpick,
   },
   {
     id: 'card-counter',

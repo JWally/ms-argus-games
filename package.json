@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "lefthook install",
     "dev": "vite",
+    "test": "tsx --test tests/*.test.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,yaml,yml,css,html}\"",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1053.0",
+    "@aws-sdk/client-secrets-manager": "3.1053.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
     "@eslint/js": "^9.39.2",
     "@types/aws-lambda": "^8.10.161",
