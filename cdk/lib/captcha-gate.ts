@@ -13,12 +13,15 @@ interface GateClaims {
   kind: 'challenge' | 'grant';
   exp: number;
   challengeId?: string;
+  returnPath?: string;
 }
 
 interface GateDependencies {
   secret: string;
   cpi: string;
   pairVerifyUrl: string;
+  pairSsoExchangeUrl: string;
+  merchantSsoReturnUrl: string;
   fetchImpl?: FetchLike;
   now?: () => number;
   randomChallenge?: () => string;
@@ -89,6 +92,67 @@ function parseBody(event: APIGatewayProxyEventV2): Record<string, unknown> | nul
   }
 }
 
+function safeReturnPath(value: unknown): string {
+  if (typeof value !== 'string' || value.length > 1024 || !value.startsWith('/')) return '/';
+  if (value.startsWith('//') || value.includes('\\')) return '/';
+  try {
+    const parsed = new URL(value, 'https://arcades.invalid');
+    return parsed.origin === 'https://arcades.invalid' ? `${parsed.pathname}${parsed.search}` : '/';
+  } catch {
+    return '/';
+  }
+}
+
+const redirect = (location: string, cookies: string[]): APIGatewayProxyResultV2 => ({
+  statusCode: 302,
+  headers: { location, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' },
+  cookies,
+  body: '',
+});
+
+async function handleSsoReturn(
+  event: APIGatewayProxyEventV2,
+  deps: GateDependencies,
+  fetchImpl: FetchLike,
+  nowSeconds: number
+): Promise<APIGatewayProxyResultV2> {
+  const query = event.queryStringParameters ?? {};
+  const { session: sessionId, code, cpi, challengeId } = query;
+  if (!sessionId || !code || !cpi || !challengeId) {
+    return response(400, { error: 'sso_return_binding_required' });
+  }
+  const challenge = verifyClaims(deps.secret, cookieValue(event, CHALLENGE_COOKIE), nowSeconds);
+  if (challenge?.kind !== 'challenge' || !challenge.challengeId) {
+    return response(401, { error: 'challenge_missing_or_expired' });
+  }
+  if (challenge.challengeId !== challengeId || cpi !== deps.cpi) {
+    return response(409, { error: 'challenge_mismatch' });
+  }
+  let pairResponse: Response;
+  try {
+    pairResponse = await fetchImpl(deps.pairSsoExchangeUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionId, code, cpi: deps.cpi, challengeId }),
+    });
+  } catch {
+    return response(502, { error: 'sso_exchange_unavailable' });
+  }
+  const verdict = (await pairResponse.json().catch(() => ({}))) as Record<string, unknown>;
+  const exactContext = verdict.cpi === deps.cpi && verdict.challengeId === challengeId;
+  if (!pairResponse.ok || verdict.valid !== true || verdict.passed !== true || !exactContext) {
+    return response(403, { error: 'sso_exchange_rejected' });
+  }
+  const grant = signClaims(deps.secret, {
+    kind: 'grant',
+    exp: nowSeconds + GRANT_TTL_SECONDS,
+  });
+  return redirect(challenge.returnPath ?? '/', [
+    secureCookie(GRANT_COOKIE, grant, GRANT_TTL_SECONDS),
+    secureCookie(CHALLENGE_COOKIE, '', 0),
+  ]);
+}
+
 export function createCaptchaGateHandler(deps: GateDependencies) {
   const fetchImpl = deps.fetchImpl ?? fetch;
   const now = deps.now ?? Date.now;
@@ -99,15 +163,21 @@ export function createCaptchaGateHandler(deps: GateDependencies) {
     const nowSeconds = Math.floor(now() / 1000);
 
     if (route === 'POST /api/captcha/challenge') {
+      const body = parseBody(event);
+      if (!body) return response(400, { error: 'invalid_body' });
       const challengeId = randomChallenge();
+      const returnPath = safeReturnPath(body.returnPath);
       const value = signClaims(deps.secret, {
         kind: 'challenge',
         challengeId,
+        returnPath,
         exp: nowSeconds + CHALLENGE_TTL_SECONDS,
       });
-      return response(200, { challengeId, cpi: deps.cpi }, [
-        secureCookie(CHALLENGE_COOKIE, value, CHALLENGE_TTL_SECONDS),
-      ]);
+      return response(
+        200,
+        { challengeId, cpi: deps.cpi, ssoReturnUrl: deps.merchantSsoReturnUrl },
+        [secureCookie(CHALLENGE_COOKIE, value, CHALLENGE_TTL_SECONDS)]
+      );
     }
 
     if (route === 'GET /api/captcha/status') {
@@ -115,6 +185,10 @@ export function createCaptchaGateHandler(deps: GateDependencies) {
       return claims?.kind === 'grant'
         ? response(200, { passed: true })
         : response(401, { passed: false });
+    }
+
+    if (route === 'GET /api/captcha/sso-return') {
+      return handleSsoReturn(event, deps, fetchImpl, nowSeconds);
     }
 
     if (route !== 'POST /api/captcha/verify') {
@@ -180,8 +254,16 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   const secret = await gateSecret();
   const cpi = process.env.CAPTCHA_CPI;
   const pairVerifyUrl = process.env.PAIR_VERIFY_URL;
-  if (!secret || !cpi || !pairVerifyUrl) {
+  const pairSsoExchangeUrl = process.env.PAIR_SSO_EXCHANGE_URL;
+  const merchantSsoReturnUrl = process.env.MERCHANT_SSO_RETURN_URL;
+  if (!secret || !cpi || !pairVerifyUrl || !pairSsoExchangeUrl || !merchantSsoReturnUrl) {
     return response(503, { error: 'captcha_gate_unconfigured' });
   }
-  return createCaptchaGateHandler({ secret, cpi, pairVerifyUrl })(event);
+  return createCaptchaGateHandler({
+    secret,
+    cpi,
+    pairVerifyUrl,
+    pairSsoExchangeUrl,
+    merchantSsoReturnUrl,
+  })(event);
 }

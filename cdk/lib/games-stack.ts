@@ -222,6 +222,8 @@ export class GamesStack extends cdk.Stack {
           CAPTCHA_GATE_SECRET_ARN: gateSecret.secretArn,
           CAPTCHA_CPI: captchaCpi,
           PAIR_VERIFY_URL: 'https://captcha-dev-jw.argus.pw/api/verify',
+          PAIR_SSO_EXCHANGE_URL: 'https://captcha-dev-jw.argus.pw/api/sso/approval/exchange',
+          MERCHANT_SSO_RETURN_URL: `https://${domainName}/api/captcha/sso-return`,
         },
         logRetention: logs.RetentionDays.ONE_WEEK,
         bundling: { minify: true, sourceMap: false, target: 'node22' },
@@ -243,6 +245,11 @@ export class GamesStack extends cdk.Stack {
       });
       api.addRoutes({
         path: '/api/captcha/status',
+        methods: [apigatewayv2.HttpMethod.GET],
+        integration: gateIntegration,
+      });
+      api.addRoutes({
+        path: '/api/captcha/sso-return',
         methods: [apigatewayv2.HttpMethod.GET],
         integration: gateIntegration,
       });

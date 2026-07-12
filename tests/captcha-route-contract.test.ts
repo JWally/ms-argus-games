@@ -18,9 +18,13 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
     read('cdk/lib/games-stack.ts'),
   ]);
   assert.match(component, /challengeId: challenge\.challengeId/);
+  assert.match(component, /ssoReturnUrl: challenge\.ssoReturnUrl/);
+  assert.match(component, /returnPath: window\.location/);
   assert.match(component, /https:\/\/qr\.arcades\.click/);
   for (const route of ['challenge', 'verify', 'status']) {
     assert.match(stack, new RegExp(`/api/captcha/${route}`));
   }
+  assert.match(stack, /\/api\/captcha\/sso-return/);
+  assert.match(stack, /PAIR_SSO_EXCHANGE_URL/);
   assert.match(stack, /CAPTCHA_CPI: captchaCpi/);
 });
