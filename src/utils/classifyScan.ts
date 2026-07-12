@@ -16,9 +16,16 @@ export type SignalKind =
   | 'PROXY'
   | 'HYPERSCALER'
   | 'CORPORATE SHIELD'
+  | 'PRIVACY RELAY'
+  | 'HOSTING PROXY'
+  | 'LOCATION MISMATCH'
+  | 'LANGUAGE MISMATCH'
   | 'BROWSER TAMPERING'
   | 'AUTOMATION'
-  | 'INCOGNITO';
+  | 'INCOGNITO'
+  | 'DEV TOOLS'
+  | 'BRAVE iOS'
+  | 'APPLE ATTESTED';
 
 export type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -27,17 +34,24 @@ export interface ClassifiedSignal {
   confidence?: Confidence;
 }
 
-/** Merchant-safe tag vocabulary — must stay in sync with server. */
+/** Merchant-safe tag vocabulary — must stay in sync with server's
+ *  MerchantTag union (ms-argus-api/src/helpers/merchant-projection.ts). */
 export type MerchantTag =
   | 'vpn'
   | 'proxy'
   | 'hyperscaler'
   | 'corporate_shield'
+  | 'privacy_relay'
   | 'browser_tampering'
   | 'automation'
   | 'incognito'
   | 'cellular'
-  | 'no_webrtc';
+  | 'location_mismatch'
+  | 'language_mismatch'
+  | 'no_webrtc'
+  | 'apple_attested'
+  | 'apple_attestation_missing'
+  | 'brave_ios';
 
 export interface BrowserDetails {
   browserName: string | null;
@@ -90,10 +104,31 @@ export interface MerchantIpLocation {
   timezone: string | null;
 }
 
+export interface MerchantAsnMetadata {
+  /** RDAP-discovered registrant operator on a sub-allocated block
+   *  (e.g. ARIN parent on a customer-allocated range). */
+  parent_org?: string;
+  /** RDAP-discovered customer organization for sub-allocated blocks
+   *  (e.g. "BrowserStack" sitting inside an upstream parent's ASN). */
+  customer_org?: string;
+  /** PeeringDB operator-self-declared type (cable/dsl, hosting, etc.).
+   *  Operator-self-declared and may shift between weekly rebuilds —
+   *  treat as a hint, not a contract. */
+  pdb_type?: string;
+  /** PeeringDB internet-exchange presence count for the operator. */
+  ix_count?: number;
+}
+
 export interface MerchantIpInfo {
   asn: {
     number: number | null;
     organization: string | null;
+    /**
+     * Legacy 5-value categorization (datacenter / vpn_proxy / corporate_proxy
+     * / privacy_relay / mobile). Kept for backwards-compat with pre-existing
+     * integrations. Prefer `network_class` (12-value taxonomy) + the booleans
+     * below for new rendering.
+     */
     category: string | null;
     /**
      * Granular network class derived from the IPtoASN dataset + CIDR overlay
@@ -104,10 +139,24 @@ export interface MerchantIpInfo {
      * the dataset and no CIDR overlay matches.
      */
     network_class: string | null;
+    /** RDAP auto-overlay + PeeringDB enrichment when at least one field is
+     *  known for this session's IP/ASN. Sparse coverage by design. */
+    metadata: MerchantAsnMetadata | null;
   };
+  /** Convenience booleans — all derived from `asn.network_class`. */
   datacenter: { result: boolean };
-  /** Convenience boolean — true when network_class === "mobile". */
   mobile: { result: boolean };
+  residential: { result: boolean };
+  /** True when network_class is vpn_proxy (declared VPN provider). */
+  vpn: { result: boolean };
+  /** True when network_class is hosting_proxy (residential proxy networks
+   *  resold by Bright Data, SOAX, etc. — not the same as `vpn`). */
+  hosting: { result: boolean };
+  /** True when network_class is privacy_relay (Apple iCloud Private Relay). */
+  privacy_relay: { result: boolean };
+  /** True when network_class is security_filter (Cisco Umbrella, Zscaler,
+   *  Cloudflare Access — corporate cloud-egress shields). */
+  corporate_shield: { result: boolean };
 }
 
 export type Verdict = 'clean' | 'suspect' | 'block';
@@ -139,7 +188,20 @@ export interface MerchantSafeResponse {
   requestHeaders: MerchantRequestHeaders | null;
 }
 
-const BINARY_KINDS: readonly SignalKind[] = ['HYPERSCALER', 'CORPORATE SHIELD', 'INCOGNITO'];
+/** Binary signals — always red `DETECTED` without a confidence tier. */
+const BINARY_RED: readonly SignalKind[] = [
+  'HYPERSCALER',
+  'CORPORATE SHIELD',
+  'HOSTING PROXY',
+  'INCOGNITO',
+  'DEV TOOLS',
+  'LOCATION MISMATCH',
+  'LANGUAGE MISMATCH',
+];
+/** Binary signals — yellow / informational, not adversarial. */
+const BINARY_YELLOW: readonly SignalKind[] = ['PRIVACY RELAY'];
+/** Binary signals — green / positive (privacy browser, Apple attested). */
+const BINARY_GREEN: readonly SignalKind[] = ['BRAVE iOS', 'APPLE ATTESTED'];
 
 const RED = '#f87171';
 const YELLOW = '#f59e0b';
@@ -160,7 +222,9 @@ function probabilityToConfidence(p: number): Confidence {
 export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[] {
   const signals: ClassifiedSignal[] = [];
   const tags = new Set(merchant.tags);
+  const ip = merchant.ipInfo;
 
+  // ── Network-layer signals ──
   if (tags.has('vpn')) {
     signals.push({
       kind: 'VPN',
@@ -173,20 +237,42 @@ export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[]
       confidence: probabilityToConfidence(merchant.network_tampering),
     });
   }
-  if (merchant.ipInfo.asn.category === 'datacenter') {
+  // network_class === 'hosting_proxy' = SOAX / Bright Data residential-resale.
+  // Surfaced separately from 'proxy' tag because they're a distinct threat
+  // class (declared residential IP being resold as a proxy node).
+  if (ip.hosting.result) signals.push({ kind: 'HOSTING PROXY' });
+  if (ip.datacenter.result || ip.asn.category === 'datacenter') {
     signals.push({ kind: 'HYPERSCALER' });
   }
-  if (merchant.ipInfo.asn.category === 'corporate_proxy') {
+  if (ip.corporate_shield.result || ip.asn.category === 'corporate_proxy') {
     signals.push({ kind: 'CORPORATE SHIELD' });
   }
+  // Apple iCloud Private Relay — neither adversarial nor positive.
+  // Informational so merchants can opt into rules.
+  if (ip.privacy_relay.result || tags.has('privacy_relay')) {
+    signals.push({ kind: 'PRIVACY RELAY' });
+  }
+
+  // ── Geographic / locale mismatches ──
+  if (tags.has('location_mismatch')) {
+    signals.push({ kind: 'LOCATION MISMATCH' });
+  }
+  if (tags.has('language_mismatch')) {
+    signals.push({ kind: 'LANGUAGE MISMATCH' });
+  }
+
+  // ── Device / browser signals ──
   if (tags.has('browser_tampering')) {
     signals.push({
       kind: 'BROWSER TAMPERING',
       confidence: probabilityToConfidence(merchant.device_tampering),
     });
   }
-  if (merchant.incognito.result) {
+  if (merchant.incognito.result || tags.has('incognito')) {
     signals.push({ kind: 'INCOGNITO' });
+  }
+  if (merchant.developer_tools.result) {
+    signals.push({ kind: 'DEV TOOLS' });
   }
   if (tags.has('automation')) {
     signals.push({
@@ -195,11 +281,17 @@ export function classifyScan(merchant: MerchantSafeResponse): ClassifiedSignal[]
     });
   }
 
+  // ── Positive / informational identifications ──
+  if (tags.has('brave_ios')) signals.push({ kind: 'BRAVE iOS' });
+  if (tags.has('apple_attested')) signals.push({ kind: 'APPLE ATTESTED' });
+
   return signals;
 }
 
 export function confidenceColor(sig: ClassifiedSignal): typeof RED | typeof YELLOW | typeof GREEN {
-  if (BINARY_KINDS.includes(sig.kind)) return RED;
+  if (BINARY_GREEN.includes(sig.kind)) return GREEN;
+  if (BINARY_YELLOW.includes(sig.kind)) return YELLOW;
+  if (BINARY_RED.includes(sig.kind)) return RED;
   switch (sig.confidence) {
     case 'HIGH':
       return RED;
@@ -212,6 +304,7 @@ export function confidenceColor(sig: ClassifiedSignal): typeof RED | typeof YELL
 }
 
 export function confidenceLabel(sig: ClassifiedSignal): string {
-  if (BINARY_KINDS.includes(sig.kind)) return 'DETECTED';
+  if (BINARY_GREEN.includes(sig.kind)) return 'CONFIRMED';
+  if (BINARY_YELLOW.includes(sig.kind) || BINARY_RED.includes(sig.kind)) return 'DETECTED';
   return sig.confidence ?? 'LOW';
 }

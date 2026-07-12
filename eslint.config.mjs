@@ -97,6 +97,9 @@ export default [
         indexedDB: 'readonly',
         caches: 'readonly',
         Response: 'readonly',
+        Element: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLScriptElement: 'readonly',
       },
     },
     plugins: {
@@ -142,6 +145,11 @@ export default [
         console: 'readonly',
         __dirname: 'readonly',
         fetch: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+        Request: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
       },
     },
     plugins: {

@@ -3,17 +3,29 @@
 @tailwind utilities;
 
 html {
-  overscroll-behavior: none;
+  /* overscroll-behavior:none was suppressing bounce on desktop trackpad scroll —
+   * scope to mobile touch contexts only. */
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overscroll-behavior: none;
   overflow-x: hidden;
+  /* touch-action: manipulation is mobile-only; left here so games keep
+   * disabling double-tap zoom. Doesn't affect desktop scroll. */
   touch-action: manipulation;
+}
+
+/* Apply the bounce-suppression only on touch devices where it matters,
+ * so desktop trackpad / wheel scroll stays smooth and predictable. */
+@media (pointer: coarse) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 @keyframes terminal-blink {

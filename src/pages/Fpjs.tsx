@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 
-const FPJS_URL = 'https://fpjscdn.net/v4/p4xc7IvhbXplsXFFozUC';
+const FPJS_URL = 'https://fpjscdn.net/v4/xszasGYxaOq23ttuMOC0';
 const SERVER_EVENT_URL = '/api/fpjs/event';
 
 const BORDER = '1px solid #0f2a18';

@@ -29,6 +29,9 @@ import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventTargets from 'aws-cdk-lib/aws-events-targets';
+import * as ddb from 'aws-cdk-lib/aws-dynamodb';
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 interface GamesStackProps extends cdk.StackProps {
   stage: string;
@@ -97,6 +100,52 @@ export class GamesStack extends cdk.Stack {
     });
 
     // ── Integrity Proxy Lambda ─────────────────────────────────────────
+    // ── Bot-Buster entries table ──────────────────────────────────────────
+    // Stores every /bot-buster submission, keyed by (cpi, created_at).
+    // GSIs let the leaderboard-entry Lambda do O(1) duplicate lookups on
+    // each of the four identity columns. See cdk/lib/integrity-proxy.ts
+    // and src/utils/classifyScan.ts for the rules.
+    const botBusterTable = new ddb.Table(this, 'BotBusterEntries', {
+      tableName: `${props.stackName ?? id}-bot-buster-entries`,
+      partitionKey: { name: 'cpi', type: ddb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: ddb.AttributeType.NUMBER },
+      billingMode: ddb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+    // Cryptographic-grade identifiers — match against any prior SUCCESS forever.
+    botBusterTable.addGlobalSecondaryIndex({
+      indexName: 'crypto-index',
+      partitionKey: { name: 'crypto_device_id', type: ddb.AttributeType.STRING },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+    botBusterTable.addGlobalSecondaryIndex({
+      indexName: 'tpc-index',
+      partitionKey: { name: 'tpc_id', type: ddb.AttributeType.STRING },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+    botBusterTable.addGlobalSecondaryIndex({
+      indexName: 'uuid-index',
+      partitionKey: { name: 'client_uuid', type: ddb.AttributeType.STRING },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+    // Custom network_id (sha256 of viewer_ip + server-parsed UA). Composite
+    // key so the duplicate-check query can range-filter on created_at to
+    // implement the 1hr rolling window without DDB TTL race conditions.
+    botBusterTable.addGlobalSecondaryIndex({
+      indexName: 'network-index',
+      partitionKey: { name: 'custom_network_id', type: ddb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: ddb.AttributeType.NUMBER },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+    // Attribution index for the public leaderboard view (top successful
+    // entries per handle). Range on created_at for "most recent first".
+    botBusterTable.addGlobalSecondaryIndex({
+      indexName: 'attribution-index',
+      partitionKey: { name: 'attribution', type: ddb.AttributeType.STRING },
+      sortKey: { name: 'created_at', type: ddb.AttributeType.NUMBER },
+      projectionType: ddb.ProjectionType.ALL,
+    });
+
     let integrityFn: lambda.NodejsFunction | undefined;
     if (merchantApiUrl && merchantApiCredential && merchantCpi) {
       integrityFn = new lambda.NodejsFunction(this, 'IntegrityProxy', {
@@ -110,10 +159,12 @@ export class GamesStack extends cdk.Stack {
           MERCHANT_API_URL: merchantApiUrl,
           MERCHANT_API_CREDENTIAL: merchantApiCredential,
           MERCHANT_CPI: merchantCpi,
+          BOT_BUSTER_TABLE_NAME: botBusterTable.tableName,
         },
         logRetention: logs.RetentionDays.ONE_WEEK,
         bundling: { minify: true, sourceMap: false, target: 'node22' },
       });
+      botBusterTable.grantReadWriteData(integrityFn);
 
       new events.Rule(this, 'IntegrityWarmerRule', {
         schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
@@ -148,6 +199,55 @@ export class GamesStack extends cdk.Stack {
       },
     });
 
+    // ── Arcade captcha gate ─────────────────────────────────────────────
+    // A server-issued challenge is verified against Pair, then exchanged for
+    // a signed HttpOnly one-hour arcade grant. The cookie is stateless: no
+    // session table or redemption database sits on the game-entry path.
+    if (merchantCpi) {
+      const captchaCpi = /\.(?:fastpass|stepup|forceauth)$/.test(merchantCpi)
+        ? merchantCpi
+        : `${merchantCpi}.fastpass`;
+      const gateSecret = new secretsmanager.Secret(this, 'CaptchaGateSecret', {
+        description: 'HMAC key for short-lived Argus Arcade access grants',
+        generateSecretString: { passwordLength: 64, excludePunctuation: true },
+      });
+      const gateFn = new lambda.NodejsFunction(this, 'CaptchaGate', {
+        entry: path.join(__dirname, 'captcha-gate.ts'),
+        handler: 'handler',
+        runtime: lambdaRuntime.Runtime.NODEJS_22_X,
+        architecture: lambdaRuntime.Architecture.ARM_64,
+        memorySize: 256,
+        timeout: cdk.Duration.seconds(10),
+        environment: {
+          CAPTCHA_GATE_SECRET_ARN: gateSecret.secretArn,
+          CAPTCHA_CPI: captchaCpi,
+          PAIR_VERIFY_URL: 'https://captcha-dev-jw.argus.pw/api/verify',
+        },
+        logRetention: logs.RetentionDays.ONE_WEEK,
+        bundling: { minify: true, sourceMap: false, target: 'node22' },
+      });
+      gateSecret.grantRead(gateFn);
+      const gateIntegration = new integrations.HttpLambdaIntegration(
+        'CaptchaGateIntegration',
+        gateFn
+      );
+      api.addRoutes({
+        path: '/api/captcha/challenge',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: gateIntegration,
+      });
+      api.addRoutes({
+        path: '/api/captcha/verify',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: gateIntegration,
+      });
+      api.addRoutes({
+        path: '/api/captcha/status',
+        methods: [apigatewayv2.HttpMethod.GET],
+        integration: gateIntegration,
+      });
+    }
+
     // Integrity proxy route
     if (integrityFn) {
       const integrityIntegration = new integrations.HttpLambdaIntegration(
@@ -156,6 +256,14 @@ export class GamesStack extends cdk.Stack {
       );
       api.addRoutes({
         path: '/api/integrity/check',
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: integrityIntegration,
+      });
+      // Same handler also serves /api/leaderboard-entry — logs the
+      // (session, attribution) pair to CloudWatch for the bot-buster
+      // bounty leaderboard. See integrity-proxy.ts:leaderboardEntry.
+      api.addRoutes({
+        path: '/api/leaderboard-entry',
         methods: [apigatewayv2.HttpMethod.POST],
         integration: integrityIntegration,
       });
@@ -195,11 +303,74 @@ export class GamesStack extends cdk.Stack {
       queryStringBehavior: CacheQueryStringBehavior.none(),
     });
 
+    // ── WAF ──────────────────────────────────────────────────────────────
+    // CLOUDFRONT-scoped WAF (must live in us-east-1, which this stack is).
+    // Rate-based rule scoped to /api/leaderboard-entry — 60 requests per IP
+    // per 5-minute sliding window. Anything above that is treated as bot
+    // abuse and 403'd at the CF edge before reaching the Lambda.
+    //
+    // Also: AWS managed KnownBadInputs ruleset, free and catches generic
+    // injection probes (Log4Shell, SQL injection probes, etc.).
+    const webAcl = new wafv2.CfnWebACL(this, 'BotBusterWebAcl', {
+      defaultAction: { allow: {} },
+      scope: 'CLOUDFRONT',
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'BotBusterWebAcl',
+        sampledRequestsEnabled: true,
+      },
+      rules: [
+        // 1. Rate-limit per IP on the submit endpoint only.
+        {
+          name: 'LeaderboardEntryRateLimit',
+          priority: 0,
+          action: { block: {} },
+          statement: {
+            rateBasedStatement: {
+              limit: 60, // 60 requests per IP per 5-min sliding window
+              aggregateKeyType: 'IP',
+              scopeDownStatement: {
+                byteMatchStatement: {
+                  fieldToMatch: { uriPath: {} },
+                  positionalConstraint: 'STARTS_WITH',
+                  searchString: '/api/leaderboard-entry',
+                  textTransformations: [{ priority: 0, type: 'NONE' }],
+                },
+              },
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'LeaderboardEntryRateLimit',
+            sampledRequestsEnabled: true,
+          },
+        },
+        // 2. AWS Managed: KnownBadInputs.
+        {
+          name: 'AWSManagedRulesKnownBadInputsRuleSet',
+          priority: 1,
+          overrideAction: { none: {} },
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesKnownBadInputsRuleSet',
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'KnownBadInputs',
+            sampledRequestsEnabled: true,
+          },
+        },
+      ],
+    });
+
     // ── CloudFront ───────────────────────────────────────────────────────
     const s3Origin = new S3Origin(bucket, { originAccessIdentity: oai });
     const apiOrigin = new HttpOrigin(`${api.apiId}.execute-api.${this.region}.amazonaws.com`);
 
     const distribution = new Distribution(this, 'SiteDistribution', {
+      webAclId: webAcl.attrArn,
       defaultBehavior: {
         origin: s3Origin,
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
