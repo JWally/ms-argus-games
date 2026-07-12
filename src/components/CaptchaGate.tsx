@@ -18,6 +18,7 @@ interface CaptchaApi {
       cpi: string;
       challengeId: string;
       embedOrigin: string;
+      ssoReturnUrl: string;
       onResult: (result: CaptchaResult) => void;
       onEvent: (event: Record<string, unknown>) => void;
     }
@@ -33,6 +34,7 @@ declare global {
 interface Challenge {
   challengeId: string;
   cpi: string;
+  ssoReturnUrl: string;
 }
 
 type Bootstrap = { passed: true } | { passed: false; challenge: Challenge };
@@ -41,12 +43,20 @@ type Phase = 'checking' | 'ready' | 'verifying' | 'error';
 let bootstrapPromise: Promise<Bootstrap> | null = null;
 
 async function requestChallenge(): Promise<Challenge> {
-  const response = await fetch('/api/captcha/challenge', { method: 'POST' });
+  const response = await fetch('/api/captcha/challenge', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ returnPath: window.location.pathname + window.location.search }),
+  });
   const body = (await response.json().catch(() => ({}))) as Partial<Challenge>;
-  if (!response.ok || !body.challengeId || !body.cpi) {
+  if (!response.ok || !body.challengeId || !body.cpi || !body.ssoReturnUrl) {
     throw new Error('challenge_unavailable');
   }
-  return { challengeId: body.challengeId, cpi: body.cpi };
+  return {
+    challengeId: body.challengeId,
+    cpi: body.cpi,
+    ssoReturnUrl: body.ssoReturnUrl,
+  };
 }
 
 async function bootstrapGate(): Promise<Bootstrap> {
@@ -123,6 +133,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
           cpi: challenge.cpi,
           challengeId: challenge.challengeId,
           embedOrigin: EMBED_ORIGIN,
+          ssoReturnUrl: challenge.ssoReturnUrl,
           onEvent: (event) => {
             if (event.event === 'error' && active) setPhase('error');
           },

@@ -29,21 +29,33 @@ function challengeCookie(response: { cookies?: string[] }): string {
 }
 
 function setup(pairPassed = true) {
-  const fetchImpl = async () =>
+  const fetchImpl = async (input: string | URL | Request) =>
     new Response(
-      JSON.stringify({
-        valid: true,
-        passed: pairPassed,
-        cpi: CPI,
-        challengeId: CHALLENGE_ID,
-        verdict: pairPassed ? 'paired' : 'failed',
-      }),
+      JSON.stringify(
+        String(input).includes('/sso/approval/exchange')
+          ? {
+              valid: true,
+              passed: true,
+              cpi: CPI,
+              challengeId: CHALLENGE_ID,
+              verdict: 'approved',
+            }
+          : {
+              valid: true,
+              passed: pairPassed,
+              cpi: CPI,
+              challengeId: CHALLENGE_ID,
+              verdict: pairPassed ? 'paired' : 'failed',
+            }
+      ),
       { status: 200, headers: { 'content-type': 'application/json' } }
     );
   return createCaptchaGateHandler({
     secret: SECRET,
     cpi: CPI,
     pairVerifyUrl: 'https://captcha.example/api/verify',
+    pairSsoExchangeUrl: 'https://captcha.example/api/sso/approval/exchange',
+    merchantSsoReturnUrl: 'https://arcades.click/api/captcha/sso-return',
     fetchImpl,
     now: () => NOW,
     randomChallenge: () => CHALLENGE_ID,
@@ -51,11 +63,80 @@ function setup(pairPassed = true) {
 }
 
 test('issues a server-bound challenge in an HttpOnly cookie', async () => {
-  const response = await setup()(event('POST', '/api/captcha/challenge'));
+  const response = await setup()(
+    event('POST', '/api/captcha/challenge', { returnPath: '/semantic-lockpick?level=2' })
+  );
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(bodyOf(response), { challengeId: CHALLENGE_ID, cpi: CPI });
+  assert.deepEqual(bodyOf(response), {
+    challengeId: CHALLENGE_ID,
+    cpi: CPI,
+    ssoReturnUrl: 'https://arcades.click/api/captcha/sso-return',
+  });
   assert.match(challengeCookie(response), /^argus_arcade_challenge=/);
   assert.match(response.cookies?.[0] ?? '', /HttpOnly; Secure; SameSite=Lax/);
+});
+
+test('exchanges mobile SSO server-side and returns to the protected route', async () => {
+  let exchangeBody: Record<string, unknown> | null = null;
+  const handler = createCaptchaGateHandler({
+    secret: SECRET,
+    cpi: CPI,
+    pairVerifyUrl: 'https://captcha.example/api/verify',
+    pairSsoExchangeUrl: 'https://captcha.example/api/sso/approval/exchange',
+    merchantSsoReturnUrl: 'https://arcades.click/api/captcha/sso-return',
+    fetchImpl: async (_input, init) => {
+      exchangeBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({
+          valid: true,
+          passed: true,
+          verdict: 'approved',
+          cpi: CPI,
+          challengeId: CHALLENGE_ID,
+        }),
+        { status: 200 }
+      );
+    },
+    now: () => NOW,
+    randomChallenge: () => CHALLENGE_ID,
+  });
+  const issued = await handler(
+    event('POST', '/api/captcha/challenge', { returnPath: '/semantic-lockpick?level=2' })
+  );
+  const callback = event('GET', '/api/captcha/sso-return', undefined, [challengeCookie(issued)]);
+  callback.queryStringParameters = {
+    session: 'sso-session',
+    code: 'one-time-code',
+    cpi: CPI,
+    challengeId: CHALLENGE_ID,
+  };
+  const response = await handler(callback);
+
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers?.location, '/semantic-lockpick?level=2');
+  assert.deepEqual(exchangeBody, {
+    sessionId: 'sso-session',
+    code: 'one-time-code',
+    cpi: CPI,
+    challengeId: CHALLENGE_ID,
+  });
+  assert.match(response.cookies?.join('\n') ?? '', /argus_arcade_grant=.*HttpOnly/);
+});
+
+test('rejects an SSO callback that does not match the signed challenge', async () => {
+  const handler = setup();
+  const issued = await handler(event('POST', '/api/captcha/challenge', { returnPath: '/go' }));
+  const callback = event('GET', '/api/captcha/sso-return', undefined, [challengeCookie(issued)]);
+  callback.queryStringParameters = {
+    session: 'sso-session',
+    code: 'one-time-code',
+    cpi: CPI,
+    challengeId: 'different_1234567890',
+  };
+  const response = await handler(callback);
+
+  assert.equal(response.statusCode, 409);
+  assert.deepEqual(bodyOf(response), { error: 'challenge_mismatch' });
 });
 
 test('rejects verification without the server-issued challenge cookie', async () => {
