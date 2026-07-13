@@ -88,7 +88,7 @@ export default function Ataxx() {
         >
           ATAXX
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           TERRITORIAL EXPANSION PROTOCOL
         </div>
       </div>
@@ -219,13 +219,13 @@ export default function Ataxx() {
       </div>
 
       {/* Legend */}
-      <div className="mt-4 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+      <div className="mt-4 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
         1 SQUARE = CLONE · 2 SQUARES = JUMP
       </div>
 
       {/* Record */}
       {(record.wins > 0 || record.losses > 0) && !game.gameOver && (
-        <p className="mt-3 font-mono text-xs" style={{ color: '#166534' }}>
+        <p className="mt-3 font-mono text-xs" style={{ color: '#3f9e68' }}>
           RECORD: {record.wins}W - {record.losses}L
         </p>
       )}
@@ -278,7 +278,7 @@ export default function Ataxx() {
           <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
             {game.blueCount} - {game.redCount}
           </p>
-          <p className="mt-1 font-mono text-xs" style={{ color: '#166534' }}>
+          <p className="mt-1 font-mono text-xs" style={{ color: '#3f9e68' }}>
             RECORD: {record.wins}W - {record.losses}L
           </p>
           <button

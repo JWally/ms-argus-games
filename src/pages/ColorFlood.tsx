@@ -106,7 +106,7 @@ export default function ColorFlood() {
         >
           COLOR FLOOD
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           CHROMATIC SATURATION PROTOCOL
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function ColorFlood() {
                 : {
                     background: '#040e07',
                     border: '1px solid #1a4a2a',
-                    color: '#166534',
+                    color: '#3f9e68',
                     borderRadius: '2px',
                   }
             }
@@ -152,9 +152,9 @@ export default function ColorFlood() {
           >
             {game.moves}
           </span>{' '}
-          <span style={{ color: '#166534' }}>/ {game.par}</span>
+          <span style={{ color: '#3f9e68' }}>/ {game.par}</span>
         </span>
-        <span style={{ color: '#166534' }}>{pct}% CAPTURED</span>
+        <span style={{ color: '#3f9e68' }}>{pct}% CAPTURED</span>
       </div>
 
       {/* Progress bar */}
@@ -224,7 +224,7 @@ export default function ColorFlood() {
 
       {/* Best score */}
       {bestScore !== null && !game.won && (
-        <p className="mt-4 font-mono text-xs" style={{ color: '#166534' }}>
+        <p className="mt-4 font-mono text-xs" style={{ color: '#3f9e68' }}>
           BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''} ({boardSize}x{boardSize})
         </p>
       )}
@@ -247,7 +247,7 @@ export default function ColorFlood() {
           >
             SECTOR FLOODED
           </p>
-          <p className="mt-1 font-mono text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          <p className="mt-1 font-mono text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
             ALL SECTORS SATURATED
           </p>
           <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
@@ -255,11 +255,11 @@ export default function ColorFlood() {
             {game.moves <= game.par ? (
               <span style={{ color: '#4ade80' }}>(UNDER PAR)</span>
             ) : (
-              <span style={{ color: '#166534' }}>(PAR: {game.par})</span>
+              <span style={{ color: '#3f9e68' }}>(PAR: {game.par})</span>
             )}
           </p>
           {bestScore !== null && (
-            <p className="mt-1 font-mono text-xs" style={{ color: '#166534' }}>
+            <p className="mt-1 font-mono text-xs" style={{ color: '#3f9e68' }}>
               BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''}
             </p>
           )}

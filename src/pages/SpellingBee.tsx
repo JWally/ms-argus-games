@@ -166,7 +166,7 @@ export default function SpellingBee() {
         >
           SPELLING BEE
         </h1>
-        <p className="mt-1 text-xs tracking-[0.3em] text-center" style={{ color: '#166534' }}>
+        <p className="mt-1 text-xs tracking-[0.3em] text-center" style={{ color: '#3f9e68' }}>
           PHONETIC INTELLIGENCE DRILL
         </p>
 
@@ -216,7 +216,7 @@ export default function SpellingBee() {
               onBlur={(e) => (e.currentTarget.style.borderColor = '#1a6632')}
             />
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs" style={{ color: '#166534' }}>
+              <span className="text-xs" style={{ color: '#3f9e68' }}>
                 {parseWords(newListWords).length} words detected
               </span>
               <button
@@ -256,7 +256,7 @@ export default function SpellingBee() {
                     <h3 className="text-sm font-semibold truncate" style={{ color: '#86efac' }}>
                       {list.name}
                     </h3>
-                    <p className="text-xs" style={{ color: '#166534' }}>
+                    <p className="text-xs" style={{ color: '#3f9e68' }}>
                       {list.words.length} words
                     </p>
                   </div>
@@ -291,7 +291,7 @@ export default function SpellingBee() {
           )}
 
           {lists.length === 0 && (
-            <p className="text-center text-sm mt-8" style={{ color: '#166534' }}>
+            <p className="text-center text-sm mt-8" style={{ color: '#3f9e68' }}>
               No word lists yet — add one above to get started!
             </p>
           )}
@@ -354,7 +354,7 @@ export default function SpellingBee() {
           <p className="mt-3 text-4xl font-bold" style={{ color: '#4ade80' }}>
             {correct}/{total}
           </p>
-          <p className="mt-1 text-sm" style={{ color: '#166534' }}>
+          <p className="mt-1 text-sm" style={{ color: '#3f9e68' }}>
             {formatTime(t)}
           </p>
         </div>
@@ -381,7 +381,7 @@ export default function SpellingBee() {
                   </>
                 )}
               </span>
-              <span className="text-xs ml-2" style={{ color: '#166534' }}>
+              <span className="text-xs ml-2" style={{ color: '#3f9e68' }}>
                 {formatTime(a.timeMs)}
               </span>
             </div>
@@ -411,7 +411,7 @@ export default function SpellingBee() {
             style={{
               background: '#040e07',
               border: '1px solid #1a4a2a',
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >
@@ -461,7 +461,7 @@ export default function SpellingBee() {
       {/* Header: progress + timer */}
       <div className="mx-auto flex w-full max-w-[480px] items-center justify-between px-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: '#166534' }}>
+          <span className="text-xs" style={{ color: '#3f9e68' }}>
             {progress}/{total}
           </span>
           <div className="flex gap-0.5">
@@ -499,7 +499,7 @@ export default function SpellingBee() {
           {'🔊'}
         </button>
 
-        <p className="mt-2 text-xs tracking-[0.2em]" style={{ color: '#166534' }}>
+        <p className="mt-2 text-xs tracking-[0.2em]" style={{ color: '#3f9e68' }}>
           TAP TO HEAR
         </p>
 
@@ -524,7 +524,7 @@ export default function SpellingBee() {
             borderRadius: '2px',
           }}
         >
-          {input || <span style={{ color: '#166534' }}>...</span>}
+          {input || <span style={{ color: '#3f9e68' }}>...</span>}
           <span style={{ color: '#4ade80' }} className="animate-pulse">
             |
           </span>
@@ -601,7 +601,7 @@ export default function SpellingBee() {
             style={{
               background: '#040e07',
               border: '1px solid #1a4a2a',
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >

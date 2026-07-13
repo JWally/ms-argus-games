@@ -238,7 +238,7 @@ function ResultOverlay({
         </h2>
 
         <div className="mt-4 space-y-1 text-sm">
-          <div className="flex justify-between" style={{ color: '#166534' }}>
+          <div className="flex justify-between" style={{ color: '#3f9e68' }}>
             <span>Previous balance</span>
             <span>${prevBankroll.toLocaleString()}</span>
           </div>
@@ -695,11 +695,11 @@ export default function CardCounter() {
             >
               CARD COUNTER
             </h1>
-            <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+            <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
               BLACKJACK INTELLIGENCE TRAINER
             </div>
           </div>
-          <div className="text-right text-sm" style={{ color: '#166534' }}>
+          <div className="text-right text-sm" style={{ color: '#3f9e68' }}>
             {remaining} left
           </div>
         </div>
@@ -722,7 +722,7 @@ export default function CardCounter() {
             style={{
               background: BG_SURFACE,
               border: BORDER_GREEN_DIM,
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >
@@ -731,7 +731,7 @@ export default function CardCounter() {
 
           {game.showCount ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: '#166534' }}>
+              <span className="text-xs" style={{ color: '#3f9e68' }}>
                 Count:
               </span>
               <span
@@ -741,7 +741,7 @@ export default function CardCounter() {
                     ? { background: '#0a2a14', color: '#4ade80' }
                     : game.runningCount < 0
                       ? { background: '#1c0607', color: '#f87171' }
-                      : { background: BG_SURFACE, color: '#166534' }
+                      : { background: BG_SURFACE, color: '#3f9e68' }
                 }
               >
                 {game.runningCount > 0 ? '+' : ''}
@@ -749,13 +749,13 @@ export default function CardCounter() {
               </span>
             </div>
           ) : (
-            <span className="text-xs italic" style={{ color: '#166534' }}>
+            <span className="text-xs italic" style={{ color: '#3f9e68' }}>
               Track it yourself!
             </span>
           )}
 
           <div className="flex items-center gap-1 text-right">
-            <span className="text-xs" style={{ color: '#166534' }}>
+            <span className="text-xs" style={{ color: '#3f9e68' }}>
               Bank:
             </span>
             <span className="text-base font-bold" style={{ color: '#f59e0b' }}>
@@ -772,7 +772,7 @@ export default function CardCounter() {
               background: BG_SURFACE,
               border: BORDER_GREEN_DIM,
               borderRadius: '2px',
-              color: '#166534',
+              color: '#3f9e68',
             }}
           >
             {countAdvice(game.runningCount)}
@@ -886,7 +886,7 @@ export default function CardCounter() {
                 className="px-2.5 py-1.5"
                 style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
-                <span style={{ color: '#166534' }}>Bust risk </span>
+                <span style={{ color: '#3f9e68' }}>Bust risk </span>
                 <span
                   className="font-bold"
                   style={{
@@ -901,7 +901,7 @@ export default function CardCounter() {
                 className="px-2.5 py-1.5"
                 style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
-                <span style={{ color: '#166534' }}>Dealer bust </span>
+                <span style={{ color: '#3f9e68' }}>Dealer bust </span>
                 <span
                   className="font-bold"
                   style={{ color: odds.dealerBustPct > 35 ? '#4ade80' : '#f59e0b' }}
@@ -913,7 +913,7 @@ export default function CardCounter() {
                 className="px-2.5 py-1.5"
                 style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
               >
-                <span style={{ color: '#166534' }}>Edge </span>
+                <span style={{ color: '#3f9e68' }}>Edge </span>
                 <span
                   className="font-bold"
                   style={{
@@ -1020,7 +1020,7 @@ export default function CardCounter() {
           {/* Betting phase */}
           {game.phase === 'betting' && (
             <div className="mx-auto max-w-[420px]">
-              <p className="mb-3 text-center text-sm" style={{ color: '#166534' }}>
+              <p className="mb-3 text-center text-sm" style={{ color: '#3f9e68' }}>
                 Place your bet
               </p>
               <div className="flex justify-center gap-4 sm:gap-5">
@@ -1093,7 +1093,7 @@ export default function CardCounter() {
                 style={{
                   background: BG_SURFACE,
                   border: BORDER_GREEN_DIM,
-                  color: '#166534',
+                  color: '#3f9e68',
                   borderRadius: '2px',
                 }}
               >
@@ -1127,7 +1127,7 @@ export default function CardCounter() {
                   style={{
                     background: BG_SURFACE,
                     border: '1px solid #1a4a2a',
-                    color: '#166534',
+                    color: '#3f9e68',
                     borderRadius: '2px',
                   }}
                 >
@@ -1139,7 +1139,7 @@ export default function CardCounter() {
           {/* Stats bar */}
           <div
             className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs"
-            style={{ color: '#166534' }}
+            style={{ color: '#3f9e68' }}
           >
             <span>Hands: {game.handsPlayed}</span>
             <span>Bet: {game.bet > 0 ? `$${game.bet}` : '\u2014'}</span>

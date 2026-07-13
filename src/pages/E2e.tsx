@@ -11,15 +11,11 @@ import { useEffect, useState } from 'react';
  *
  * Use it to eyeball that the e2e SDK runs the real Worker path end-to-end.
  */
-const E2E_LOADER_URL =
-  'https://static-integrity-e2e.argus.pw/argus-loader.iife.js';
+const E2E_LOADER_URL = 'https://static-integrity-e2e.argus.pw/argus-loader.iife.js';
 const CPI = import.meta.env.VITE_MERCHANT_CPI as string | undefined;
 
 interface E2eArgus {
-  run(opts?: {
-    cpi?: string;
-    timeoutMs?: number;
-  }): Promise<{ argusSessionId: string }>;
+  run(opts?: { cpi?: string; timeoutMs?: number }): Promise<{ argusSessionId: string }>;
 }
 
 export default function E2e() {
@@ -91,11 +87,7 @@ export default function E2e() {
         minHeight: '100vh',
       }}
     >
-      {status === 'error'
-        ? `ERROR: ${err}`
-        : out
-          ? JSON.stringify(out, null, 2)
-          : `[${status}…]`}
+      {status === 'error' ? `ERROR: ${err}` : out ? JSON.stringify(out, null, 2) : `[${status}…]`}
     </pre>
   );
 }

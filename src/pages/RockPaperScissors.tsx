@@ -272,7 +272,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
         </h2>
         <div
           className="mt-1 text-center font-mono tracking-[0.25em]"
-          style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', color: '#166534' }}
+          style={{ fontSize: 'clamp(10px, 2.5vw, 12px)', color: '#3f9e68' }}
         >
           ROCK · PAPER · SCISSORS
         </div>
@@ -523,7 +523,7 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         : streaking
           ? '#d97706'
           : isWin
-            ? '#166534'
+            ? '#3f9e68'
             : peeking
               ? '#b91c1c'
               : '#14532d';
@@ -1100,7 +1100,7 @@ export default function RockPaperScissors() {
         >
           ROCK.PAPER.SCISSORS
         </h1>
-        <div className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           {mode === 'vs-ai'
             ? 'PATTERN ANALYSIS COMBAT'
             : 'CYBORG SUBSYSTEM v1.4 · USE AI TO CRUSH YOUR FRIENDS'}
@@ -1433,7 +1433,7 @@ export default function RockPaperScissors() {
                 style={{
                   color:
                     game.seriesWinner === 'human'
-                      ? '#166534'
+                      ? '#3f9e68'
                       : game.seriesWinner === 'ai'
                         ? '#7f1d1d'
                         : '#374151',
@@ -1454,7 +1454,7 @@ export default function RockPaperScissors() {
                     HUMAN
                   </div>
                 </div>
-                <div style={{ color: '#0f3018' }} className="text-2xl font-bold self-center">
+                <div style={{ color: '#26714a' }} className="text-2xl font-bold self-center">
                   —
                 </div>
                 <div>
@@ -1492,7 +1492,7 @@ export default function RockPaperScissors() {
               </div>
               <div
                 className="mt-1 text-xs tracking-[0.3em]"
-                style={{ color: game.humanScore >= 8 ? '#166534' : '#7f1d1d' }}
+                style={{ color: game.humanScore >= 8 ? '#3f9e68' : '#7f1d1d' }}
               >
                 {game.humanScore >= 8
                   ? 'YOUR FRIEND NEVER SAW IT COMING'
@@ -1503,11 +1503,11 @@ export default function RockPaperScissors() {
                   <div className="text-3xl font-bold tabular-nums" style={{ color: '#4ade80' }}>
                     {String(game.humanScore).padStart(2, '0')}
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#166534' }}>
+                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
                     AI CORRECT
                   </div>
                 </div>
-                <div className="self-center text-xl font-bold" style={{ color: '#0f3018' }}>
+                <div className="self-center text-xl font-bold" style={{ color: '#26714a' }}>
                   —
                 </div>
                 <div>
@@ -1549,7 +1549,7 @@ export default function RockPaperScissors() {
 
       {/* W/L record (idle, not over) */}
       {!isOver && mode === 'vs-ai' && (record.wins > 0 || record.losses > 0) && (
-        <p className="mt-3 font-mono text-xs tracking-[0.2em]" style={{ color: '#0f3018' }}>
+        <p className="mt-3 font-mono text-xs tracking-[0.2em]" style={{ color: '#26714a' }}>
           RECORD&nbsp;&nbsp;{record.wins}W / {record.losses}L
         </p>
       )}

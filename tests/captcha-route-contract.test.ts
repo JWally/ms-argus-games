@@ -20,9 +20,9 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
   assert.match(component, /challengeId: challenge\.challengeId/);
   assert.match(component, /startMobileSso/);
   assert.match(component, /returnUrl: challenge\.ssoReturnUrl/);
-  assert.match(component, />\s*MOBILE SSO\s*</);
-  assert.match(component, /max-w-md flex-col items-center/);
-  assert.match(component, /'flex w-full justify-center'/);
+  assert.match(component, />\s*▶ CHECK WITH YOUR PHONE\s*</);
+  assert.match(component, /max-w-md flex-1 flex-col items-center/);
+  assert.match(component, /'hidden w-full justify-center sm:flex'/);
   assert.doesNotMatch(component, /render\(slot, \{[\s\S]*ssoReturnUrl: challenge\.ssoReturnUrl/);
   assert.match(component, /returnPath: window\.location/);
   assert.match(component, /https:\/\/qr\.arcades\.click/);

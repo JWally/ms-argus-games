@@ -213,7 +213,7 @@ function drawMenuOverlay(ctx: CanvasRenderingContext2D, state: GameState): void 
   ctx.font = 'bold 26px sans-serif';
   ctx.fillStyle = TEXT_COLOR;
   ctx.textAlign = 'center';
-  ctx.fillText('Hanoi Hilton', width / 2, height * 0.2);
+  ctx.fillText('Tower of Hanoi', width / 2, height * 0.2);
 
   ctx.font = '12px sans-serif';
   ctx.fillStyle = TEXT_DIM;
