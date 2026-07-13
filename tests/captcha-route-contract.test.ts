@@ -18,7 +18,12 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
     read('cdk/lib/games-stack.ts'),
   ]);
   assert.match(component, /challengeId: challenge\.challengeId/);
-  assert.match(component, /ssoReturnUrl: challenge\.ssoReturnUrl/);
+  assert.match(component, /startMobileSso/);
+  assert.match(component, /returnUrl: challenge\.ssoReturnUrl/);
+  assert.match(component, />\s*MOBILE SSO\s*</);
+  assert.match(component, /max-w-md flex-col items-center/);
+  assert.match(component, /'flex w-full justify-center'/);
+  assert.doesNotMatch(component, /render\(slot, \{[\s\S]*ssoReturnUrl: challenge\.ssoReturnUrl/);
   assert.match(component, /returnPath: window\.location/);
   assert.match(component, /https:\/\/qr\.arcades\.click/);
   for (const route of ['challenge', 'verify', 'status']) {

@@ -12,13 +12,13 @@ interface CaptchaHandle {
 }
 
 interface CaptchaApi {
+  startMobileSso: (options: { cpi: string; challengeId: string; returnUrl: string }) => void;
   render: (
     element: Element,
     options: {
       cpi: string;
       challengeId: string;
       embedOrigin: string;
-      ssoReturnUrl: string;
       onResult: (result: CaptchaResult) => void;
       onEvent: (event: Record<string, unknown>) => void;
     }
@@ -133,7 +133,6 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
           cpi: challenge.cpi,
           challengeId: challenge.challengeId,
           embedOrigin: EMBED_ORIGIN,
-          ssoReturnUrl: challenge.ssoReturnUrl,
           onEvent: (event) => {
             if (event.event === 'error' && active) setPhase('error');
           },
@@ -191,6 +190,19 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
       .catch(() => setPhase('error'));
   };
 
+  const launchMobileSso = () => {
+    if (!challenge) return;
+    void loadCaptcha()
+      .then((captcha) =>
+        captcha.startMobileSso({
+          cpi: challenge.cpi,
+          challengeId: challenge.challengeId,
+          returnUrl: challenge.ssoReturnUrl,
+        })
+      )
+      .catch(() => setPhase('error'));
+  };
+
   if (granted) return children;
 
   return (
@@ -211,8 +223,19 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
           )}
           <div
             ref={slotRef}
-            className={phase === 'checking' || phase === 'error' ? 'hidden' : 'flex justify-center'}
+            className={
+              phase === 'checking' || phase === 'error' ? 'hidden' : 'flex w-full justify-center'
+            }
           />
+          {phase === 'ready' && challenge && (
+            <button
+              type="button"
+              onClick={launchMobileSso}
+              className="mt-4 flex min-h-11 w-full items-center justify-center rounded-md border border-arcade-accent bg-arcade-accent px-5 py-3 font-display text-[9px] uppercase text-white transition hover:border-white hover:bg-white hover:text-arcade-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcade-accent"
+            >
+              MOBILE SSO
+            </button>
+          )}
           {phase === 'verifying' && (
             <p className="mt-4 text-center font-display text-[9px] uppercase text-arcade-neon">
               Checking result
