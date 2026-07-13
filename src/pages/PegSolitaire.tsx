@@ -170,7 +170,7 @@ export default function PegSolitaire() {
           <span>
             PEGS <span style={{ color: '#4ade80' }}>{pegsLeft}</span>
           </span>
-          {highScore > 0 && <span style={{ color: '#166534' }}>BEST {highScore.toFixed(1)}s</span>}
+          {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore.toFixed(1)}s</span>}
         </div>
       </div>
 
@@ -185,7 +185,7 @@ export default function PegSolitaire() {
         >
           PEG SOLITAIRE
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           SINGLE UNIT ELIMINATION DRILL
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function PegSolitaire() {
 
       {/* Hint / leaderboard */}
       {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
           TAP TO BEGIN — JUMP PEGS TO ELIMINATE THEM
         </p>
       )}

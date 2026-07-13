@@ -179,7 +179,7 @@ export default function Checkers() {
         >
           CHECKERS
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           TACTICAL BOARD ENGAGEMENT
         </div>
       </div>
@@ -200,7 +200,7 @@ export default function Checkers() {
 
       {/* Ready hint */}
       {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
           TAP TO BEGIN — YOU ARE RED, JUMP TO CAPTURE
         </p>
       )}

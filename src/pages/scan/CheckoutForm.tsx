@@ -90,8 +90,8 @@ export function CheckoutForm({
           color: '#4b5563',
         }}
       >
-        A non-fungible artifact of your visit. Includes verdict scorecard, leaderboard
-        eligibility, and the satisfaction of being benchmarked.
+        A non-fungible artifact of your visit. Includes verdict scorecard, leaderboard eligibility,
+        and the satisfaction of being benchmarked.
       </div>
 
       <form
@@ -115,7 +115,11 @@ export function CheckoutForm({
 
         {/* Field 2: Tier */}
         <Row label="Tier">
-          <select value={tier} onChange={(e) => setTier(e.target.value as (typeof TIERS)[number])} style={selectStyle}>
+          <select
+            value={tier}
+            onChange={(e) => setTier(e.target.value as (typeof TIERS)[number])}
+            style={selectStyle}
+          >
             {TIERS.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -146,7 +150,11 @@ export function CheckoutForm({
         {/* Field 4: Add-ons */}
         <Row label="Add-ons">
           <div className="space-y-1">
-            <Check label="Expedited handling (+$0.00)" checked={expedited} onChange={setExpedited} />
+            <Check
+              label="Expedited handling (+$0.00)"
+              checked={expedited}
+              onChange={setExpedited}
+            />
             <Check label="Gift wrap (+$0.00)" checked={giftWrap} onChange={setGiftWrap} />
             <Check
               label="Anti-bot fraud screening (already included, free)"
@@ -188,8 +196,8 @@ export function CheckoutForm({
             />
           </Row>
           <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
-            Optional. Only field we keep. If you crack all five detectors, this is how we
-            reach you about the bounty.
+            Optional. Only field we keep. If you crack all five detectors, this is how we reach you
+            about the bounty.
           </div>
         </div>
 
@@ -197,7 +205,14 @@ export function CheckoutForm({
           Place Order →
         </button>
 
-        <div style={{ fontSize: '0.72rem', color: '#9ca3af', textAlign: 'center', marginTop: '0.5rem' }}>
+        <div
+          style={{
+            fontSize: '0.72rem',
+            color: '#9ca3af',
+            textAlign: 'center',
+            marginTop: '0.5rem',
+          }}
+        >
           Submitting reveals your bot-detection scorecard.
         </div>
       </form>

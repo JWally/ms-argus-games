@@ -93,7 +93,7 @@ function BattleGrid({
       <div
         className="w-full text-center text-xs font-bold tracking-[0.25em]"
         style={{
-          color: isEnemy ? '#f87171' : '#166534',
+          color: isEnemy ? '#f87171' : '#3f9e68',
           textShadow: isEnemy ? '0 0 10px #dc2626, 0 0 20px #dc262666' : 'none',
         }}
       >
@@ -406,7 +406,7 @@ export default function Battleship() {
         >
           BATTLESHIP
         </h1>
-        <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
+        <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
           NAVAL COMBAT SYSTEM v4.2
         </div>
       </div>
@@ -463,7 +463,7 @@ export default function Battleship() {
             </span>
           )}
           {isPlaying && !aiPending && (
-            <span className="ml-auto font-mono text-xs" style={{ color: '#166534' }}>
+            <span className="ml-auto font-mono text-xs" style={{ color: '#3f9e68' }}>
               SHOTS: {game.totalShots} | ACC: {accuracy}%
             </span>
           )}
@@ -601,7 +601,7 @@ export default function Battleship() {
               </div>
               <div
                 className="mt-1 text-xs tracking-[0.3em]"
-                style={{ color: game.phase === 'won' ? '#166534' : '#7f1d1d' }}
+                style={{ color: game.phase === 'won' ? '#3f9e68' : '#7f1d1d' }}
               >
                 {game.phase === 'won' ? 'ENEMY FLEET ELIMINATED' : 'FRIENDLY FLEET ANNIHILATED'}
               </div>
@@ -611,7 +611,7 @@ export default function Battleship() {
                   <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
                     {game.totalShots}
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#166534' }}>
+                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
                     ROUNDS FIRED
                   </div>
                 </div>
@@ -619,7 +619,7 @@ export default function Battleship() {
                   <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
                     {accuracy}%
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#166534' }}>
+                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
                     ACCURACY
                   </div>
                 </div>
@@ -627,7 +627,7 @@ export default function Battleship() {
                   <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
                     {game.hits}
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#166534' }}>
+                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
                     DIRECT HITS
                   </div>
                 </div>

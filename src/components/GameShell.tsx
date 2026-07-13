@@ -8,8 +8,8 @@ export function CrtOverlay() {
       className="pointer-events-none fixed inset-0 z-50"
       style={{
         backgroundImage:
-          'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.15) 3px, rgba(0,10,0,0.15) 4px)',
-        opacity: 0.5,
+          'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.12) 3px, rgba(0,10,0,0.12) 4px)',
+        opacity: 0.35,
       }}
     />
   );
@@ -54,7 +54,7 @@ export function Leaderboard({
     >
       <div
         className="mb-1.5 px-3 pt-2.5 font-mono text-xs tracking-[0.3em]"
-        style={{ color: result.isNewBest ? '#4ade80' : '#166534' }}
+        style={{ color: result.isNewBest ? '#4ade80' : '#3f9e68' }}
       >
         {result.isNewBest ? '▲ NEW BEST · ' : ''}
         {title}
@@ -73,14 +73,14 @@ export function Leaderboard({
           >
             <span
               className="w-5 shrink-0 text-right"
-              style={{ color: i < 3 ? MEDAL_COLORS[i] : '#166534' }}
+              style={{ color: i < 3 ? MEDAL_COLORS[i] : '#3f9e68' }}
             >
               {i + 1}.
             </span>
             <span className="flex-1 truncate">
               {entry.isPlayer ? `▶ ${entry.name}` : entry.name}
             </span>
-            <span style={{ color: entry.isPlayer ? '#4ade80' : '#166534' }}>
+            <span style={{ color: entry.isPlayer ? '#4ade80' : '#3f9e68' }}>
               {format(entry.score)}
             </span>
           </div>

@@ -83,7 +83,7 @@ function RulesModal({ onClose }: { onClose: () => void }) {
           padding: '1.5rem',
         }}
       >
-        <div className="mb-1 font-mono text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
+        <div className="mb-1 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
           CLASSIFIED BRIEFING
         </div>
         <h2
@@ -488,7 +488,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
             fontFamily: 'monospace',
           }}
         >
-          <div className="mb-2 text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+          <div className="mb-2 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
             FINAL SCORE
           </div>
           <div className="space-y-1">
@@ -654,7 +654,7 @@ export default function Go() {
           <Link
             to="/"
             className="font-mono text-xs tracking-widest transition-colors hover:text-[#4ade80]"
-            style={{ color: '#166534' }}
+            style={{ color: '#3f9e68' }}
           >
             ← ARCADE
           </Link>
@@ -671,7 +671,7 @@ export default function Go() {
           >
             GO
           </h1>
-          <div className="mt-0.5 font-mono text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
+          <div className="mt-0.5 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
             9×9 TACTICAL BOARD
           </div>
           <div
@@ -705,7 +705,7 @@ export default function Go() {
               {statusMsg}
             </span>
             {game.phase === 'playing' && (
-              <span className="ml-auto text-xs" style={{ color: '#166534' }}>
+              <span className="ml-auto text-xs" style={{ color: '#3f9e68' }}>
                 MOVE {game.moveCount}
               </span>
             )}
@@ -738,15 +738,15 @@ export default function Go() {
                   ? game.score.playerTotal.toFixed(1)
                   : estimate.player}
               </span>
-              <span className="text-xs" style={{ color: '#166534' }}>
+              <span className="text-xs" style={{ color: '#3f9e68' }}>
                 ({game.captured[0]} cap)
               </span>
             </div>
-            <div className="text-xs" style={{ color: '#0f3018' }}>
+            <div className="text-xs" style={{ color: '#26714a' }}>
               VS
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: '#166534' }}>
+              <span className="text-xs" style={{ color: '#3f9e68' }}>
                 ({game.captured[1]} cap)
               </span>
               <span className="text-xs font-bold" style={{ color: '#e2e8f0' }}>
@@ -825,13 +825,13 @@ export default function Go() {
         {/* Footer */}
         <footer
           className="px-4 py-3 text-center font-mono text-xs tracking-wider"
-          style={{ borderTop: BORDER_DARKEST, color: '#0f3018' }}
+          style={{ borderTop: BORDER_DARKEST, color: '#26714a' }}
         >
           POWERED BY{' '}
           <a
             href="https://bio-dev-jw.argus.pw"
             className="hover:underline"
-            style={{ color: '#166534' }}
+            style={{ color: '#3f9e68' }}
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -167,13 +167,13 @@ export default function Multiply() {
         >
           MULTIPLY
         </h1>
-        <p className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <p className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           COMPUTATION SPEED DRILL
         </p>
 
         <GameDivider className="my-2 max-w-md" />
 
-        <p className="mb-3 text-xs tracking-[0.2em]" style={{ color: '#166534' }}>
+        <p className="mb-3 text-xs tracking-[0.2em]" style={{ color: '#3f9e68' }}>
           SELECT A FACTOR TO BEGIN
         </p>
 
@@ -188,7 +188,7 @@ export default function Multiply() {
               >
                 <span className="text-3xl font-bold">{n}</span>
                 {best !== null && (
-                  <span className="mt-1 text-xs" style={{ color: '#166534' }}>
+                  <span className="mt-1 text-xs" style={{ color: '#3f9e68' }}>
                     {formatTime(best)}
                   </span>
                 )}
@@ -290,7 +290,7 @@ export default function Multiply() {
       {/* Header: pips + timer */}
       <div className="mx-auto flex max-w-[400px] items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: '#166534' }}>
+          <span className="text-xs" style={{ color: '#3f9e68' }}>
             {progress}/{game.problems.length}
           </span>
           <div className="flex gap-0.5">
@@ -494,7 +494,7 @@ function MultiplyResults({
         >
           {formatTime(t)}
         </p>
-        <p className="mt-1 text-sm" style={{ color: '#166534' }}>
+        <p className="mt-1 text-sm" style={{ color: '#3f9e68' }}>
           {correct}/{game.problems.length} correct
           {lb.isNewBest && perfect && (
             <span className="ml-2 font-semibold" style={{ color: '#4ade80' }}>
@@ -523,7 +523,7 @@ function MultiplyResults({
       <details className="mt-4 w-full max-w-[400px]">
         <summary
           className="cursor-pointer text-center text-xs hover:underline"
-          style={{ color: '#166534' }}
+          style={{ color: '#3f9e68' }}
         >
           Show problem breakdown
         </summary>
@@ -544,11 +544,11 @@ function MultiplyResults({
                   a.answer
                 ) : (
                   <>
-                    {a.userAnswer} <span style={{ color: '#166534' }}>({a.answer})</span>
+                    {a.userAnswer} <span style={{ color: '#3f9e68' }}>({a.answer})</span>
                   </>
                 )}
               </span>
-              <span className="text-xs" style={{ color: '#166534' }}>
+              <span className="text-xs" style={{ color: '#3f9e68' }}>
                 {formatTime(a.timeMs)}
               </span>
             </div>
@@ -576,7 +576,7 @@ function MultiplyResults({
           style={{
             background: '#040e07',
             border: '1px solid #1a4a2a',
-            color: '#166534',
+            color: '#3f9e68',
             borderRadius: '2px',
           }}
         >

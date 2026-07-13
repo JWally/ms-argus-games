@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { CrtOverlay } from './GameShell';
 
 const LOADER_URL = 'https://static-captcha-dev-jw.argus.pw/captcha.js';
 const EMBED_ORIGIN = 'https://qr.arcades.click';
@@ -206,54 +207,96 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
   if (granted) return children;
 
   return (
-    <main className="min-h-screen bg-arcade-bg px-4 py-10 text-white sm:py-16">
-      <section className="mx-auto flex w-full max-w-md flex-col items-center">
+    <main
+      className="flex min-h-screen flex-col px-4 py-10 sm:py-16"
+      style={{ background: '#030c06', color: '#4ade80' }}
+    >
+      <CrtOverlay />
+      <section className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center">
         <div className="mb-8 text-center">
-          <p className="font-display text-[10px] uppercase text-arcade-accent">Argus Arcade</p>
-          <h1 className="mt-4 font-display text-lg leading-relaxed sm:text-xl">Pass to play</h1>
-          <p className="mt-3 text-sm text-gray-400">Complete the check to enter the arcade.</p>
+          <p
+            className="font-display text-[10px] tracking-[0.2em]"
+            style={{ color: '#4ade80', textShadow: '0 0 8px #22c55e, 0 0 20px #22c55e44' }}
+          >
+            ARCADES.CLICK
+          </p>
+          <h1
+            className="mt-5 font-display text-lg leading-relaxed sm:text-xl"
+            style={{ color: '#86efac', textShadow: '0 0 8px #22c55e44' }}
+          >
+            HUMAN CHECK
+          </h1>
+          <p className="mt-3 font-mono text-sm leading-relaxed" style={{ color: '#3f9e68' }}>
+            One quick check unlocks every game.
+            <br />
+            No account, nothing to install.
+          </p>
         </div>
 
-        <div className="w-full">
+        <div className="w-full p-5" style={{ border: '1px solid #0f2a18', background: '#040e07' }}>
           {phase === 'checking' && (
             <div className="flex h-80 items-center justify-center" role="status">
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-arcade-border border-t-arcade-accent" />
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#0f2a18] border-t-[#22c55e]" />
               <span className="sr-only">Loading check</span>
             </div>
           )}
+          {/* QR widget — desktop only; phones use the button below instead */}
           <div
             ref={slotRef}
             className={
-              phase === 'checking' || phase === 'error' ? 'hidden' : 'flex w-full justify-center'
+              phase === 'checking' || phase === 'error'
+                ? 'hidden'
+                : 'hidden w-full justify-center sm:flex'
             }
           />
           {phase === 'ready' && challenge && (
             <button
               type="button"
               onClick={launchMobileSso}
-              className="mt-4 flex min-h-11 w-full items-center justify-center rounded-md border border-arcade-accent bg-arcade-accent px-5 py-3 font-display text-[9px] uppercase text-white transition hover:border-white hover:bg-white hover:text-arcade-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcade-accent"
+              className="flex min-h-11 w-full items-center justify-center font-display text-[10px] tracking-widest transition-all duration-150 hover:[box-shadow:0_0_18px_#22c55e88] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#22c55e] sm:hidden"
+              style={{
+                color: '#0a1f0a',
+                background: '#22c55e',
+                border: '1px solid #4ade80',
+                padding: '12px 18px',
+              }}
             >
-              MOBILE SSO
+              ▶ CHECK WITH YOUR PHONE
             </button>
           )}
           {phase === 'verifying' && (
-            <p className="mt-4 text-center font-display text-[9px] uppercase text-arcade-neon">
-              Checking result
+            <p
+              className="mt-4 text-center font-mono text-xs tracking-widest"
+              style={{ color: '#4ade80' }}
+            >
+              CHECKING…
             </p>
           )}
           {phase === 'error' && (
             <div className="flex h-80 flex-col items-center justify-center text-center">
-              <p className="text-sm text-gray-300">The check could not be completed.</p>
+              <p className="font-mono text-sm" style={{ color: '#86efac' }}>
+                The check didn&apos;t load.
+              </p>
               <button
                 type="button"
                 onClick={retry}
-                className="mt-6 rounded border border-arcade-accent px-5 py-3 font-display text-[9px] uppercase text-arcade-accent transition hover:bg-arcade-accent hover:text-white"
+                className="mt-6 font-display text-[10px] tracking-widest transition-all duration-150 hover:[box-shadow:0_0_12px_#22c55e66]"
+                style={{
+                  color: '#4ade80',
+                  background: 'transparent',
+                  border: '1px solid #1a6632',
+                  padding: '12px 18px',
+                }}
               >
-                Try again
+                ▶ TRY AGAIN
               </button>
             </div>
           )}
         </div>
+
+        <p className="mt-4 font-mono text-[10px] tracking-widest" style={{ color: '#26714a' }}>
+          ▮ TAKES SECONDS · BEATS ROBOTS
+        </p>
       </section>
     </main>
   );

@@ -81,26 +81,6 @@ const IcoSpellingBee = () => (
     />
   </Ico>
 );
-const IcoSemanticLockpick = () => (
-  <Ico>
-    <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" strokeWidth=".8" />
-    <circle
-      cx="8"
-      cy="8"
-      r="3.5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth=".6"
-      opacity=".65"
-    />
-    <circle cx="8" cy="8" r="1.2" fill="currentColor" />
-    <circle cx="4.2" cy="5" r="1.1" fill="currentColor" opacity=".45" />
-    <circle cx="11.8" cy="4.6" r="1.1" fill="currentColor" opacity=".75" />
-    <circle cx="12.2" cy="11.5" r="1.1" fill="currentColor" opacity=".55" />
-    <circle cx="4.4" cy="11.2" r="1.1" fill="currentColor" opacity=".35" />
-    <line x1="8" y1="8" x2="11.8" y2="4.6" stroke="currentColor" strokeWidth=".7" />
-  </Ico>
-);
 const IcoCardCounter = () => (
   <Ico>
     <path d="M7.184 11.246A3.5 3.5 0 0 1 1 9c0-1.602 1.14-2.633 2.66-4.008C4.986 3.792 6.602 2.33 8 0c1.398 2.33 3.014 3.792 4.34 4.992C13.86 6.367 15 7.398 15 9a3.5 3.5 0 0 1-6.184 2.246 20 20 0 0 0 1.582 2.907c.231.35-.02.847-.438.847H6.04c-.419 0-.67-.497-.438-.847a20 20 0 0 0 1.582-2.907" />
@@ -201,46 +181,6 @@ const IcoHanoi = () => (
     <line x1="0" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth=".9" fill="none" />
   </Ico>
 );
-const IcoAmaze = () => (
-  <Ico>
-    <rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" strokeWidth=".9" />
-    <line x1="1" y1="5.5" x2="9" y2="5.5" stroke="currentColor" strokeWidth=".9" />
-    <line x1="6" y1="1" x2="6" y2="5.5" stroke="currentColor" strokeWidth=".9" />
-    <line x1="9" y1="5.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth=".9" />
-    <line x1="4" y1="10.5" x2="9" y2="10.5" stroke="currentColor" strokeWidth=".9" />
-    <line x1="4" y1="10.5" x2="4" y2="15" stroke="currentColor" strokeWidth=".9" />
-    <line x1="9" y1="10.5" x2="15" y2="10.5" stroke="currentColor" strokeWidth=".9" />
-    <circle cx="2.8" cy="2.8" r="1.3" fill="currentColor" />
-  </Ico>
-);
-const IcoFpjs = () => (
-  <Ico>
-    <path
-      d="M8 0a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V5a5 5 0 0 0-5-5m-2.6 4.5a3.6 3.6 0 0 1 7 1.5v.5a.5.5 0 0 1-1 0v-.5a2.6 2.6 0 0 0-5.1-.6.5.5 0 0 1-1-.2zM4 6a4 4 0 0 1 8 0v2.5a.5.5 0 0 1-1 0V6a3 3 0 0 0-6 0v3a.5.5 0 0 1-1 0zm2 0a2 2 0 0 1 4 0v3.5a.5.5 0 0 1-1 0V6a1 1 0 1 0-2 0v4.5a.5.5 0 0 1-1 0zm1.5 1a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-1 0V7.5a.5.5 0 0 1 .5-.5"
-      fill="currentColor"
-    />
-  </Ico>
-);
-const IcoPair = () => (
-  <Ico>
-    <path d="M3 1h4v4H3zM9 1h4v4H9zM3 7h4v4H3zM9 7h2v2H9zM12 9h2v2h-2zM10 11h2v2h-2z" />
-  </Ico>
-);
-const IcoWayfinder = () => (
-  <Ico>
-    <circle cx="3" cy="4" r="1.6" fill="currentColor" />
-    <circle cx="13" cy="3" r="1.6" fill="currentColor" />
-    <circle cx="14" cy="11" r="1.6" fill="currentColor" />
-    <circle cx="7" cy="14" r="1.6" fill="currentColor" />
-    <circle cx="2" cy="11" r="1.6" fill="currentColor" />
-    <circle cx="9" cy="7" r="1.3" fill="currentColor" opacity=".6" />
-    <line x1="3" y1="4" x2="13" y2="3" stroke="currentColor" strokeWidth=".7" fill="none" />
-    <line x1="13" y1="3" x2="14" y2="11" stroke="currentColor" strokeWidth=".7" fill="none" />
-    <line x1="14" y1="11" x2="7" y2="14" stroke="currentColor" strokeWidth=".7" fill="none" />
-    <line x1="7" y1="14" x2="2" y2="11" stroke="currentColor" strokeWidth=".7" fill="none" />
-    <line x1="2" y1="11" x2="3" y2="4" stroke="currentColor" strokeWidth=".7" fill="none" />
-  </Ico>
-);
 
 // ── Game definitions ───────────────────────────────────────────────────
 
@@ -258,14 +198,6 @@ interface Game {
 }
 
 const games: Game[] = [
-  {
-    id: 'fpjs',
-    name: 'FPJS PROBE',
-    desc: 'Run FingerprintJS · see what they see',
-    tag: 'Diagnostic',
-    path: '/fpjs',
-    Icon: IcoFpjs,
-  },
   {
     id: 'ataxx',
     name: 'Ataxx',
@@ -340,14 +272,6 @@ const games: Game[] = [
     Icon: IcoSpellingBee,
   },
   {
-    id: 'semantic-lockpick',
-    name: 'Semantic Lockpick',
-    desc: 'Guess the vector-nearest word',
-    tag: 'Brain',
-    path: '/semantic-lockpick',
-    Icon: IcoSemanticLockpick,
-  },
-  {
     id: 'card-counter',
     name: 'Card Counter',
     desc: 'Card counting tutor',
@@ -397,27 +321,11 @@ const games: Game[] = [
   },
   {
     id: 'hanoi-hilton',
-    name: 'Hanoi Hilton',
+    name: 'Tower of Hanoi',
     desc: 'Move the tower in par moves',
     tag: 'Puzzle',
     path: '/hanoi-hilton',
     Icon: IcoHanoi,
-  },
-  {
-    id: 'amaze',
-    name: 'AMAZE',
-    desc: 'Slide to paint every cell',
-    tag: 'Puzzle',
-    path: '/amaze',
-    Icon: IcoAmaze,
-  },
-  {
-    id: 'wayfinder',
-    name: 'Wayfinder',
-    desc: 'Hit all outposts · minimum fuel',
-    tag: 'Puzzle',
-    path: '/wayfinder',
-    Icon: IcoWayfinder,
   },
   {
     id: 'scan',
@@ -427,25 +335,16 @@ const games: Game[] = [
     path: '/bot-buster',
     Icon: ScanIcon,
   },
-  {
-    id: 'pair',
-    name: 'PHONE PAIR',
-    desc: 'Scan a QR · pair your phone · prove you are human',
-    tag: 'Diagnostic',
-    path: 'https://captcha-dev-jw.argus.pw',
-    Icon: IcoPair,
-    external: true,
-  },
 ];
 
 // ── Tag styling ────────────────────────────────────────────────────────
 
 const TAG_CFG: Record<TagKey, { color: string; border: string; bg: string; label: string }> = {
-  Arcade: { color: '#4ade80', border: '#1a6632', bg: '#0a2a14', label: 'ACT' },
-  Strategy: { color: '#f59e0b', border: '#78350f', bg: '#1c1206', label: 'STR' },
-  Puzzle: { color: '#22d3ee', border: '#164e63', bg: '#061a1c', label: 'PZL' },
-  Brain: { color: '#f87171', border: '#7f1d1d', bg: '#1c0607', label: 'INT' },
-  Diagnostic: { color: '#94a3b8', border: '#475569', bg: '#0f172a', label: 'DIA' },
+  Arcade: { color: '#4ade80', border: '#1a6632', bg: '#0a2a14', label: 'ARCADE' },
+  Strategy: { color: '#fbbf24', border: '#78350f', bg: '#1c1206', label: 'STRATEGY' },
+  Puzzle: { color: '#22d3ee', border: '#164e63', bg: '#061a1c', label: 'PUZZLE' },
+  Brain: { color: '#c4b5fd', border: '#4c3d99', bg: '#120f2a', label: 'BRAIN' },
+  Diagnostic: { color: '#94a3b8', border: '#475569', bg: '#0f172a', label: 'SCAN' },
 };
 
 const TAG_META: Record<TagKey, [string, string]> = {
@@ -458,6 +357,10 @@ const TAG_META: Record<TagKey, [string, string]> = {
 
 const BORDER = '1px solid #0f2a18';
 const CTA_BORDER = '1px solid #4ade80';
+// Muted/faint text — MUTED is the darkest green that still reads on the
+// panel background; FAINT is decorative only (rules, glyphs, hints).
+const MUTED = '#3f9e68';
+const FAINT = '#26714a';
 
 // Module-scope random helpers — kept out of the component body so the
 // react-hooks/purity rule doesn't flag in-render Math.random calls. These
@@ -483,7 +386,7 @@ function StatBlock({ value, label }: { value: string; label: string }) {
       >
         {value}
       </div>
-      <div className="mt-1 font-mono text-[10px] tracking-widest" style={{ color: '#1a6632' }}>
+      <div className="mt-1 font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
         {label}
       </div>
     </div>
@@ -496,7 +399,7 @@ function CabinetCell({ game, onPlay }: { game: Game; onPlay: () => void }) {
       onClick={onPlay}
       title={game.name}
       aria-label={`Play ${game.name}`}
-      className="group relative flex aspect-square items-center justify-center transition-all duration-150 hover:border-[#22c55e] hover:[box-shadow:0_0_12px_#22c55e33,inset_0_0_12px_#00000040]"
+      className="group relative flex aspect-square flex-col items-center justify-center gap-2 px-1 transition-all duration-150 hover:border-[#22c55e] hover:[box-shadow:0_0_12px_#22c55e33,inset_0_0_12px_#00000040]"
       style={{ border: BORDER, background: '#040e07' }}
     >
       {game.special ? (
@@ -508,12 +411,18 @@ function CabinetCell({ game, onPlay }: { game: Game; onPlay: () => void }) {
         </span>
       ) : (
         <div
-          className="scale-[1.05] transition-transform group-hover:scale-[1.12] sm:scale-[1.4] sm:group-hover:scale-[1.5]"
+          className="scale-[0.95] transition-transform group-hover:scale-[1.02] sm:scale-[1.25] sm:group-hover:scale-[1.35]"
           style={{ color: '#22c55e', filter: 'drop-shadow(0 0 6px #22c55e88)' }}
         >
           <game.Icon />
         </div>
       )}
+      <span
+        className="max-w-full truncate font-mono text-[9px] tracking-wider sm:mt-1.5"
+        style={{ color: MUTED }}
+      >
+        {game.name.toUpperCase()}
+      </span>
     </button>
   );
 }
@@ -554,19 +463,20 @@ function BrowseRow({ game, onPlay }: { game: Game; onPlay: () => void }) {
           </span>
         </div>
       </div>
-      <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+      <span className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
         PLAY ▸
       </span>
     </button>
   );
 }
 
-// ── Joshua prompt ──────────────────────────────────────────────────────
+// ── Boot prompt ────────────────────────────────────────────────────────
 
 const PROMPT_LINES = [
-  'GREETINGS PROFESSOR FALKEN.',
+  'BOOT OK.',
   '',
-  "IT'S BEEN A LONG TIME.",
+  'ALL CARTRIDGES LOADED.',
+  'NO COINS NEEDED.',
   '',
   'SHALL WE PLAY A GAME?',
 ] as const;
@@ -623,25 +533,26 @@ function useJoshuaTypewriter(onYes: () => void, onNo: () => void) {
     };
   }, []);
 
-  // Keyboard: any key skips typewriter; once done, Y/N route.
+  // Keyboard: Y/N route immediately (finishing the typewriter on the way);
+  // any other key just skips the typewriter.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-      if (!done) {
-        skipToEnd();
-        e.preventDefault();
-        return;
-      }
       const k = e.key.toLowerCase();
       if (k === 'y' || k === 'enter') {
         e.preventDefault();
+        skipToEnd();
         onYes();
       } else if (k === 'n' || k === 'escape') {
         e.preventDefault();
+        skipToEnd();
         onNo();
+      } else if (!done) {
+        e.preventDefault();
+        skipToEnd();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -689,7 +600,7 @@ function JoshuaText({
       })}
 
       {!done && (
-        <p className="mt-4 font-mono text-[10px] tracking-widest" style={{ color: '#0f3018' }}>
+        <p className="mt-4 font-mono text-[10px] tracking-widest" style={{ color: FAINT }}>
           [ ANY KEY TO SKIP ]
         </p>
       )}
@@ -731,6 +642,7 @@ function JoshuaActions({ onYes, onNo }: { onYes: () => void; onNo: () => void })
 // ── Main component ─────────────────────────────────────────────────────
 
 const FILTER_KEYS = ['All', 'Arcade', 'Strategy', 'Puzzle', 'Brain', 'Diagnostic'] as const;
+const FEATURED_ROTATE_MS = 8000;
 
 export default function Hub() {
   const navigate = useNavigate();
@@ -739,9 +651,24 @@ export default function Hub() {
   const [menuOpen, setMenuOpen] = useState(false);
   const browseRef = useRef<HTMLElement>(null);
 
-  // Featured game is picked once per page-load (excludes diagnostic).
-  // Module-scope helper keeps Math.random outside render.
-  const featured = useMemo<Game>(() => pickFeatured(), []);
+  // Featured game — random pick per page-load (module-scope helper keeps
+  // Math.random outside render), then rotates through the playable list on
+  // a timer. Paused while the cursor is over the card so the PLAY button
+  // doesn't move under a hovering mouse.
+  const [featured, setFeatured] = useState<Game>(pickFeatured);
+  const featuredPausedRef = useRef(false);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (featuredPausedRef.current) return;
+      setFeatured((prev) => {
+        const playable = games.filter((g) => g.tag !== 'Diagnostic');
+        const i = playable.findIndex((g) => g.id === prev.id);
+        return playable[(i + 1) % playable.length];
+      });
+    }, FEATURED_ROTATE_MS);
+    return () => clearInterval(id);
+  }, []);
 
   const selectTag = (tag: 'All' | TagKey) => {
     setActiveTag(tag);
@@ -774,8 +701,8 @@ export default function Hub() {
   );
 
   const playRandom = useCallback(() => {
-    // pickRandom's pool already excludes Diagnostic, so external games
-    // (only Pair is currently external) are never reached here.
+    // Pool excludes Diagnostic entries, which are the only candidates for
+    // `external`, so navigate() is always safe here.
     const choice = pickRandom(visibleGames.filter((g) => g.tag !== 'Diagnostic'));
     if (choice) navigate(choice.path);
   }, [visibleGames, navigate]);
@@ -794,13 +721,13 @@ export default function Hub() {
       className="flex min-h-[100dvh] flex-col"
       style={{ background: '#030c06', color: '#4ade80' }}
     >
-      {/* CRT scanlines */}
+      {/* CRT scanlines — kept subtle so they read as texture, not a dimmer */}
       <div
         className="pointer-events-none fixed inset-0 z-50"
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.18) 3px, rgba(0,10,0,0.18) 4px)',
-          opacity: 0.55,
+            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.12) 3px, rgba(0,10,0,0.12) 4px)',
+          opacity: 0.35,
         }}
       />
 
@@ -844,7 +771,7 @@ export default function Hub() {
                           background: isAll ? '#071a0e' : cfg!.bg,
                         }
                       : {
-                          color: '#1a6632',
+                          color: MUTED,
                           border: '1px solid transparent',
                           background: 'transparent',
                         }
@@ -881,7 +808,7 @@ export default function Hub() {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={2}
-                style={{ color: '#1a6632' }}
+                style={{ color: MUTED }}
               >
                 <path
                   strokeLinecap="round"
@@ -980,13 +907,13 @@ export default function Hub() {
                 >
                   <span
                     className="font-mono text-base tracking-widest"
-                    style={{ color: isActive ? '#4ade80' : '#1a6632' }}
+                    style={{ color: isActive ? '#4ade80' : MUTED }}
                   >
                     {label}
                   </span>
                   <span
                     className="ml-auto font-mono text-xs"
-                    style={{ color: isActive ? '#4ade80' : '#0f3018' }}
+                    style={{ color: isActive ? '#4ade80' : FAINT }}
                   >
                     {count}
                   </span>
@@ -999,23 +926,44 @@ export default function Hub() {
 
       {/* Status line */}
       <div className="mx-auto w-full max-w-6xl px-4 pt-3 sm:px-6">
-        <p className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
-          ▶ ACCESS GRANTED · TERMINAL ONLINE · {games.length} GAMES LOADED
+        <p className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
+          ▶ TERMINAL READY · {games.length} GAMES LOADED · HUMANS WELCOME
         </p>
       </div>
 
       {/* Hero */}
       <section className="mx-auto w-full max-w-6xl px-4 pt-6 pb-10 sm:px-6 lg:grid lg:grid-cols-2 lg:gap-10 lg:pt-10">
-        {/* LEFT — Joshua prompt + actions/stats pinned to bottom */}
+        {/* LEFT — console monitor + actions/stats pinned to bottom */}
         <div className="flex flex-col">
-          <JoshuaText typed={typed} done={done} onSkip={skipToEnd} />
+          <div className="mb-3 flex items-center justify-between">
+            <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
+              ARCADES.CLICK
+            </span>
+            <span className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
+              [CH·01 LIVE]
+            </span>
+          </div>
+          <div
+            className="relative flex-1 overflow-hidden p-4 sm:p-5"
+            style={{ border: BORDER, background: '#040e07' }}
+          >
+            <div
+              aria-hidden="true"
+              className="crt-console-lines pointer-events-none absolute inset-0"
+            />
+            <div
+              aria-hidden="true"
+              className="crt-rollbar pointer-events-none absolute inset-x-0"
+            />
+            <JoshuaText typed={typed} done={done} onSkip={skipToEnd} />
+          </div>
 
-          <div className="mt-8 flex w-full flex-col gap-4 lg:mt-auto lg:pt-12">
-            {done && <JoshuaActions onYes={playRandom} onNo={browseCabinets} />}
+          <div className="mt-4 flex w-full flex-col gap-4">
+            <JoshuaActions onYes={playRandom} onNo={browseCabinets} />
             <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
-              <StatBlock value="NO" label="SIGNUPS · EVER" />
-              <StatBlock value="NO" label="INSTALLS" />
-              <StatBlock value="NO" label="ADS · TRACKERS" />
+              <StatBlock value="FREE" label="EVERY GAME · NO ADS" />
+              <StatBlock value="ZERO" label="SIGNUPS · INSTALLS" />
+              <StatBlock value="ONE" label="QUICK HUMAN CHECK" />
               <StatBlock value={String(games.length)} label="GAMES READY" />
             </div>
           </div>
@@ -1027,14 +975,14 @@ export default function Hub() {
             <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
               GAME WALL
             </span>
-            <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+            <span className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
               [{visibleGames.length} ONLINE]
             </span>
           </div>
           {cabinetWall.length === 0 ? (
             <div
               className="flex aspect-[3/1] items-center justify-center font-mono text-xs tracking-widest"
-              style={{ border: BORDER, background: '#040e07', color: '#166534' }}
+              style={{ border: BORDER, background: '#040e07', color: MUTED }}
             >
               NO GAMES MATCH FILTER
             </div>
@@ -1052,13 +1000,23 @@ export default function Hub() {
       <section className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
         <div className="mb-3 flex items-center gap-3">
           <span className="font-display text-xs tracking-widest" style={{ color: '#86efac' }}>
-            FEATURED GAME
+            NOW SHOWING
           </span>
           <span className="h-px flex-1" style={{ background: '#0f2a18' }} />
+          <span className="font-mono text-[10px] tracking-widest" style={{ color: FAINT }}>
+            AUTO-CYCLES · HOVER TO HOLD
+          </span>
         </div>
         <div
-          className="grid gap-4 sm:gap-6 lg:grid-cols-[2fr_3fr]"
+          key={featured.id}
+          className="featured-swap grid gap-4 sm:gap-6 lg:grid-cols-[2fr_3fr]"
           style={{ border: BORDER, background: '#040e07', padding: 0 }}
+          onMouseEnter={() => {
+            featuredPausedRef.current = true;
+          }}
+          onMouseLeave={() => {
+            featuredPausedRef.current = false;
+          }}
         >
           {/* Featured art */}
           <div
@@ -1066,6 +1024,12 @@ export default function Hub() {
             style={{ background: '#030c06', borderRight: '1px solid #0f2a18' }}
           >
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, #22c55e1a, transparent 65%)',
+                }}
+              />
               <div
                 className="absolute rounded-full"
                 style={{ width: 180, height: 180, border: '1px solid #0f2a1866' }}
@@ -1117,7 +1081,7 @@ export default function Hub() {
               </p>
               <ul
                 className="mt-4 grid grid-cols-2 gap-2 font-mono text-[10px] tracking-widest"
-                style={{ color: '#166534' }}
+                style={{ color: MUTED }}
               >
                 <li>· {featuredMeta[0]}</li>
                 <li>· {featuredMeta[1]}</li>
@@ -1148,14 +1112,14 @@ export default function Hub() {
             BROWSE ALL GAMES
           </span>
           <span className="h-px flex-1" style={{ background: '#0f2a18' }} />
-          <span className="font-mono text-[10px] tracking-widest" style={{ color: '#166534' }}>
+          <span className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
             {visibleGames.length} / {games.length}
           </span>
         </div>
         {visibleGames.length === 0 ? (
           <div
             className="flex h-32 items-center justify-center font-mono text-xs tracking-widest"
-            style={{ border: BORDER, background: '#040e07', color: '#166534' }}
+            style={{ border: BORDER, background: '#040e07', color: MUTED }}
           >
             NO MATCHES · ADJUST FILTER OR SEARCH
           </div>
@@ -1171,9 +1135,9 @@ export default function Hub() {
       {/* Footer */}
       <footer
         className="mt-auto px-4 py-4 text-center font-mono text-[10px] tracking-widest"
-        style={{ borderTop: BORDER, color: '#0f3018' }}
+        style={{ borderTop: BORDER, color: FAINT }}
       >
-        ▮ END OF MANIFEST · {games.length} GAMES · AUTHORIZED ACCESS ONLY
+        ▮ EOF · {games.length} GAMES · NO QUARTERS REQUIRED · COME BACK SOON
       </footer>
     </div>
   );

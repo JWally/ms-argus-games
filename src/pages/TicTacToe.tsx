@@ -36,7 +36,7 @@ function IntroModal({ onStart }: { onStart: () => void }) {
         }}
       >
         {/* eyebrow */}
-        <div className="mb-2 font-mono text-xs tracking-[0.4em]" style={{ color: '#166534' }}>
+        <div className="mb-2 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
           TACTICAL BRIEFING — CLASSIFIED
         </div>
 
@@ -139,7 +139,7 @@ function LeaderboardModal({
       >
         <div
           className="mb-3 text-center font-mono text-sm tracking-[0.4em]"
-          style={{ color: '#166534' }}
+          style={{ color: '#3f9e68' }}
         >
           SESSION COMPLETE
         </div>
@@ -397,7 +397,7 @@ export default function TicTacToe() {
         {!showIntro && (
           <button
             className="font-mono text-xs tracking-widest transition-colors hover:underline"
-            style={{ color: '#166534' }}
+            style={{ color: '#3f9e68' }}
             onClick={() => setShowIntro(true)}
           >
             RULES
@@ -421,7 +421,7 @@ export default function TicTacToe() {
             TIC-TAC-TOE
           </span>
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           MAXIMUM TACTICAL GRID DOMINANCE
         </div>
       </div>

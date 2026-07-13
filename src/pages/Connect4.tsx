@@ -212,7 +212,7 @@ export default function Connect4() {
         >
           CONNECT 4
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           FOUR-IN-LINE DOMINANCE PROTOCOL
         </div>
       </div>
@@ -235,7 +235,7 @@ export default function Connect4() {
 
       {/* Hint */}
       {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
           TAP TO BEGIN — DROP DISCS, CONNECT 4 TO WIN
         </p>
       )}

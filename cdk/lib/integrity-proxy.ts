@@ -1,9 +1,5 @@
 import { createHash } from 'node:crypto';
-import {
-  DynamoDBClient,
-  PutItemCommand,
-  QueryCommand,
-} from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 
@@ -80,7 +76,7 @@ function safeStatus(status: number): number {
  * and /api/leaderboard-entry (consumes the projection to make a verdict).
  */
 async function fetchMerchantSession(
-  sessionId: string,
+  sessionId: string
 ): Promise<{ status: number; data: Record<string, unknown> }> {
   const { keyId, token } = splitCredential(MERCHANT_API_CREDENTIAL);
   const url = `${MERCHANT_API_URL}/v1/session/${encodeURIComponent(MERCHANT_CPI)}/${encodeURIComponent(sessionId)}`;
@@ -222,7 +218,7 @@ async function findPriorSuccess(
   indexName: string,
   keyName: string,
   value: string | null,
-  rangeFilter?: { fromMs: number },
+  rangeFilter?: { fromMs: number }
 ): Promise<PriorMatch | null> {
   if (!value) return null;
   const expr: Record<string, string> = { '#k': keyName, '#outcome': 'outcome' };
@@ -250,7 +246,7 @@ async function findPriorSuccess(
       ExpressionAttributeValues: marshall(vals),
       FilterExpression: '#outcome = :success',
       ScanIndexForward: false,
-    }),
+    })
   );
   if (!out.Items || out.Items.length === 0) return null;
   // Items already filtered to outcome=SUCCESS. Pick the most recent
@@ -284,7 +280,7 @@ function checkTamperingThresholds(m: MerchantProjection): BlockReason {
 
 async function checkDuplicates(
   id: NonNullable<MerchantProjection['identification']>,
-  customNetworkId: string,
+  customNetworkId: string
 ): Promise<{ reason: BlockReason; duplicate: PriorMatch | null }> {
   const checks: Array<{
     index: string;
@@ -390,7 +386,7 @@ async function leaderboardEntry(event: APIGatewayProxyEventV2): Promise<APIGatew
     }
     const attribution = (typeof body.attribution === 'string' ? body.attribution.trim() : '').slice(
       0,
-      256,
+      256
     );
 
     const { status, data: merchant } = await fetchMerchantSession(body.sessionId);
@@ -442,9 +438,9 @@ async function leaderboardEntry(event: APIGatewayProxyEventV2): Promise<APIGatew
             viewerIp,
             m,
           }),
-          { removeUndefinedValues: true },
+          { removeUndefinedValues: true }
         ),
-      }),
+      })
     );
 
     return jsonResponse(200, {

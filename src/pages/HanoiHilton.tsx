@@ -169,9 +169,9 @@ export default function HanoiHilton() {
             textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
           }}
         >
-          HANOI HILTON
+          TOWER OF HANOI
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           RECURSIVE DISK RELOCATION EXERCISE
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function HanoiHilton() {
       />
 
       {phase === 'playing' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
           KEYS A / B / C OR 1 / 2 / 3 TO SELECT PEG
         </p>
       )}

@@ -43,6 +43,79 @@ body {
   animation: terminal-blink 1.05s steps(1) infinite;
 }
 
+/* Console frame — denser scanlines than the page-wide overlay, so the
+ * boot prompt reads as its own little monitor. */
+.crt-console-lines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 12, 0, 0.3) 2px,
+    rgba(0, 12, 0, 0.3) 3px
+  );
+}
+
+/* The horizontal "adjustment" bar old CRTs get — rolls down the console,
+ * then rests offscreen for most of the cycle so it stays occasional. */
+@keyframes crt-roll {
+  0% {
+    top: -20%;
+  }
+  22% {
+    top: 120%;
+  }
+  100% {
+    top: 120%;
+  }
+}
+
+.crt-rollbar {
+  top: -20%;
+  height: 64px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(74, 222, 128, 0.05) 30%,
+    rgba(74, 222, 128, 0.12) 50%,
+    rgba(74, 222, 128, 0.05) 70%,
+    transparent
+  );
+  animation: crt-roll 13s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-rollbar {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Featured-game rotation — brief CRT re-tune: flicker dark, then settle. */
+@keyframes featured-swap {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.featured-swap {
+  animation: featured-swap 0.45s steps(6) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-swap {
+    animation: none;
+  }
+}
+
 @keyframes multiply-correct {
   0% {
     box-shadow: inset 0 0 0 4px #22c55e;

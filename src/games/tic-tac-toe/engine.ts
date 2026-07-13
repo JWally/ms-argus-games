@@ -290,7 +290,7 @@ const O_COLOR = '#facc15';
 const TEXT_DIM = '#64748b';
 const WIN_GLOW = '#22c55e';
 const GREEN = '#4ade80';
-const GREEN_DIM = '#166534';
+const GREEN_DIM = '#3f9e68';
 
 interface Layout {
   cellSize: number;

@@ -136,7 +136,7 @@ export default function Flappy() {
           <span>
             SCORE <span style={{ color: '#4ade80' }}>{score}</span>
           </span>
-          {highScore > 0 && <span style={{ color: '#166534' }}>BEST {highScore}</span>}
+          {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore}</span>}
         </div>
       </div>
 
@@ -151,7 +151,7 @@ export default function Flappy() {
         >
           FLAPPY BIRD
         </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           AERIAL EVASION PROTOCOL
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function Flappy() {
 
       {/* Hint / leaderboard */}
       {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#166534' }}>
+        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
           TAP OR SPACE TO FLAP
         </p>
       )}

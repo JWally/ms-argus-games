@@ -51,11 +51,7 @@ function tagColor(tag: string): string {
     return GREEN;
   }
   // Neutral / merchant-correlation hints
-  if (
-    tag === 'no_webrtc' ||
-    tag === 'privacy_relay' ||
-    tag === 'apple_attestation_missing'
-  ) {
+  if (tag === 'no_webrtc' || tag === 'privacy_relay' || tag === 'apple_attestation_missing') {
     return YELLOW;
   }
   // Everything else (vpn/proxy/hyperscaler/corporate_shield/browser_tampering/
@@ -267,7 +263,7 @@ function ago(deltaMs: number): string {
 function formatReason(
   reason: BotBusterReason,
   merchant: MerchantSafeResponse | undefined,
-  duplicateAt: number | null,
+  duplicateAt: number | null
 ): string {
   if (!reason) return '';
   const T = 20; // matches integrity-proxy TAMPER_THRESHOLD
@@ -338,10 +334,7 @@ function PageHeader({
           &gt; BLOCKED!
         </h1>
         {reason && (
-          <div
-            className="mt-2 font-mono text-xs tracking-widest"
-            style={{ color: '#fca5a5' }}
-          >
+          <div className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#fca5a5' }}>
             reason: {reason} — {formatReason(reason, merchant, duplicateAt)}
           </div>
         )}
@@ -446,9 +439,7 @@ function MerchantView({ merchant }: { merchant: MerchantSafeResponse }): ReactEl
         <Row
           label="corporate_shield"
           value={fmt(merchant.ipInfo.corporate_shield.result)}
-          colorOverride={
-            merchant.ipInfo.corporate_shield.result ? YELLOW : MUTED
-          }
+          colorOverride={merchant.ipInfo.corporate_shield.result ? YELLOW : MUTED}
           indent={1}
         />
         <div style={{ borderTop: BORDER, margin: '6px 0' }} />
@@ -701,7 +692,7 @@ export default function Scan(): ReactElement {
           }}
         >
           <PageHeader
-            outcome={state === 'revealed' ? result?.verdict.outcome ?? null : null}
+            outcome={state === 'revealed' ? (result?.verdict.outcome ?? null) : null}
             reason={result?.verdict.reason ?? null}
             merchant={result?.merchant}
             duplicateAt={result?.verdict.duplicateAt ?? null}
@@ -714,14 +705,12 @@ export default function Scan(): ReactElement {
                 className="mt-3 font-mono text-xs tracking-widest"
                 style={{ color: '#94a3b8', lineHeight: 1.6 }}
               >
-                Working on bot &amp; proxy detection. If you have a scraper or bot
-                and want to see if it gets caught &mdash; without burning the IP &mdash;
-                fill out the (free, fake) checkout below. Submitting reveals
-                your scorecard.
+                Working on bot &amp; proxy detection. If you have a scraper or bot and want to see
+                if it gets caught &mdash; without burning the IP &mdash; fill out the (free, fake)
+                checkout below. Submitting reveals your scorecard.
                 <br />
                 <span style={{ color: MUTED }}>
-                  First verified all-five-pass bypass wins the bounty. Leaderboard
-                  handle below.
+                  First verified all-five-pass bypass wins the bounty. Leaderboard handle below.
                 </span>
               </div>
               <CheckoutForm onSubmit={handleCheckoutSubmit} />
@@ -763,7 +752,8 @@ export default function Scan(): ReactElement {
                       className="mt-4 font-mono text-xs tracking-widest"
                       style={{ color: MUTED, lineHeight: 1.5 }}
                     >
-                      no leaderboard handle entered &mdash; score won&apos;t be associated with a contact
+                      no leaderboard handle entered &mdash; score won&apos;t be associated with a
+                      contact
                     </div>
                   )}
                   <div className="mt-6 font-mono text-xs tracking-widest" style={{ color: MUTED }}>

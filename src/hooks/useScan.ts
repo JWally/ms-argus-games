@@ -182,7 +182,7 @@ export function useScan() {
         setState('error');
       }
     },
-    [state, startProfile],
+    [state, startProfile]
   );
 
   /** Restart from scratch — re-profile and re-reveal. */

@@ -253,7 +253,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
         >
           CONTAINMENT PROTOCOL
         </h2>
-        <div className="mt-1 text-center text-sm tracking-[0.3em]" style={{ color: '#166534' }}>
+        <div className="mt-1 text-center text-sm tracking-[0.3em]" style={{ color: '#3f9e68' }}>
           OPERATIONAL BRIEFING
         </div>
 
@@ -289,7 +289,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
           <ModalStep n={2} text="Transfer to a vessel with matching compound on top">
             <div className="flex items-end gap-1.5">
               <MiniTube colors={[1, 0]} />
-              <span className="mb-4 text-base" style={{ color: '#166534' }}>
+              <span className="mb-4 text-base" style={{ color: '#3f9e68' }}>
                 →
               </span>
               <MiniTube colors={[0, 2, 2]} highlight />
@@ -471,7 +471,7 @@ function WinModal({
             </div>
             {bestScore !== null && !isNewRecord && (
               <div className="text-center">
-                <div className="font-mono text-4xl font-bold" style={{ color: '#166534' }}>
+                <div className="font-mono text-4xl font-bold" style={{ color: '#3f9e68' }}>
                   {bestScore}
                 </div>
                 <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>
@@ -665,7 +665,7 @@ export default function BallSort() {
           BALL SORT
         </h1>
         <div className="mt-1 flex items-center justify-center gap-2">
-          <div className="text-xs tracking-[0.35em]" style={{ color: '#166534' }}>
+          <div className="text-xs tracking-[0.35em]" style={{ color: '#3f9e68' }}>
             CHEMICAL CONTAINMENT SYSTEM v1.0
           </div>
           <button
@@ -675,7 +675,7 @@ export default function BallSort() {
             style={{
               background: '#040e07',
               border: BORDER_GREEN_DIM,
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >
@@ -727,14 +727,14 @@ export default function BallSort() {
             </div>
             {bestScore !== null && (
               <>
-                <span style={{ color: '#0f3018', fontFamily: 'monospace' }}>|</span>
+                <span style={{ color: '#26714a', fontFamily: 'monospace' }}>|</span>
                 <div className="flex items-baseline gap-1">
                   <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
                     BEST
                   </span>
                   <span
                     className="font-mono text-lg font-bold leading-none"
-                    style={{ color: '#166534', textShadow: '0 0 6px #22c55e33' }}
+                    style={{ color: '#3f9e68', textShadow: '0 0 6px #22c55e33' }}
                   >
                     {bestScore}
                   </span>
@@ -756,7 +756,7 @@ export default function BallSort() {
               style={{
                 background: difficulty === d ? '#0a2a14' : '#040e07',
                 border: `1px solid ${difficulty === d ? '#22c55e' : '#1a4a2a'}`,
-                color: difficulty === d ? '#4ade80' : '#166534',
+                color: difficulty === d ? '#4ade80' : '#3f9e68',
                 boxShadow: difficulty === d ? '0 0 8px #22c55e33' : undefined,
                 borderRadius: '2px',
               }}
@@ -776,7 +776,7 @@ export default function BallSort() {
             style={{
               background: '#040e07',
               border: '1px solid #1a4a2a',
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >
@@ -788,7 +788,7 @@ export default function BallSort() {
             style={{
               background: '#040e07',
               border: '1px solid #1a4a2a',
-              color: '#166534',
+              color: '#3f9e68',
               borderRadius: '2px',
             }}
           >
