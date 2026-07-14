@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
 import {
   type GameState,
   createGame,
@@ -63,61 +63,24 @@ export default function Ataxx() {
     setGame((prev) => handleCellClick(prev, r, c));
   }, []);
 
-  const cellSize = `calc((min(100vw - 32px, 400px) - ${(game.size - 1) * 3}px) / ${game.size})`;
+  // Board sizing: phone → viewport width; desktop → grow with viewport
+  // height (so the board + chrome never scrolls) up to a 620px cap.
+  const boardSize = 'min(100vw - 64px, clamp(400px, 68vh, 620px))';
+  const cellSize = `calc((${boardSize} - ${(game.size - 1) * 3}px) / ${game.size})`;
 
-  return (
-    <div
-      className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
+  const resultText =
+    game.winner === 'blue' ? 'YOU WIN' : game.winner === 'red' ? 'CPU WINS' : 'DRAW';
 
-      {/* Back link */}
-      <div className="mb-4 w-full max-w-[400px]">
-        <BackLink />
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          ATAXX
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          TERRITORIAL EXPANSION PROTOCOL
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider />
-
-      {/* Score bar */}
-      <div className="mt-2 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">
+  const status = (
+    <div>
+      <div className="flex items-center justify-between font-mono text-sm lg:text-base">
         <span style={{ color: '#4ade80' }}>YOU: {game.blueCount}</span>
-        <span style={{ color: '#86efac' }}>
-          {game.gameOver
-            ? game.winner === 'blue'
-              ? 'MISSION COMPLETE'
-              : game.winner === 'red'
-                ? 'MISSION FAILED'
-                : 'STALEMATE'
-            : game.turn === 'blue'
-              ? 'YOUR TURN'
-              : 'CPU CALCULATING...'}
-        </span>
         <span style={{ color: '#f87171' }}>CPU: {game.redCount}</span>
       </div>
-
-      {/* Score bar visual */}
       <div
-        className="mt-2 flex h-3 w-full max-w-[400px] overflow-hidden"
+        className="mt-2 flex h-3 w-full overflow-hidden lg:h-3.5"
         style={{
-          background: '#040e07',
+          background: '#030c06',
           border: '1px solid #0f2a18',
           borderRadius: '2px',
         }}
@@ -135,10 +98,42 @@ export default function Ataxx() {
           }}
         />
       </div>
+      <p
+        className="mt-2 text-center font-mono text-xs tracking-widest lg:text-sm"
+        style={{ color: '#86efac' }}
+      >
+        {game.gameOver ? resultText : game.turn === 'blue' ? 'YOUR TURN' : 'CPU CALCULATING...'}
+      </p>
+    </div>
+  );
 
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· CLICK A BLUE PIECE, THEN A GLOWING CELL</li>
+      <li>· MOVE 1 SQUARE — YOUR PIECE CLONES</li>
+      <li>· JUMP 2 SQUARES — THE PIECE MOVES</li>
+      <li>· LANDING BESIDE CPU PIECES FLIPS THEM</li>
+      <li>· MOST PIECES WHEN THE BOARD FILLS WINS</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="ATAXX"
+      subtitle="CLONE & CONQUER THE BOARD"
+      tag="Strategy"
+      record={
+        record.wins > 0 || record.losses > 0 ? `${record.wins}W – ${record.losses}L` : undefined
+      }
+      onRestart={restart}
+      status={status}
+      rules={rules}
+    >
       {/* Board */}
       <div
-        className="mt-5"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${game.size}, ${cellSize})`,
@@ -218,22 +213,10 @@ export default function Ataxx() {
         )}
       </div>
 
-      {/* Legend */}
-      <div className="mt-4 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-        1 SQUARE = CLONE · 2 SQUARES = JUMP
-      </div>
-
-      {/* Record */}
-      {(record.wins > 0 || record.losses > 0) && !game.gameOver && (
-        <p className="mt-3 font-mono text-xs" style={{ color: '#3f9e68' }}>
-          RECORD: {record.wins}W - {record.losses}L
-        </p>
-      )}
-
       {/* Game over */}
       {game.gameOver && (
         <div
-          className="mt-6 w-full max-w-[400px] p-6 text-center"
+          className="mt-6 w-full p-6 text-center"
           style={
             game.winner === 'blue'
               ? {
@@ -260,7 +243,7 @@ export default function Ataxx() {
           }
         >
           <p
-            className="font-display text-2xl tracking-widest"
+            className="font-display text-2xl tracking-widest lg:text-3xl"
             style={
               game.winner === 'blue'
                 ? { color: '#4ade80', textShadow: '0 0 20px #22c55e, 0 0 60px #22c55e66' }
@@ -269,11 +252,7 @@ export default function Ataxx() {
                   : { color: '#f59e0b', textShadow: '0 0 20px #f59e0b, 0 0 60px #f59e0b66' }
             }
           >
-            {game.winner === 'blue'
-              ? 'MISSION COMPLETE'
-              : game.winner === 'red'
-                ? 'MISSION FAILED'
-                : 'STALEMATE'}
+            {resultText}
           </p>
           <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
             {game.blueCount} - {game.redCount}
@@ -292,7 +271,7 @@ export default function Ataxx() {
               borderRadius: '2px',
             }}
           >
-            NEW ENGAGEMENT
+            PLAY AGAIN
           </button>
         </div>
       )}
@@ -321,6 +300,6 @@ export default function Ataxx() {
           100% { transform: translate(0,0) rotate(0deg); }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

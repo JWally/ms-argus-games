@@ -8,6 +8,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { SiteShell } from '../components/SiteShell';
 import { ScanIcon } from './scan/icons/ScanIcon';
 
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
@@ -717,74 +718,41 @@ export default function Hub() {
   const featuredTag = TAG_CFG[featured.tag];
 
   return (
-    <div
-      className="flex min-h-[100dvh] flex-col"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      {/* CRT scanlines — kept subtle so they read as texture, not a dimmer */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,10,0,0.12) 3px, rgba(0,10,0,0.12) 4px)',
-          opacity: 0.35,
-        }}
-      />
-
-      {/* Nav */}
-      <nav
-        className="sticky top-0 z-40"
-        style={{
-          background: '#030c06f0',
-          borderBottom: BORDER,
-          backdropFilter: 'blur(8px)',
-          boxShadow: '0 4px 16px #000c',
-        }}
-      >
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
-          <span
-            className="font-display text-base tracking-[0.2em] sm:text-lg"
-            style={{
-              color: '#4ade80',
-              textShadow: '0 0 8px #22c55e, 0 0 20px #22c55e44',
-            }}
-          >
-            ARCADES.CLICK
-          </span>
-
-          {/* Desktop category links */}
-          <div className="hidden items-center gap-1 lg:flex">
-            {FILTER_KEYS.map((tag) => {
-              const isAll = tag === 'All';
-              const cfg = isAll ? null : TAG_CFG[tag as TagKey];
-              const isActive = activeTag === tag;
-              return (
-                <button
-                  key={tag}
-                  onClick={() => selectTag(tag)}
-                  className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
-                  style={
-                    isActive
-                      ? {
-                          color: isAll ? '#4ade80' : cfg!.color,
-                          border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
-                          background: isAll ? '#071a0e' : cfg!.bg,
-                        }
-                      : {
-                          color: MUTED,
-                          border: '1px solid transparent',
-                          background: 'transparent',
-                        }
-                  }
-                >
-                  {isAll ? 'ALL' : tag.toUpperCase()}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Right side — PLAY RANDOM + search (desktop) */}
-          <div className="ml-auto hidden items-center gap-2 lg:flex">
+    <SiteShell
+      center={
+        <div className="hidden items-center gap-1 lg:flex">
+          {FILTER_KEYS.map((tag) => {
+            const isAll = tag === 'All';
+            const cfg = isAll ? null : TAG_CFG[tag as TagKey];
+            const isActive = activeTag === tag;
+            return (
+              <button
+                key={tag}
+                onClick={() => selectTag(tag)}
+                className="rounded-[2px] px-3 py-1.5 font-mono text-xs tracking-widest transition-all duration-150"
+                style={
+                  isActive
+                    ? {
+                        color: isAll ? '#4ade80' : cfg!.color,
+                        border: `1px solid ${isAll ? '#22c55e' : cfg!.border}`,
+                        background: isAll ? '#071a0e' : cfg!.bg,
+                      }
+                    : {
+                        color: MUTED,
+                        border: '1px solid transparent',
+                        background: 'transparent',
+                      }
+                }
+              >
+                {isAll ? 'ALL' : tag.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
+      }
+      right={
+        <>
+          <div className="hidden items-center gap-2 lg:flex">
             <button
               onClick={playRandom}
               className="whitespace-nowrap font-display text-[10px] tracking-widest transition-all duration-150 hover:[box-shadow:0_0_12px_#22c55e66]"
@@ -827,10 +795,9 @@ export default function Hub() {
             </div>
           </div>
 
-          {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="ml-auto flex flex-col items-center justify-center gap-1.5 p-2 lg:hidden"
+            className="flex flex-col items-center justify-center gap-1.5 p-2 lg:hidden"
             aria-label="Toggle menu"
           >
             {menuOpen ? (
@@ -853,10 +820,10 @@ export default function Hub() {
               </>
             )}
           </button>
-        </div>
-
-        {/* Mobile dropdown menu */}
-        {menuOpen && (
+        </>
+      }
+      below={
+        menuOpen ? (
           <div className="lg:hidden" style={{ borderTop: BORDER, background: '#030c06' }}>
             <div className="px-4 py-3" style={{ borderBottom: BORDER }}>
               <div
@@ -921,9 +888,9 @@ export default function Hub() {
               );
             })}
           </div>
-        )}
-      </nav>
-
+        ) : undefined
+      }
+    >
       {/* Status line */}
       <div className="mx-auto w-full max-w-6xl px-4 pt-3 sm:px-6">
         <p className="font-mono text-[10px] tracking-widest" style={{ color: MUTED }}>
@@ -1139,6 +1106,6 @@ export default function Hub() {
       >
         ▮ EOF · {games.length} GAMES · NO QUARTERS REQUIRED · COME BACK SOON
       </footer>
-    </div>
+    </SiteShell>
   );
 }
