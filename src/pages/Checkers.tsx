@@ -22,21 +22,19 @@ export default function Checkers() {
 
   const [phase, setPhase] = useState<string>('ready');
   const [turn, setTurn] = useState<'player' | 'ai'>('player');
+  const [mustCapture, setMustCapture] = useState(false);
   const [stats, setStats] = useState({ wins: 0, losses: 0 });
+  const lastMustCaptureRef = useRef(false);
 
   const getCanvasSize = useCallback(() => {
-    // Backing (internal) resolution only — the canvas element itself is
-    // CSS-scaled to fill the bezel (width: 100%, height: auto). The 8×8
-    // board's backing size caps at the engine's 65px-cell limit (520px
-    // board); the canvas adds 24px side margin and ~130px vertical HUD
-    // chrome around the board.
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const board = Math.min(vw - 64, Math.max(320, Math.min(vh * 0.62, 520)));
-    return {
-      w: Math.max(280, Math.round(board + 24)),
-      h: Math.max(380, Math.round(board + 130)),
-    };
+    // Backing resolution = the canvas's actual on-screen size × device
+    // pixel ratio, so the board renders pixel-crisp at any display size.
+    // The canvas is square (the board IS the canvas now — chrome lives
+    // in the cabinet shell).
+    const cssW = canvasRef.current?.clientWidth || 400;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const px = Math.max(320, Math.round(cssW * dpr));
+    return { w: px, h: px };
   }, []);
 
   const resetGame = useCallback(() => {
@@ -89,6 +87,10 @@ export default function Checkers() {
       if (s.turn !== prevTurn) {
         lastTurnRef.current = s.turn;
         setTurn(s.turn);
+      }
+      if (s.mustCapture !== lastMustCaptureRef.current) {
+        lastMustCaptureRef.current = s.mustCapture;
+        setMustCapture(s.mustCapture);
       }
 
       if (s.phase === 'done' && prevPhase !== 'done' && s.winner === 'player') {
@@ -173,7 +175,14 @@ export default function Checkers() {
     <p
       className="text-center font-mono text-xs tracking-widest lg:text-sm"
       style={{
-        color: phase === 'playing' ? (turn === 'player' ? '#4ade80' : '#f59e0b') : '#86efac',
+        color:
+          phase === 'playing'
+            ? turn === 'player'
+              ? mustCapture
+                ? '#fbbf24'
+                : '#4ade80'
+              : '#f59e0b'
+            : '#86efac',
       }}
     >
       {phase === 'ready'
@@ -181,14 +190,16 @@ export default function Checkers() {
         : phase === 'done'
           ? 'GAME OVER — TAP THE BOARD FOR A REMATCH'
           : turn === 'player'
-            ? 'YOUR TURN'
+            ? mustCapture
+              ? 'CAPTURE AVAILABLE — YOU MUST TAKE IT'
+              : 'YOUR TURN'
             : 'CPU THINKING...'}
     </p>
   );
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· MOVE YOUR RED PIECES DIAGONALLY ON DARK SQUARES</li>
@@ -214,7 +225,10 @@ export default function Checkers() {
         className="touch-none"
         onClick={handleClick}
         style={{
-          width: '100%',
+          // Square board fills the bezel width, capped so it never grows
+          // past ~72vh on desktop.
+          width: 'min(100%, 72vh)',
+          aspectRatio: '1',
           height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',

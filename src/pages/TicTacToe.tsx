@@ -29,6 +29,25 @@ function getBestScore(): number | null {
 
 const GREEN_BORDER = '1px solid #22c55e';
 
+// Status-slot readout — replaces the status line the canvas used to draw
+function getStatusReadout(
+  sessionPhase: string,
+  gamePhase: 'playing' | 'result',
+  lastResult: 'win' | 'loss' | 'draw' | null,
+  turn: 1 | 2
+): { text: string; color: string } {
+  if (sessionPhase === 'finished') return { text: "TIME'S UP!", color: '#86efac' };
+  if (sessionPhase !== 'running') return { text: '30 SECONDS ON THE CLOCK', color: '#86efac' };
+  if (gamePhase === 'result') {
+    if (lastResult === 'win') return { text: 'BOARD CLEARED!', color: '#4ade80' };
+    if (lastResult === 'draw') return { text: 'DRAW — SURVIVED', color: '#facc15' };
+    return { text: 'ELIMINATED!', color: '#ef4444' };
+  }
+  return turn === 1
+    ? { text: 'YOUR MOVE', color: '#4ade80' }
+    : { text: 'CPU THINKING...', color: '#f59e0b' };
+}
+
 // ── Intro modal ───────────────────────────────────────────────────────────
 
 function IntroModal({ onStart }: { onStart: () => void }) {
@@ -210,9 +229,16 @@ export default function TicTacToe() {
   const lastTurnRef = useRef<number>(0); // 0 = sentinel, forces sync on first frame
   const lastGameCountRef = useRef<number>(0);
 
+  const lastSecondsRef = useRef<number>(-1);
+  const lastClearedRef = useRef<number>(-1);
+
   const [sessionPhase, setSessionPhase] = useState<string>('idle');
   const [turn, setTurn] = useState<1 | 2>(1);
   const [gameCount, setGameCount] = useState(0);
+  const [gamePhase, setGamePhase] = useState<'playing' | 'result'>('playing');
+  const [lastResult, setLastResult] = useState<'win' | 'loss' | 'draw' | null>(null);
+  const [seconds, setSeconds] = useState(30);
+  const [cleared, setCleared] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const [showLb, setShowLb] = useState(false);
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
@@ -222,18 +248,14 @@ export default function TicTacToe() {
   const best = getBestScore();
 
   const getCanvasSize = useCallback(() => {
-    // Backing (internal) resolution only — the canvas element itself is
-    // CSS-scaled to fill the bezel (width: 100%, height: auto). The 3×3
-    // grid's backing size caps at the engine's 500px grid limit. The
-    // canvas adds 40px side margin and ~210px vertical chrome (timer
-    // boxes above, status line below).
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const grid = Math.min(vw - 64, Math.max(300, Math.min(vh * 0.55, 500)));
-    return {
-      w: Math.max(300, Math.round(grid + 40)),
-      h: Math.max(420, Math.round(Math.min(grid + 210, vh - 140))),
-    };
+    // Backing resolution = the canvas's actual on-screen size × device
+    // pixel ratio, so the grid renders pixel-crisp at any display size.
+    // The canvas is square (the grid IS the canvas now — clock/score/
+    // status chrome lives in the cabinet shell).
+    const cssW = canvasRef.current?.clientWidth || 400;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const px = Math.max(320, Math.round(cssW * dpr));
+    return { w: px, h: px };
   }, []);
 
   const resetCanvas = useCallback(() => {
@@ -247,8 +269,14 @@ export default function TicTacToe() {
     lastGameCountRef.current = 0;
     lastSessionPhaseRef.current = 'idle';
     lastGamePhaseRef.current = 'playing';
+    lastSecondsRef.current = -1;
+    lastClearedRef.current = -1;
     setSessionPhase('idle');
     setTurn(1);
+    setGamePhase('playing');
+    setLastResult(null);
+    setSeconds(30);
+    setCleared(0);
   }, [getCanvasSize]);
 
   // Game loop
@@ -296,16 +324,30 @@ export default function TicTacToe() {
         }
       }
 
-      // Confetti on board win
-      if (s.phase === 'result' && lastGamePhaseRef.current !== 'result' && s.winner === 1) {
-        launchConfetti();
+      // Sync game phase (drives the status-slot result readout) +
+      // confetti on board win
+      if (s.phase !== lastGamePhaseRef.current) {
+        if (s.phase === 'result' && s.winner === 1) launchConfetti();
+        lastGamePhaseRef.current = s.phase;
+        setGamePhase(s.phase);
+        setLastResult(s.lastResult);
       }
-      lastGamePhaseRef.current = s.phase;
 
       // Sync turn (drives AI effect)
       if (s.turn !== lastTurnRef.current) {
         lastTurnRef.current = s.turn;
         setTurn(s.turn as 1 | 2);
+      }
+
+      // Sync HUD readouts (evicted from the canvas) only when they change
+      const secs = Math.ceil(s.timeLeft);
+      if (secs !== lastSecondsRef.current) {
+        lastSecondsRef.current = secs;
+        setSeconds(secs);
+      }
+      if (s.boardsCleared !== lastClearedRef.current) {
+        lastClearedRef.current = s.boardsCleared;
+        setCleared(s.boardsCleared);
       }
 
       render(ctx, s);
@@ -404,21 +446,29 @@ export default function TicTacToe() {
     return () => window.removeEventListener('resize', onResize);
   }, [resetCanvas]);
 
+  // HUD readouts evicted from the canvas — clock + boards cleared
+  const clockRed = sessionPhase === 'running' && seconds <= 10;
+  const clockFlash = sessionPhase === 'running' && seconds <= 5;
+  const timeStr = `0:${String(Math.max(0, Math.min(59, seconds))).padStart(2, '0')}`;
+
+  const readout = getStatusReadout(sessionPhase, gamePhase, lastResult, turn);
+
   const status = (
     <div className="flex items-center justify-center gap-4">
-      <p
-        className="font-mono text-xs tracking-widest lg:text-sm"
-        style={{
-          color: sessionPhase === 'running' ? (turn === 1 ? '#4ade80' : '#f59e0b') : '#86efac',
-        }}
-      >
-        {sessionPhase === 'running'
-          ? turn === 1
-            ? 'YOUR MOVE'
-            : 'CPU THINKING...'
-          : sessionPhase === 'finished'
-            ? "TIME'S UP!"
-            : '30 SECONDS ON THE CLOCK'}
+      <p className="font-mono text-xs tracking-widest lg:text-sm">
+        <span
+          style={{
+            color: clockRed ? '#ef4444' : '#4ade80',
+            animation: clockFlash ? 'hud-blink 0.4s steps(1) infinite' : undefined,
+          }}
+        >
+          {timeStr}
+        </span>
+        <span style={{ color: '#3f9e68' }}>{' · '}</span>
+        <span style={{ color: '#86efac' }}>CLEARED {cleared}</span>
+      </p>
+      <p className="font-mono text-xs tracking-widest lg:text-sm" style={{ color: readout.color }}>
+        {readout.text}
       </p>
       {!showIntro && (
         <button
@@ -434,7 +484,7 @@ export default function TicTacToe() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· YOU HAVE 30 SECONDS ON THE CLOCK</li>
@@ -463,7 +513,10 @@ export default function TicTacToe() {
         ref={canvasRef}
         className="touch-none"
         style={{
-          width: '100%',
+          // Square grid fills the bezel width, capped so it never grows
+          // past ~72vh on desktop.
+          width: 'min(100%, 72vh)',
+          aspectRatio: '1',
           height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',
@@ -478,6 +531,10 @@ export default function TicTacToe() {
         @keyframes modal-in {
           0%   { opacity: 0; transform: scale(0.94) translateY(10px); }
           100% { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+        @keyframes hud-blink {
+          0%  { opacity: 1; }
+          50% { opacity: 0.25; }
         }
       `}</style>
     </GameCabinet>

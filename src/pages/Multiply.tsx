@@ -192,7 +192,7 @@ export default function Multiply() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· PICK A NUMBER TO PRACTICE ITS TIMES TABLE — ? MIXES THEM ALL</li>

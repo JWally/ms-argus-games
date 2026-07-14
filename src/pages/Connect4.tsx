@@ -23,18 +23,19 @@ export default function Connect4() {
 
   const [phase, setPhase] = useState<string>('ready');
   const [turn, setTurn] = useState<1 | 2>(1);
-  const [stats, setStats] = useState({ wins: 0, losses: 0 });
+  const [stats, setStats] = useState({ wins: 0, losses: 0, draws: 0 });
 
   const getCanvasSize = useCallback(() => {
     // Backing (internal) resolution only — the canvas element itself is
-    // CSS-scaled to fill the bezel (width: 100%, height: auto). For the
-    // 7-wide × 6-tall board, backing width caps at 444px (the engine's
-    // 60px-cell limit). Height adds ~90px so the vertical constraint
-    // ((h - 100) / 7 rows incl. hover) never shrinks the cells.
+    // CSS-scaled to fill the bezel (width: 100%, height: auto). Width
+    // caps at 444px (the engine's 60px-cell limit); height is derived
+    // from the cell size: 6 board rows + 1 hover row + slim margins, so
+    // the box hugs the board with just enough room to see the drop disc.
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const w = Math.max(280, Math.round(Math.min(vw - 64, Math.max(320, Math.min(vh * 0.55, 444)))));
-    const h = Math.max(380, Math.round(Math.min(w + 90, vh - 160)));
+    const cell = Math.min(Math.floor((w - 24) / 7), 60);
+    const h = cell * 7 + 30;
     return { w, h };
   }, []);
 
@@ -49,7 +50,7 @@ export default function Connect4() {
     stateRef.current = s;
     setPhase('ready');
     setTurn(1);
-    setStats({ wins: s.wins, losses: s.losses });
+    setStats({ wins: s.wins, losses: s.losses, draws: s.draws });
   }, [getCanvasSize]);
 
   // Restart button — fresh board (stats persist in the engine)
@@ -83,7 +84,7 @@ export default function Connect4() {
       if (s.phase !== prevPhase) {
         lastPhaseRef.current = s.phase;
         setPhase(s.phase);
-        setStats({ wins: s.wins, losses: s.losses });
+        setStats({ wins: s.wins, losses: s.losses, draws: s.draws });
       }
       if (s.turn !== prevTurn) {
         lastTurnRef.current = s.turn;
@@ -216,7 +217,7 @@ export default function Connect4() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· CLICK A COLUMN TO DROP A DISC (KEYS 1–7 WORK TOO)</li>
@@ -249,6 +250,13 @@ export default function Connect4() {
           borderRadius: '2px',
         }}
       />
+
+      {/* Lifetime W/D/L — lives below the board, not in the canvas */}
+      <div className="mt-3 flex items-center justify-center gap-6 font-mono text-xs tracking-widest lg:text-sm">
+        <span style={{ color: '#4ade80' }}>W {stats.wins}</span>
+        <span style={{ color: '#fbbf24' }}>D {stats.draws}</span>
+        <span style={{ color: '#f87171' }}>L {stats.losses}</span>
+      </div>
     </GameCabinet>
   );
 }

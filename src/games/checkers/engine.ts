@@ -487,18 +487,19 @@ function evaluateCheckers(board: Cell[][]): number {
 
 // ── Rendering ────────────────────────────────────────────────────────
 
-const BG_COLOR = '#0a0a1a';
-const BOARD_LIGHT = '#d4a574';
-const BOARD_DARK = '#8b6340';
+// Phosphor-terminal palette — matches the site theme (wood-brown board
+// was a leftover from the pre-CRT era).
+const BG_COLOR = '#030c06';
+const BOARD_LIGHT = '#123c20';
+const BOARD_DARK = '#071a0e';
 const PLAYER_FILL = '#ef4444';
-const PLAYER_STROKE = '#dc2626';
-const AI_FILL = '#1e1e1e';
-const AI_STROKE = '#444';
+const PLAYER_STROKE = '#f87171';
+const AI_FILL = '#182420';
+const AI_STROKE = '#86efac';
 const KING_CROWN = '#fbbf24';
 const SELECT_GLOW = '#fbbf24';
 const MOVE_DOT = '#22c55e';
 const TEXT_COLOR = '#e2e8f0';
-const TEXT_DIM = '#64748b';
 
 interface Layout {
   cellSize: number;
@@ -508,11 +509,14 @@ interface Layout {
 }
 
 function getLayout(width: number, height: number): Layout {
-  const maxCell = Math.min(Math.floor((width - 24) / SIZE), Math.floor((height - 110) / SIZE), 65);
-  const cellSize = Math.max(maxCell, 40);
+  // The board IS the canvas, minus a slim margin — turn/record chrome
+  // lives in the page shell, not in-canvas. No cell cap: the backing
+  // resolution is set from the display size, so bigger canvas = bigger,
+  // still-crisp board.
+  const cellSize = Math.max(Math.min((width - 24) / SIZE, (height - 24) / SIZE), 40);
   const boardPx = cellSize * SIZE;
   const boardX = (width - boardPx) / 2;
-  const boardY = height - boardPx - 20;
+  const boardY = (height - boardPx) / 2;
   return { cellSize, boardX, boardY, boardPx };
 }
 
@@ -524,7 +528,6 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
 
   const layout = getLayout(width, height);
 
-  drawHud(ctx, state, layout);
   drawBoardSquares(ctx, state, layout);
   drawPieces(ctx, state, layout);
 
@@ -535,39 +538,11 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   }
 }
 
-function drawHud(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
-  const { width } = state;
-  const y = layout.boardY - 36;
-
-  if (state.phase === 'playing') {
-    ctx.font = '13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = state.turn === 'player' ? PLAYER_FILL : '#888';
-    ctx.fillText(state.turn === 'player' ? 'Your turn' : 'AI thinking...', width / 2, y);
-  }
-
-  if (state.mustCapture && state.turn === 'player' && state.phase === 'playing') {
-    ctx.font = '11px sans-serif';
-    ctx.fillStyle = KING_CROWN;
-    ctx.textAlign = 'center';
-    ctx.fillText('Must capture!', width / 2, y + 16);
-  }
-
-  ctx.font = '11px sans-serif';
-  ctx.fillStyle = TEXT_DIM;
-  ctx.textAlign = 'left';
-  ctx.fillText(`W: ${state.wins}`, layout.boardX, y - 18);
-  ctx.textAlign = 'center';
-  ctx.fillText(`D: ${state.draws}`, width / 2, y - 18);
-  ctx.textAlign = 'right';
-  ctx.fillText(`L: ${state.losses}`, layout.boardX + layout.boardPx, y - 18);
-}
-
 function drawBoardSquares(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
   const { cellSize, boardX, boardY } = layout;
 
   // Board border
-  ctx.strokeStyle = '#5a3e26';
+  ctx.strokeStyle = '#1a6632';
   ctx.lineWidth = 3;
   ctx.strokeRect(boardX - 2, boardY - 2, cellSize * SIZE + 4, cellSize * SIZE + 4);
 
@@ -634,7 +609,7 @@ function drawPieces(ctx: CanvasRenderingContext2D, state: GameState, layout: Lay
       const isP = isPlayer(cell);
       const fill = isP ? PLAYER_FILL : AI_FILL;
       const stroke = isP ? PLAYER_STROKE : AI_STROKE;
-      const light = isP ? '#f87171' : '#3a3a3a';
+      const light = isP ? '#f87171' : '#2f4438';
 
       ctx.beginPath();
       ctx.arc(cx, cy, pieceR, 0, Math.PI * 2);
@@ -676,33 +651,37 @@ function drawOverlay(
 ): void {
   const { width, height } = state;
 
-  ctx.fillStyle = 'rgba(10, 10, 26, 0.6)';
+  // Scale overlay chrome with the board so it reads the same at any
+  // backing resolution (canvas is sized from display px now).
+  const u = Math.max(width / 400, 1);
+
+  ctx.fillStyle = 'rgba(3, 12, 6, 0.78)';
   ctx.fillRect(0, 0, width, height);
 
   const isWin = state.winner === 'player';
   const isLoss = state.winner === 'ai';
 
-  ctx.font = 'bold 26px sans-serif';
+  ctx.font = `bold ${Math.round(26 * u)}px monospace`;
   ctx.fillStyle = isWin ? MOVE_DOT : isLoss ? PLAYER_FILL : TEXT_COLOR;
   ctx.textAlign = 'center';
-  ctx.fillText(title, width / 2, height / 2 - 50);
+  ctx.fillText(title, width / 2, height / 2 - 50 * u);
 
-  const bw = 160;
-  const bh = 48;
+  const bw = 160 * u;
+  const bh = 48 * u;
   const bx = (width - bw) / 2;
   const by = height / 2 - bh / 2;
-  ctx.fillStyle = '#8b6340';
-  roundRect(ctx, bx, by, bw, bh, 8);
+  ctx.fillStyle = '#22c55e';
+  roundRect(ctx, bx, by, bw, bh, 4 * u);
   ctx.fill();
 
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillStyle = '#fff';
-  ctx.fillText(buttonText, width / 2, by + bh / 2 + 7);
+  ctx.font = `bold ${Math.round(18 * u)}px monospace`;
+  ctx.fillStyle = '#0a1f0a';
+  ctx.fillText(buttonText, width / 2, by + bh / 2 + 6 * u);
 
   if (subtitle) {
-    ctx.font = '12px sans-serif';
-    ctx.fillStyle = TEXT_DIM;
-    ctx.fillText(subtitle, width / 2, height / 2 + 50);
+    ctx.font = `${Math.round(12 * u)}px monospace`;
+    ctx.fillStyle = '#3f9e68';
+    ctx.fillText(subtitle, width / 2, height / 2 + 50 * u);
   }
 }
 

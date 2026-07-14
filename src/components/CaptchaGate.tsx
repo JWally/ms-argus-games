@@ -204,7 +204,10 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
       .catch(() => setPhase('error'));
   };
 
-  if (granted) return children;
+  // Local-tooling escape hatch: `VITE_SKIP_GATE=1 vite` skips the gate so
+  // headless screenshots/dev can reach game routes (localhost has no
+  // /api/captcha). Unset in normal dev and in production builds.
+  if (granted || import.meta.env.VITE_SKIP_GATE === '1') return children;
 
   return (
     <main

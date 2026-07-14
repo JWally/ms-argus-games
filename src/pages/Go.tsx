@@ -46,10 +46,6 @@ const KEYFRAMES = `
   75%  { transform: translate(-1px,0) rotate(-0.5deg); }
   100% { transform: translate(0,0) rotate(0deg); }
 }
-@keyframes go-scan {
-  0%   { top: -10%; }
-  100% { top: 110%; }
-}
 `;
 
 // ── Leaderboard config ────────────────────────────────────────────────
@@ -92,28 +88,12 @@ function GoBoard({ game, cellSize, hoverIdx, onPlace, onHover, disabled }: Board
       {/* Outer frame */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
-          border: '1px solid #1a6632',
-          boxShadow: '0 0 30px #22c55e18, inset 0 0 30px #00000060',
+          background: '#040e07',
+          border: BORDER_DARKEST,
           padding: `${pad}px`,
           position: 'relative',
         }}
       >
-        {/* Scan line */}
-        <div
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            height: '20%',
-            background:
-              'linear-gradient(to bottom, transparent, rgba(34,197,94,0.04), transparent)',
-            animation: 'go-scan 5s linear infinite',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}
-        />
-
         {/* Column labels (A-J, no I) */}
         <div
           style={{
@@ -375,7 +355,6 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
       style={{
         background: '#030c06',
         border: `1px solid ${playerWon ? '#22c55e' : '#dc2626'}`,
-        boxShadow: `0 0 30px ${playerWon ? '#22c55e22' : '#dc262622'}`,
         padding: '1.25rem',
       }}
     >
@@ -655,7 +634,7 @@ export default function Go() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· CLICK ANY INTERSECTION TO PLACE A RED STONE</li>

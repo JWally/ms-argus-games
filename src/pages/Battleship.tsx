@@ -94,37 +94,22 @@ function BattleGrid({
         className="w-full text-center text-xs font-bold tracking-[0.25em] lg:text-sm"
         style={{
           color: isEnemy ? '#f87171' : '#3f9e68',
-          textShadow: isEnemy ? '0 0 10px #dc2626, 0 0 20px #dc262666' : 'none',
         }}
       >
         {label}
       </div>
 
-      {/* Outer glow frame */}
+      {/* Outer frame */}
       <div
         className="w-full"
         style={{
           padding: '2px',
-          background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
-          boxShadow: isEnemy
-            ? '0 0 20px #22c55e33, inset 0 0 20px #00000066'
-            : '0 0 12px #0f4a2233, inset 0 0 12px #00000066',
+          background: '#040e07',
+          border: BORDER_DARK,
           borderRadius: '4px',
-          position: 'relative',
         }}
         onMouseLeave={onGridLeave}
       >
-        {/* Scan line */}
-        <div
-          className="pointer-events-none absolute inset-x-0 z-10"
-          style={{
-            height: '2px',
-            background:
-              'linear-gradient(to right, transparent, #22c55e44 20%, #22c55e88 50%, #22c55e44 80%, transparent)',
-            animation: 'bs-scan 4s linear infinite',
-          }}
-        />
-
         {/* 9×9 grid: col-0 = row labels, row-0 = col labels */}
         <div
           style={{
@@ -236,10 +221,7 @@ function BattleGrid({
                       <div
                         className="h-full w-full rounded-sm"
                         style={{
-                          background:
-                            cell === 'sunk'
-                              ? 'linear-gradient(135deg, #1a0303, #0a0202)'
-                              : 'linear-gradient(135deg, #133a1e, #0a2a14)',
+                          background: cell === 'sunk' ? '#120303' : '#103019',
                         }}
                       />
                     )}
@@ -284,17 +266,13 @@ function ShipStatus({ ships }: { ships: GameState['playerShips'] }) {
                       borderRadius: 2,
                       background: sunk ? '#2a0505' : hit ? '#7f1d1d' : '#0f3a1e',
                       border: `1px solid ${sunk ? '#450a0a' : hit ? '#dc2626' : '#1a6632'}`,
-                      boxShadow: !sunk && !hit ? '0 0 3px #22c55e44' : undefined,
                     }}
                   />
                 );
               })}
             </div>
             {ship?.sunk && (
-              <span
-                className="text-sm font-bold"
-                style={{ color: '#7f1d1d', textShadow: '0 0 4px #dc2626' }}
-              >
+              <span className="text-sm font-bold" style={{ color: '#7f1d1d' }}>
                 ✕
               </span>
             )}
@@ -398,7 +376,6 @@ export default function Battleship() {
       style={{
         background: '#040e07',
         border: '1px solid #0f3018',
-        boxShadow: 'inset 0 0 20px #00000060',
       }}
     >
       <div className="flex items-center gap-2">
@@ -451,7 +428,7 @@ export default function Battleship() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· RESHUFFLE YOUR FLEET UNTIL YOU LIKE IT, THEN OPEN FIRE</li>
@@ -488,7 +465,6 @@ export default function Battleship() {
                   background: '#040e07',
                   border: BORDER_GREEN,
                   color: '#4ade80',
-                  boxShadow: '0 0 10px #22c55e44',
                 }}
               >
                 RESHUFFLE FLEET
@@ -500,7 +476,6 @@ export default function Battleship() {
                   background: '#0a2a14',
                   border: '1px solid #1a6632',
                   color: '#86efac',
-                  boxShadow: '0 0 6px #22c55e22',
                 }}
               >
                 OPEN FIRE →
@@ -575,10 +550,6 @@ export default function Battleship() {
               style={{
                 background: game.phase === 'won' ? '#030f06' : '#0c0303',
                 border: `1px solid ${game.phase === 'won' ? '#1a6632' : '#7f1d1d'}`,
-                boxShadow:
-                  game.phase === 'won'
-                    ? '0 0 40px #22c55e22, inset 0 0 40px #00000060'
-                    : '0 0 40px #dc262622, inset 0 0 40px #00000060',
                 animation:
                   game.phase === 'won' ? 'bs-victory 0.8s ease-out' : 'bs-defeat 0.7s ease-out',
               }}
@@ -636,7 +607,6 @@ export default function Battleship() {
                   background: '#040e07',
                   border: BORDER_GREEN,
                   color: '#4ade80',
-                  boxShadow: '0 0 12px #22c55e44',
                 }}
               >
                 PLAY AGAIN
@@ -648,12 +618,6 @@ export default function Battleship() {
 
       {/* Keyframe styles */}
       <style>{`
-        @keyframes bs-scan {
-          0% { top: -2px; opacity: 0; }
-          5% { opacity: 1; }
-          95% { opacity: 1; }
-          100% { top: calc(100% + 2px); opacity: 0; }
-        }
         @keyframes bs-hit {
           0% { transform: scale(1); filter: brightness(1); }
           20% { transform: scale(1.4); filter: brightness(3); }

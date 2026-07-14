@@ -179,7 +179,7 @@ export default function Breakout() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· SLIDE YOUR POINTER TO MOVE THE PADDLE</li>
@@ -209,10 +209,12 @@ export default function Breakout() {
         onPointerMove={handlePointerMove}
         onClick={handleTap}
         style={{
-          // Fill the bezel — upscale via CSS only; internal resolution (and
-          // physics) unchanged. Pointer input maps through
+          // Fill the bezel width, but never grow taller than ~65vh — a
+          // portrait canvas at full column width would tower past the
+          // fold on desktop. Upscale is CSS-only; internal resolution
+          // (and physics) unchanged. Pointer input maps through
           // getBoundingClientRect so it stays exact at any display size.
-          width: '100%',
+          width: `min(100%, calc(65vh * ${aspect}))`,
           height: 'auto',
           aspectRatio: `${aspect}`,
           border: '1px solid #1a6632',

@@ -145,7 +145,7 @@ export default function ColorFlood() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· YOUR BLOB STARTS AT THE TOP-LEFT CELL</li>
@@ -169,9 +169,10 @@ export default function ColorFlood() {
       rules={rules}
       sidebar={game.won && lb ? <Leaderboard result={lb} /> : undefined}
     >
-      {/* Board — fills the bezel; cells scale as equal fractions */}
+      {/* Board — fills the bezel; cells scale as equal fractions.
+          Desktop: cap the square board so board + swatch row fit ~100vh. */}
       <div
-        className="w-full"
+        className="mx-auto w-full lg:max-w-[calc(100vh-22rem)]"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
@@ -206,7 +207,7 @@ export default function ColorFlood() {
               disabled={isActive || game.won}
               onClick={() => pick(idx as ColorIndex)}
               aria-label={`Pick ${color.name}`}
-              className="h-12 w-12 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
+              className="h-12 w-12 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14"
               style={{
                 backgroundColor: color.hex,
                 borderRadius: '4px',
