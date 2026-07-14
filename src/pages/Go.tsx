@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { CrtOverlay, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import {
   createGame,
   placeStone,
@@ -50,10 +50,6 @@ const KEYFRAMES = `
   0%   { top: -10%; }
   100% { top: 110%; }
 }
-@keyframes go-blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
 `;
 
 // ── Leaderboard config ────────────────────────────────────────────────
@@ -66,105 +62,36 @@ const LB_CONFIG = {
   spread: 0.55,
 };
 
-// ── Rules Modal ───────────────────────────────────────────────────────
+// ── Board sizing ──────────────────────────────────────────────────────
+// Mirrors the cabinet formula min(100vw - 64px, clamp(400px, 68vh, 620px))
+// numerically, because the board's absolute-positioned px math needs a
+// number, not a CSS string. Total board footprint = (SIZE + 1) cells
+// (8 gaps + a cell of label padding on each side).
 
-function RulesModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.88)' }}
-    >
-      <div
-        className="w-full max-w-sm"
-        style={{
-          background: '#040e07',
-          border: BORDER_GREEN_BRIGHT,
-          boxShadow: '0 0 40px #22c55e22',
-          padding: '1.5rem',
-        }}
-      >
-        <div className="mb-1 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
-          CLASSIFIED BRIEFING
-        </div>
-        <h2
-          className="mb-4 font-mono text-lg font-bold tracking-[0.2em]"
-          style={{ color: '#4ade80', textShadow: '0 0 10px #22c55e88' }}
-        >
-          GO — FIELD MANUAL
-        </h2>
-
-        <ol className="mb-4 space-y-2.5">
-          {[
-            'Place your red stone on any intersection on your turn.',
-            "Surround all of an enemy stone's adjacent empty points to capture it — captured stones leave the board.",
-            'Empty intersections surrounded only by your stones score as your territory.',
-            'PASS when satisfied. Two consecutive passes ends the game.',
-            'KO: you cannot immediately re-capture a single stone.',
-          ].map((rule, i) => (
-            <li key={i} className="flex gap-2.5">
-              <span
-                className="mt-0.5 shrink-0 font-mono text-xs font-bold"
-                style={{ color: '#22c55e' }}
-              >
-                {i + 1}.
-              </span>
-              <span className="text-[12px] leading-snug" style={{ color: '#86efac' }}>
-                {rule}
-              </span>
-            </li>
-          ))}
-        </ol>
-
-        <div
-          className="mb-5 border-l-2 pl-3 font-mono text-xs leading-relaxed"
-          style={{ borderColor: '#1a6632', color: '#4ade80' }}
-        >
-          SCORING: your stones on board + territory you surround.
-          <br />
-          AI receives 5.5 bonus points (komi) for going second.
-          <br />
-          Most points wins.
-        </div>
-
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 font-mono text-xs font-bold tracking-[0.2em] transition-all"
-          style={{
-            background: '#0a2a14',
-            border: BORDER_GREEN_BRIGHT,
-            color: '#4ade80',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = '#0f3a1e';
-            (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px #22c55e44';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = '#0a2a14';
-            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-          }}
-        >
-          [ UNDERSTOOD. ENGAGE. ]
-        </button>
-      </div>
-    </div>
+function computeCellSize(): number {
+  const board = Math.min(
+    window.innerWidth - 64,
+    Math.min(Math.max(window.innerHeight * 0.68, 400), 620)
   );
+  return Math.max(28, Math.floor(board / (SIZE + 1)));
 }
 
 // ── Go Board ──────────────────────────────────────────────────────────
 
 interface BoardProps {
   game: GoState;
+  cellSize: number;
   hoverIdx: number | null;
   onPlace: (i: number) => void;
   onHover: (i: number | null) => void;
   disabled: boolean;
 }
 
-function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
-  const cellSize = 40; // px per intersection gap
-  const boardPx = (SIZE - 1) * cellSize; // 320px
+function GoBoard({ game, cellSize, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
+  const boardPx = (SIZE - 1) * cellSize;
   const stonePx = Math.round(cellSize * 0.82);
   const pad = cellSize; // padding for labels
+  const labelFont = cellSize >= 52 ? 11 : 9;
 
   const territory = game.phase === 'done' ? game.score?.territory : null;
 
@@ -213,7 +140,7 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
                 width: 0,
                 textAlign: 'center',
                 fontFamily: 'monospace',
-                fontSize: 9,
+                fontSize: labelFont,
                 color: '#1a6632',
                 letterSpacing: '0.05em',
               }}
@@ -242,7 +169,7 @@ function GoBoard({ game, hoverIdx, onPlace, onHover, disabled }: BoardProps) {
                 height: 0,
                 lineHeight: 0,
                 fontFamily: 'monospace',
-                fontSize: 9,
+                fontSize: labelFont,
                 color: '#1a6632',
               }}
             >
@@ -439,35 +366,30 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
   const winner = score?.winner ?? (resigned === 1 ? 2 : 1);
   const playerWon = winner === 1;
 
-  const playerScore = score?.playerTotal ?? 0;
-  const lb = useMemo(() => getLeaderboard(LB_CONFIG, Math.round(playerScore)), [playerScore]);
-
   const resultLabel = resigned
     ? resigned === 1
-      ? 'RESIGNED'
-      : 'ENEMY RESIGNED'
+      ? 'YOU RESIGNED'
+      : 'CPU RESIGNED'
     : playerWon
-      ? 'VICTORY'
-      : 'DEFEAT';
+      ? 'YOU WIN'
+      : 'CPU WINS';
 
   const resultColor = playerWon ? '#4ade80' : '#dc2626';
   const resultShadow = playerWon ? '0 0 20px #22c55e88' : '0 0 20px #dc262688';
 
   return (
     <div
+      className="mt-4 w-full"
       style={{
         background: '#030c06',
         border: `1px solid ${playerWon ? '#22c55e' : '#dc2626'}`,
         boxShadow: `0 0 30px ${playerWon ? '#22c55e22' : '#dc262622'}`,
         padding: '1.25rem',
-        marginTop: '1rem',
-        maxWidth: 380,
-        marginInline: 'auto',
       }}
     >
       {/* Result */}
       <div
-        className="mb-3 text-center font-mono text-2xl font-bold tracking-[0.3em]"
+        className="mb-3 text-center font-mono text-2xl font-bold tracking-[0.3em] lg:text-3xl"
         style={{
           color: resultColor,
           textShadow: resultShadow,
@@ -488,7 +410,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
             fontFamily: 'monospace',
           }}
         >
-          <div className="mb-2 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
+          <div className="mb-2 text-xs tracking-[0.3em] lg:text-sm" style={{ color: '#3f9e68' }}>
             FINAL SCORE
           </div>
           <div className="space-y-1">
@@ -503,7 +425,7 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
             ].map(([label, val, highlight]) => (
               <div
                 key={String(label)}
-                className="flex justify-between text-xs"
+                className="flex justify-between text-xs lg:text-sm"
                 style={{
                   color: highlight === 1 ? '#f87171' : highlight === 2 ? '#e2e8f0' : '#1a6632',
                   fontWeight: highlight ? 'bold' : 'normal',
@@ -518,21 +440,19 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
             ))}
           </div>
           <div
-            className="mt-2 pt-2 text-center text-xs tracking-widest"
+            className="mt-2 pt-2 text-center text-xs tracking-widest lg:text-sm"
             style={{ borderTop: BORDER_DARKEST, color: '#22c55e' }}
           >
             {playerWon
-              ? `MARGIN: +${score.margin.toFixed(1)}`
-              : `DEFICIT: −${score.margin.toFixed(1)}`}
+              ? `AHEAD BY +${score.margin.toFixed(1)}`
+              : `BEHIND BY −${score.margin.toFixed(1)}`}
           </div>
         </div>
       )}
 
-      <Leaderboard result={lb} className="mb-3" />
-
       <button
         onClick={onNewGame}
-        className="w-full py-2 font-mono text-xs font-bold tracking-[0.2em] transition-all"
+        className="w-full py-2 font-mono text-xs font-bold tracking-[0.2em] transition-all lg:text-sm"
         style={{
           background: '#0a2a14',
           border: BORDER_GREEN_BRIGHT,
@@ -545,10 +465,17 @@ function GameOverPanel({ game, onNewGame }: { game: GoState; onNewGame: () => vo
           (e.currentTarget as HTMLElement).style.background = '#0a2a14';
         }}
       >
-        [ NEW ENGAGEMENT ]
+        PLAY AGAIN
       </button>
     </div>
   );
+}
+
+// ── Sidebar leaderboard (game end) ────────────────────────────────────
+
+function GoLeaderboard({ score }: { score: number }) {
+  const lb = useMemo(() => getLeaderboard(LB_CONFIG, Math.round(score)), [score]);
+  return <Leaderboard result={lb} />;
 }
 
 // ── Main component ────────────────────────────────────────────────────
@@ -557,13 +484,20 @@ export default function Go() {
   const [game, setGame] = useState<GoState>(createGame);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [showRules, setShowRules] = useState(true);
   const [blinkOn, setBlinkOn] = useState(true);
+  const [cellSize, setCellSize] = useState<number>(computeCellSize);
 
   // Blink cursor
   useEffect(() => {
     const t = setInterval(() => setBlinkOn((v) => !v), 530);
     return () => clearInterval(t);
+  }, []);
+
+  // Board resize
+  useEffect(() => {
+    const onResize = () => setCellSize(computeCellSize());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const handlePlace = useCallback(
@@ -611,7 +545,6 @@ export default function Go() {
   const handleNewGame = useCallback(() => {
     setGame(createGame());
     setAiThinking(false);
-    setShowRules(true);
   }, []);
 
   const estimate = useMemo(() => estimateScore(game), [game]);
@@ -624,222 +557,180 @@ export default function Go() {
   let statusColor: string;
   if (game.phase === 'done') {
     const winner = game.score?.winner ?? (game.resignedBy === 1 ? 2 : 1);
-    statusMsg = winner === 1 ? 'MISSION COMPLETE — VICTORY' : 'MISSION FAILED';
+    statusMsg = winner === 1 ? 'YOU WIN' : 'CPU WINS';
     statusColor = winner === 1 ? '#4ade80' : '#dc2626';
   } else if (aiThinking) {
-    statusMsg = 'ORACLE CALCULATING...';
+    statusMsg = 'CPU THINKING...';
     statusColor = '#f59e0b';
   } else if (game.turn === 1) {
     statusMsg = `YOUR MOVE${blinkOn ? ' ▌' : '  '}`;
     statusColor = '#dc2626';
   } else {
-    statusMsg = 'AWAITING AI';
+    statusMsg = 'CPU TURN';
     statusColor = '#94a3b8';
   }
 
-  return (
-    <>
-      <style>{KEYFRAMES}</style>
-
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
-
-      <CrtOverlay />
-
+  const status = (
+    <div>
+      {/* Status bar */}
       <div
-        className="flex min-h-[100dvh] flex-col"
-        style={{ background: '#030c06', color: '#4ade80' }}
+        className="flex items-center gap-2 px-3 py-1.5"
+        style={{
+          background: '#040e07',
+          border: '1px solid #0f3018',
+          fontFamily: 'monospace',
+        }}
       >
-        {/* Back link */}
-        <div className="px-4 pt-4">
-          <Link
-            to="/"
-            className="font-mono text-xs tracking-widest transition-colors hover:text-[#4ade80]"
-            style={{ color: '#3f9e68' }}
-          >
-            ← ARCADE
-          </Link>
-        </div>
-
-        {/* Header */}
-        <header className="px-4 pb-3 pt-3 text-center">
-          <h1
-            className="font-mono text-2xl font-bold tracking-[0.4em]"
-            style={{
-              color: '#4ade80',
-              textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
-            }}
-          >
-            GO
-          </h1>
-          <div className="mt-0.5 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
-            9×9 TACTICAL BOARD
-          </div>
-          <div
-            className="mx-auto mt-3 h-px w-48"
-            style={{
-              background:
-                'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-              boxShadow: '0 0 6px #22c55e44',
-            }}
-          />
-        </header>
-
-        {/* Status bar */}
-        <div className="mx-auto w-full max-w-lg px-4">
-          <div
-            className="flex items-center gap-2 px-3 py-1.5"
-            style={{
-              background: '#040e07',
-              border: '1px solid #0f3018',
-              fontFamily: 'monospace',
-            }}
-          >
-            <div
-              className="h-1.5 w-1.5 rounded-full"
-              style={{
-                background: statusColor,
-                boxShadow: `0 0 4px ${statusColor}`,
-              }}
-            />
-            <span className="text-xs tracking-[0.15em]" style={{ color: statusColor }}>
-              {statusMsg}
-            </span>
-            {game.phase === 'playing' && (
-              <span className="ml-auto text-xs" style={{ color: '#3f9e68' }}>
-                MOVE {game.moveCount}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Score bar */}
-        <div className="mx-auto mt-1.5 w-full max-w-lg px-4">
-          <div
-            className="flex justify-between px-3 py-1"
-            style={{
-              background: '#040e07',
-              border: BORDER_DARKEST,
-              fontFamily: 'monospace',
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#dc2626',
-                  boxShadow: '0 0 5px #dc2626',
-                }}
-              />
-              <span className="text-xs font-bold" style={{ color: '#f87171' }}>
-                RED{' '}
-                {game.phase === 'done' && game.score
-                  ? game.score.playerTotal.toFixed(1)
-                  : estimate.player}
-              </span>
-              <span className="text-xs" style={{ color: '#3f9e68' }}>
-                ({game.captured[0]} cap)
-              </span>
-            </div>
-            <div className="text-xs" style={{ color: '#26714a' }}>
-              VS
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: '#3f9e68' }}>
-                ({game.captured[1]} cap)
-              </span>
-              <span className="text-xs font-bold" style={{ color: '#e2e8f0' }}>
-                {game.phase === 'done' && game.score ? game.score.aiTotal.toFixed(1) : estimate.ai}{' '}
-                WHITE
-              </span>
-              <div
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  background: '#e2e8f0',
-                  boxShadow: '0 0 4px #94a3b880',
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Board */}
-        <main className="flex-1 overflow-x-auto px-2 py-3">
-          <GoBoard
-            game={game}
-            hoverIdx={hoverIdx}
-            onPlace={handlePlace}
-            onHover={setHoverIdx}
-            disabled={boardDisabled}
-          />
-
-          {/* Controls */}
-          {game.phase === 'playing' && (
-            <div className="mt-3 flex justify-center gap-3">
-              <button
-                onClick={handlePass}
-                disabled={!isPlayerTurn}
-                className="font-mono text-xs font-bold tracking-[0.2em] px-4 py-2 transition-all disabled:opacity-40"
-                style={{
-                  background: '#040e07',
-                  border: '1px solid #1a6632',
-                  color: '#4ade80',
-                }}
-                onMouseEnter={(e) => {
-                  if (!boardDisabled)
-                    (e.currentTarget as HTMLElement).style.borderColor = '#22c55e';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#1a6632';
-                }}
-              >
-                [ PASS ]
-              </button>
-              <button
-                onClick={handleResign}
-                className="font-mono text-xs font-bold tracking-[0.2em] px-4 py-2 transition-all"
-                style={{
-                  background: '#040e07',
-                  border: '1px solid #7f1d1d',
-                  color: '#f87171',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#dc2626';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#7f1d1d';
-                }}
-              >
-                [ RESIGN ]
-              </button>
-            </div>
-          )}
-
-          {/* Game over */}
-          {game.phase === 'done' && <GameOverPanel game={game} onNewGame={handleNewGame} />}
-        </main>
-
-        {/* Footer */}
-        <footer
-          className="px-4 py-3 text-center font-mono text-xs tracking-wider"
-          style={{ borderTop: BORDER_DARKEST, color: '#26714a' }}
-        >
-          POWERED BY{' '}
-          <a
-            href="https://bio-dev-jw.argus.pw"
-            className="hover:underline"
-            style={{ color: '#3f9e68' }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            ARGUS BIO
-          </a>{' '}
-          · AUTHORIZED ACCESS ONLY
-        </footer>
+        <div
+          className="h-1.5 w-1.5 rounded-full"
+          style={{
+            background: statusColor,
+            boxShadow: `0 0 4px ${statusColor}`,
+          }}
+        />
+        <span className="text-xs tracking-[0.15em] lg:text-sm" style={{ color: statusColor }}>
+          {statusMsg}
+        </span>
+        {game.phase === 'playing' && (
+          <span className="ml-auto text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+            MOVE {game.moveCount}
+          </span>
+        )}
       </div>
-    </>
+
+      {/* Score bar */}
+      <div
+        className="mt-1.5 flex justify-between px-3 py-1"
+        style={{
+          background: '#040e07',
+          border: BORDER_DARKEST,
+          fontFamily: 'monospace',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#dc2626',
+              boxShadow: '0 0 5px #dc2626',
+            }}
+          />
+          <span className="text-xs font-bold lg:text-sm" style={{ color: '#f87171' }}>
+            RED{' '}
+            {game.phase === 'done' && game.score
+              ? game.score.playerTotal.toFixed(1)
+              : estimate.player}
+          </span>
+          <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+            ({game.captured[0]} cap)
+          </span>
+        </div>
+        <div className="text-xs lg:text-sm" style={{ color: '#26714a' }}>
+          VS
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+            ({game.captured[1]} cap)
+          </span>
+          <span className="text-xs font-bold lg:text-sm" style={{ color: '#e2e8f0' }}>
+            {game.phase === 'done' && game.score ? game.score.aiTotal.toFixed(1) : estimate.ai}{' '}
+            WHITE
+          </span>
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#e2e8f0',
+              boxShadow: '0 0 4px #94a3b880',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· CLICK ANY INTERSECTION TO PLACE A RED STONE</li>
+      <li>· SURROUND CPU STONES TO CAPTURE THEM</li>
+      <li>· EMPTY POINTS YOU ENCLOSE COUNT AS TERRITORY</li>
+      <li>· TWO PASSES IN A ROW ENDS THE GAME</li>
+      <li>· WHITE GETS +5.5 KOMI — MOST POINTS WINS</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="GO"
+      subtitle="SURROUND & CAPTURE ON THE 9×9"
+      tag="Strategy"
+      onRestart={handleNewGame}
+      status={status}
+      rules={rules}
+      sidebar={
+        game.phase === 'done' ? <GoLeaderboard score={game.score?.playerTotal ?? 0} /> : undefined
+      }
+    >
+      <GoBoard
+        game={game}
+        cellSize={cellSize}
+        hoverIdx={hoverIdx}
+        onPlace={handlePlace}
+        onHover={setHoverIdx}
+        disabled={boardDisabled}
+      />
+
+      {/* Controls */}
+      {game.phase === 'playing' && (
+        <div className="mt-3 flex justify-center gap-3">
+          <button
+            onClick={handlePass}
+            disabled={!isPlayerTurn}
+            className="font-mono text-xs font-bold tracking-[0.2em] px-4 py-2 transition-all disabled:opacity-40 lg:text-sm"
+            style={{
+              background: '#040e07',
+              border: '1px solid #1a6632',
+              color: '#4ade80',
+            }}
+            onMouseEnter={(e) => {
+              if (!boardDisabled) (e.currentTarget as HTMLElement).style.borderColor = '#22c55e';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = '#1a6632';
+            }}
+          >
+            [ PASS ]
+          </button>
+          <button
+            onClick={handleResign}
+            className="font-mono text-xs font-bold tracking-[0.2em] px-4 py-2 transition-all lg:text-sm"
+            style={{
+              background: '#040e07',
+              border: '1px solid #7f1d1d',
+              color: '#f87171',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = '#dc2626';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = '#7f1d1d';
+            }}
+          >
+            [ RESIGN ]
+          </button>
+        </div>
+      )}
+
+      {/* Game over */}
+      {game.phase === 'done' && <GameOverPanel game={game} onNewGame={handleNewGame} />}
+
+      <style>{KEYFRAMES}</style>
+    </GameCabinet>
   );
 }

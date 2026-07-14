@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -13,6 +14,20 @@ import {
 } from '../games/tic-tac-toe/engine';
 import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import { launchConfetti } from '../games/confetti';
+
+// Player's persisted best (written by the leaderboard module)
+function getBestScore(): number | null {
+  try {
+    const raw = localStorage.getItem('leaderboard-tic-tac-toe');
+    if (!raw) return null;
+    const best: unknown = JSON.parse(raw).best;
+    return typeof best === 'number' ? best : null;
+  } catch {
+    return null;
+  }
+}
+
+const GREEN_BORDER = '1px solid #22c55e';
 
 // ── Intro modal ───────────────────────────────────────────────────────────
 
@@ -29,7 +44,7 @@ function IntroModal({ onStart }: { onStart: () => void }) {
         className="w-full max-w-sm"
         style={{
           background: '#040e07',
-          border: '1px solid #22c55e',
+          border: GREEN_BORDER,
           boxShadow: '0 0 60px #22c55e22, 0 0 120px #22c55e0a',
           padding: '1.5rem',
           animation: 'modal-in 0.22s ease',
@@ -37,7 +52,7 @@ function IntroModal({ onStart }: { onStart: () => void }) {
       >
         {/* eyebrow */}
         <div className="mb-2 font-mono text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
-          TACTICAL BRIEFING — CLASSIFIED
+          READ FAST — THE CLOCK IS WAITING
         </div>
 
         {/* Title */}
@@ -64,7 +79,7 @@ function IntroModal({ onStart }: { onStart: () => void }) {
           ].map((line, i) => (
             <p
               key={i}
-              className={`font-mono text-base leading-snug${line.accent ? ' font-bold' : ''}`}
+              className={`font-mono text-base leading-snug lg:text-lg${line.accent ? ' font-bold' : ''}`}
               style={{
                 color: line.accent ? '#4ade80' : '#86efac',
                 textShadow: line.accent ? '0 0 8px #22c55e66' : 'none',
@@ -97,7 +112,7 @@ function IntroModal({ onStart }: { onStart: () => void }) {
             (e.currentTarget as HTMLElement).style.boxShadow = '0 0 16px #f9731622';
           }}
         >
-          [LOCK AND LOAD!]
+          [LET&apos;S GO!]
         </button>
       </div>
     </div>
@@ -128,7 +143,7 @@ function LeaderboardModal({
         className="w-full max-w-sm"
         style={{
           background: '#040e07',
-          border: '1px solid #22c55e',
+          border: GREEN_BORDER,
           boxShadow: '0 0 60px #22c55e22',
           padding: '1.5rem',
           animation: 'modal-in 0.3s ease',
@@ -141,7 +156,7 @@ function LeaderboardModal({
           className="mb-3 text-center font-mono text-sm tracking-[0.4em]"
           style={{ color: '#3f9e68' }}
         >
-          SESSION COMPLETE
+          TIME&apos;S UP!
         </div>
 
         <div
@@ -164,7 +179,7 @@ function LeaderboardModal({
           className="w-full py-2.5 font-mono text-xs font-bold tracking-[0.2em] transition-all"
           style={{
             background: '#0a2a14',
-            border: '1px solid #22c55e',
+            border: GREEN_BORDER,
             color: '#4ade80',
           }}
           onMouseEnter={(e) => {
@@ -203,12 +218,21 @@ export default function TicTacToe() {
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
   const [finalScore, setFinalScore] = useState(0);
 
+  // Read record fresh — it's cheap (localStorage) and avoids stale state
+  const best = getBestScore();
+
   const getCanvasSize = useCallback(() => {
+    // Ataxx-style desktop-first sizing: the 3×3 grid tracks viewport
+    // height — min(100vw - 64px, clamp(300px, 55vh, 500px)) — up to the
+    // engine's 500px grid cap. The canvas adds 40px side margin and
+    // ~210px vertical chrome (timer boxes above, status line below).
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const w = Math.min(vw >= 640 ? Math.round(vw * 0.55) : vw - 16, 600);
-    const h = Math.min(vh - 160, 720);
-    return { w: Math.max(w, 300), h: Math.max(h, 420) };
+    const grid = Math.min(vw - 64, Math.max(300, Math.min(vh * 0.55, 500)));
+    return {
+      w: Math.max(300, Math.round(grid + 40)),
+      h: Math.max(420, Math.round(Math.min(grid + 210, vh - 140))),
+    };
   }, []);
 
   const resetCanvas = useCallback(() => {
@@ -379,60 +403,70 @@ export default function TicTacToe() {
     return () => window.removeEventListener('resize', onResize);
   }, [resetCanvas]);
 
-  return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
+  const status = (
+    <div className="flex items-center justify-center gap-4">
+      <p
+        className="font-mono text-xs tracking-widest lg:text-sm"
+        style={{
+          color: sessionPhase === 'running' ? (turn === 1 ? '#4ade80' : '#f59e0b') : '#86efac',
+        }}
+      >
+        {sessionPhase === 'running'
+          ? turn === 1
+            ? 'YOUR MOVE'
+            : 'CPU THINKING...'
+          : sessionPhase === 'finished'
+            ? "TIME'S UP!"
+            : '30 SECONDS ON THE CLOCK'}
+      </p>
+      {!showIntro && (
+        <button
+          className="font-mono text-xs tracking-widest transition-colors hover:underline lg:text-sm"
+          style={{ color: '#3f9e68' }}
+          onClick={() => setShowIntro(true)}
+        >
+          RULES
+        </button>
+      )}
+    </div>
+  );
 
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· YOU HAVE 30 SECONDS ON THE CLOCK</li>
+      <li>· CLEAR AS MANY BOARDS AS YOU CAN — WINS AND DRAWS BOTH COUNT</li>
+      <li>· CLICK A CELL OR PRESS KEYS 1–9 TO PLACE YOUR X</li>
+      <li>· LOSE ONE BOARD AND YOUR RUN IS OVER</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="EXTREME! TIC-TAC-TOE"
+      subtitle="30-SECOND BOARD-CLEARING BLITZ"
+      tag="Strategy"
+      record={best !== null ? `BEST ${best}` : undefined}
+      onRestart={doStartSession}
+      status={status}
+      rules={rules}
+    >
       {showIntro && <IntroModal onStart={handleStart} />}
       {showLb && lb && (
         <LeaderboardModal lb={lb} totalScore={finalScore} onPlayAgain={handlePlayAgain} />
       )}
 
-      {/* Header */}
-      <div className="mb-2 flex w-full max-w-[480px] sm:max-w-[600px] items-center justify-between px-1">
-        <BackLink />
-        {!showIntro && (
-          <button
-            className="font-mono text-xs tracking-widest transition-colors hover:underline"
-            style={{ color: '#3f9e68' }}
-            onClick={() => setShowIntro(true)}
-          >
-            RULES
-          </button>
-        )}
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1 className="font-display text-lg tracking-[0.2em]">
-          <span style={{ color: '#f97316', textShadow: '0 0 10px #f9731666' }}>e</span>
-          <span style={{ color: '#fbbf24' }}>X</span>
-          <span style={{ color: '#f97316', textShadow: '0 0 10px #f9731666' }}>treme!</span>
-          <span
-            style={{
-              color: '#4ade80',
-              textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
-              marginLeft: '0.4em',
-            }}
-          >
-            TIC-TAC-TOE
-          </span>
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          MAXIMUM TACTICAL GRID DOMINANCE
-        </div>
-      </div>
-
-      <GameDivider className="my-2 max-w-[480px] sm:max-w-[600px]" />
-
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
         className="touch-none"
-        style={{ maxWidth: '100%', border: '1px solid #1a6632', borderRadius: '2px' }}
+        style={{
+          maxWidth: '100%',
+          height: 'auto',
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+        }}
         aria-label="eXtreme Tic-Tac-Toe game board"
         onClick={handleClick}
         onPointerMove={handlePointerMove}
@@ -445,6 +479,6 @@ export default function TicTacToe() {
           100% { opacity: 1; transform: scale(1)    translateY(0); }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

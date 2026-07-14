@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useState, type ReactNode } from 'react';
-import { GameLibraryRail, RAIL_WIDTH } from './GameLibraryRail';
+import { GameLibraryRail, RAIL_COLLAPSED_WIDTH, RAIL_WIDTH } from './GameLibraryRail';
 import { CrtOverlay } from './GameShell';
 import { SiteNav, type SiteNavProps } from './SiteNav';
 
@@ -39,27 +39,27 @@ export function SiteShell({
     >
       <CrtOverlay />
 
-      <SiteNav
-        menuToggle={{ open: libraryOpen, onToggle: toggleLibrary }}
-        center={center}
-        right={right}
-        below={below}
-      />
+      <SiteNav center={center} right={right} below={below} />
 
-      {/* Library rail hugs the screen edge; page content fills the rest */}
+      {/* Library rail hugs the screen edge; page content fills the rest.
+          Collapsed = slim strip with its own expand control, never gone. */}
       <div className="flex w-full flex-1">
         <aside
           className="hidden shrink-0 overflow-hidden transition-[width] duration-200 lg:block"
           style={{
-            width: libraryOpen ? RAIL_WIDTH : 0,
-            borderRight: libraryOpen ? BORDER : 'none',
+            width: libraryOpen ? RAIL_WIDTH : RAIL_COLLAPSED_WIDTH,
+            borderRight: BORDER,
           }}
         >
           <div
-            className="sticky top-12 h-[calc(100vh-3rem)] lg:top-14 lg:h-[calc(100vh-3.5rem)]"
-            style={{ width: RAIL_WIDTH }}
+            className="h-[calc(100vh-3rem)] lg:h-[calc(100vh-3.5rem)]"
+            style={{ width: libraryOpen ? RAIL_WIDTH : RAIL_COLLAPSED_WIDTH }}
           >
-            <GameLibraryRail currentPath={pathname} />
+            <GameLibraryRail
+              currentPath={pathname}
+              collapsed={!libraryOpen}
+              onToggle={toggleLibrary}
+            />
           </div>
         </aside>
 

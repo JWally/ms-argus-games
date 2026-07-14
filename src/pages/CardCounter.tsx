@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { BackLink, CrtOverlay } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
 import {
   type GameState,
   type Card,
@@ -318,7 +318,7 @@ function CardView({
       }}
     >
       <div
-        className="relative h-[110px] w-[76px] sm:h-[150px] sm:w-[105px]"
+        className="relative h-[110px] w-[76px] sm:h-[150px] sm:w-[105px] lg:h-[168px] lg:w-[118px]"
         style={{
           transformStyle: 'preserve-3d',
           transition: `transform ${FLIP_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
@@ -342,7 +342,10 @@ function CardView({
         >
           {/* Top-left */}
           <div className="flex flex-col items-center pl-1.5 pt-1">
-            <span className="text-base font-bold leading-tight sm:text-lg" style={{ color }}>
+            <span
+              className="text-base font-bold leading-tight sm:text-lg lg:text-xl"
+              style={{ color }}
+            >
               {card.rank}
             </span>
             <SuitIcon suit={card.suit} size={12} />
@@ -353,7 +356,10 @@ function CardView({
           </div>
           {/* Bottom-right */}
           <div className="flex rotate-180 flex-col items-center pl-1.5 pt-1">
-            <span className="text-base font-bold leading-tight sm:text-lg" style={{ color }}>
+            <span
+              className="text-base font-bold leading-tight sm:text-lg lg:text-xl"
+              style={{ color }}
+            >
               {card.rank}
             </span>
             <SuitIcon suit={card.suit} size={12} />
@@ -402,14 +408,14 @@ function HandDisplay({
     <div className="text-center">
       <div className="mb-2 flex items-center justify-center gap-2">
         <span
-          className="text-sm font-semibold uppercase tracking-wider sm:text-base"
+          className="text-sm font-semibold uppercase tracking-wider sm:text-base lg:text-lg"
           style={{ color: '#86efac' }}
         >
           {label}
         </span>
         {value > 0 && (
           <span
-            className="rounded-full px-2.5 py-0.5 text-sm font-bold sm:text-base"
+            className="rounded-full px-2.5 py-0.5 text-sm font-bold sm:text-base lg:text-lg"
             style={
               value > 21
                 ? { background: '#7f1d1d', color: '#fca5a5' }
@@ -663,8 +669,101 @@ export default function CardCounter() {
   const isPlaying = game.phase === 'playing' && !animLock;
   const odds = calculateOdds(game);
 
+  const status = (
+    <div>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={handleToggleCount}
+          className="px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95 lg:text-sm"
+          style={{
+            background: BG_SURFACE,
+            border: BORDER_GREEN_DIM,
+            color: '#3f9e68',
+            borderRadius: '2px',
+          }}
+        >
+          {game.showCount ? 'Hide Count' : 'Show Count'}
+        </button>
+
+        {game.showCount ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+              Count:
+            </span>
+            <span
+              className="rounded px-2 py-0.5 text-base font-bold lg:text-lg"
+              style={
+                game.runningCount > 0
+                  ? { background: '#0a2a14', color: '#4ade80' }
+                  : game.runningCount < 0
+                    ? { background: '#1c0607', color: '#f87171' }
+                    : { background: BG_SURFACE, color: '#3f9e68' }
+              }
+            >
+              {game.runningCount > 0 ? '+' : ''}
+              {game.runningCount}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs italic lg:text-sm" style={{ color: '#3f9e68' }}>
+            Track it yourself!
+          </span>
+        )}
+
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-1">
+            <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+              Bank:
+            </span>
+            <span className="text-base font-bold lg:text-lg" style={{ color: '#f59e0b' }}>
+              ${game.bankroll.toLocaleString()}
+            </span>
+          </div>
+          <div className="text-[10px] lg:text-xs" style={{ color: '#3f9e68' }}>
+            {remaining} cards left
+          </div>
+        </div>
+      </div>
+
+      {/* Count betting advice */}
+      {game.showCount && game.phase === 'betting' && (
+        <div
+          className="mt-1.5 px-3 py-1 text-center text-xs lg:text-sm"
+          style={{
+            background: BG_SURFACE,
+            border: BORDER_GREEN_DIM,
+            borderRadius: '2px',
+            color: '#3f9e68',
+          }}
+        >
+          {countAdvice(game.runningCount)}
+        </div>
+      )}
+    </div>
+  );
+
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· CLASSIC BLACKJACK — GET CLOSER TO 21 THAN THE DEALER</li>
+      <li>· EVERY CARD SHOWS ITS HI-LO VALUE: 2–6 = +1, 10–A = −1</li>
+      <li>· KEEP A RUNNING COUNT AS THE CARDS FLY</li>
+      <li>· COUNT HIGH? BET BIG — THE DECK IS ON YOUR SIDE</li>
+      <li>· SURPRISE QUIZZES CHECK YOUR COUNT BETWEEN HANDS</li>
+    </ul>
+  );
+
   return (
-    <>
+    <GameCabinet
+      title="CARD COUNTER"
+      subtitle="KEEP THE COUNT · BEAT THE DEALER"
+      tag="Brain"
+      onRestart={handleNewGame}
+      status={status}
+      rules={rules}
+    >
       <style>{STYLES}</style>
 
       {showConfetti && <Confetti />}
@@ -679,112 +778,13 @@ export default function CardCounter() {
         />
       )}
 
-      <CrtOverlay />
-
-      <div className="flex h-[100dvh] flex-col" style={{ background: '#030c06', color: '#4ade80' }}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3">
-          <BackLink />
-          <div className="text-center">
-            <h1
-              className="font-display text-base tracking-[0.3em] sm:text-lg"
-              style={{
-                color: '#4ade80',
-                textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-              }}
-            >
-              CARD COUNTER
-            </h1>
-            <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-              BLACKJACK INTELLIGENCE TRAINER
-            </div>
-          </div>
-          <div className="text-right text-sm" style={{ color: '#3f9e68' }}>
-            {remaining} left
-          </div>
-        </div>
-
-        {/* Glowing divider */}
-        <div
-          className="mx-4 mt-2 h-px"
-          style={{
-            background:
-              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-            boxShadow: '0 0 6px #22c55e44',
-          }}
-        />
-
-        {/* Info bar */}
-        <div className="mt-2 flex items-center justify-between px-4">
-          <button
-            onClick={handleToggleCount}
-            className="px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-            style={{
-              background: BG_SURFACE,
-              border: BORDER_GREEN_DIM,
-              color: '#3f9e68',
-              borderRadius: '2px',
-            }}
-          >
-            {game.showCount ? 'Hide Count' : 'Show Count'}
-          </button>
-
-          {game.showCount ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs" style={{ color: '#3f9e68' }}>
-                Count:
-              </span>
-              <span
-                className="rounded px-2 py-0.5 text-base font-bold"
-                style={
-                  game.runningCount > 0
-                    ? { background: '#0a2a14', color: '#4ade80' }
-                    : game.runningCount < 0
-                      ? { background: '#1c0607', color: '#f87171' }
-                      : { background: BG_SURFACE, color: '#3f9e68' }
-                }
-              >
-                {game.runningCount > 0 ? '+' : ''}
-                {game.runningCount}
-              </span>
-            </div>
-          ) : (
-            <span className="text-xs italic" style={{ color: '#3f9e68' }}>
-              Track it yourself!
-            </span>
-          )}
-
-          <div className="flex items-center gap-1 text-right">
-            <span className="text-xs" style={{ color: '#3f9e68' }}>
-              Bank:
-            </span>
-            <span className="text-base font-bold" style={{ color: '#f59e0b' }}>
-              ${game.bankroll.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        {/* Count betting advice */}
-        {game.showCount && game.phase === 'betting' && (
-          <div
-            className="mx-4 mt-1 px-3 py-1 text-center text-xs"
-            style={{
-              background: BG_SURFACE,
-              border: BORDER_GREEN_DIM,
-              borderRadius: '2px',
-              color: '#3f9e68',
-            }}
-          >
-            {countAdvice(game.runningCount)}
-          </div>
-        )}
-
+      <div className="flex w-full flex-col">
         {/* ── Table area ── */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-5 px-4">
+        <div className="flex min-h-[300px] flex-col items-center justify-center gap-5 lg:min-h-[400px]">
           {/* Place bet prompt */}
           {game.phase === 'betting' && game.playerHand.length === 0 && !game.message && (
             <p
-              className="font-display text-xl tracking-[0.2em] sm:text-2xl text-center"
+              className="font-display text-xl tracking-[0.2em] sm:text-2xl lg:text-3xl text-center"
               style={{
                 color: '#4ade80',
                 textShadow: '0 0 10px #22c55e66',
@@ -881,7 +881,7 @@ export default function CardCounter() {
 
           {/* Live odds bar */}
           {game.phase === 'playing' && !animLock && (
-            <div className="flex w-full max-w-[400px] justify-center gap-3 text-sm sm:gap-4 sm:text-xs">
+            <div className="flex w-full max-w-[400px] justify-center gap-3 text-sm sm:gap-4 sm:text-xs lg:max-w-[520px] lg:text-sm">
               <div
                 className="px-2.5 py-1.5"
                 style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
@@ -931,7 +931,7 @@ export default function CardCounter() {
           {/* Advice panel */}
           {showAdvice && advice && (
             <div
-              className="w-full max-w-[380px] px-4 py-2.5 text-center text-sm"
+              className="w-full max-w-[380px] px-4 py-2.5 text-center text-sm lg:max-w-[520px] lg:text-base"
               style={{
                 background: BG_SURFACE,
                 border: BORDER_GREEN_DIM,
@@ -946,7 +946,7 @@ export default function CardCounter() {
           {/* Count check quiz */}
           {game.phase === PHASE_COUNT_CHECK && !animLock && (
             <div
-              className="w-full max-w-[340px] p-5 text-center"
+              className="w-full max-w-[340px] p-5 text-center lg:max-w-[420px]"
               style={{
                 background: BG_SURFACE,
                 border: BORDER_GREEN_DIM,
@@ -1016,11 +1016,11 @@ export default function CardCounter() {
         </div>
 
         {/* ── Actions ── */}
-        <div className="px-4 pb-5">
+        <div className="w-full pt-4">
           {/* Betting phase */}
           {game.phase === 'betting' && (
-            <div className="mx-auto max-w-[420px]">
-              <p className="mb-3 text-center text-sm" style={{ color: '#3f9e68' }}>
+            <div className="mx-auto max-w-[420px] lg:max-w-[560px]">
+              <p className="mb-3 text-center text-sm lg:text-base" style={{ color: '#3f9e68' }}>
                 Place your bet
               </p>
               <div className="flex justify-center gap-4 sm:gap-5">
@@ -1032,9 +1032,9 @@ export default function CardCounter() {
                     className="group active:scale-90 disabled:opacity-30"
                   >
                     <div
-                      className={`flex h-16 w-16 items-center justify-center rounded-full border-[3px] bg-gradient-to-b shadow-xl transition-transform group-hover:scale-110 sm:h-[72px] sm:w-[72px] ${CHIP_COLORS[amount]}`}
+                      className={`flex h-16 w-16 items-center justify-center rounded-full border-[3px] bg-gradient-to-b shadow-xl transition-transform group-hover:scale-110 sm:h-[72px] sm:w-[72px] lg:h-20 lg:w-20 ${CHIP_COLORS[amount]}`}
                     >
-                      <span className="text-sm font-bold text-white drop-shadow sm:text-base">
+                      <span className="text-sm font-bold text-white drop-shadow sm:text-base lg:text-lg">
                         ${amount}
                       </span>
                     </div>
@@ -1046,11 +1046,11 @@ export default function CardCounter() {
 
           {/* Playing phase */}
           {isPlaying && (
-            <div className="mx-auto max-w-[420px]">
+            <div className="mx-auto max-w-[420px] lg:max-w-[560px]">
               <div className="flex gap-2.5">
                 <button
                   onClick={handleHit}
-                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 lg:text-lg"
                   style={{
                     background: BG_SURFACE,
                     border: BORDER_GREEN_BRIGHT,
@@ -1063,7 +1063,7 @@ export default function CardCounter() {
                 </button>
                 <button
                   onClick={handleStand}
-                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 lg:text-lg"
                   style={{
                     background: '#1c0607',
                     border: BORDER_RED_DIM,
@@ -1076,7 +1076,7 @@ export default function CardCounter() {
                 <button
                   onClick={handleDouble}
                   disabled={game.playerHand.length !== 2 || game.bet > game.bankroll}
-                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
+                  className="flex-1 py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 lg:text-lg disabled:opacity-30"
                   style={{
                     background: BG_SURFACE,
                     border: '1px solid #f59e0b',
@@ -1107,10 +1107,10 @@ export default function CardCounter() {
             !animLock &&
             !showResultOverlay &&
             game.phase !== PHASE_COUNT_CHECK && (
-              <div className="mx-auto flex max-w-[420px] flex-col gap-2">
+              <div className="mx-auto flex max-w-[420px] flex-col gap-2 lg:max-w-[560px]">
                 <button
                   onClick={handleNext}
-                  className="w-full py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95"
+                  className="w-full py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 lg:text-lg"
                   style={{
                     background: BG_SURFACE,
                     border: BORDER_GREEN_BRIGHT,
@@ -1138,7 +1138,7 @@ export default function CardCounter() {
 
           {/* Stats bar */}
           <div
-            className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs"
+            className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs lg:max-w-[560px] lg:text-sm"
             style={{ color: '#3f9e68' }}
           >
             <span>Hands: {game.handsPlayed}</span>
@@ -1152,6 +1152,6 @@ export default function CardCounter() {
           </div>
         </div>
       </div>
-    </>
+    </GameCabinet>
   );
 }

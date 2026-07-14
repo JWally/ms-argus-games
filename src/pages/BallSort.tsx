@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import { getLeaderboard } from '../games/leaderboard';
 import {
   BALL_COLORS,
@@ -22,16 +23,22 @@ import { launchConfetti } from '../games/confetti';
 const BORDER_GREEN_DIM = '1px solid #1a6632';
 const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
 
-const BALL = 36;
 const GAP = 4;
 const PADH = 6;
 const PADB = 8;
 const BORDER = 2;
+const ROW_GAP = 12; // gap-3 between tubes in a row
 
-const TUBE_INNER_W = BALL + PADH * 2;
-const TUBE_OUTER_W = TUBE_INNER_W + BORDER * 2;
-const TUBE_BODY_H = TUBE_CAPACITY * (BALL + GAP) - GAP + PADB + BORDER;
-const FLOAT_H = BALL + 14;
+// Ball diameter scales with the viewport: fill the cabinet column width on
+// desktop, stay height-bounded so two tube rows + chrome never scroll.
+// Row height = FLOAT_H + TUBE_BODY_H + badge ≈ 5·ball + 56, so two rows
+// plus the row gap ≈ 10·ball + 120.
+function computeBall(vw: number, vh: number, tubesInRow: number): number {
+  const rowW = Math.min(vw - 64, 600);
+  const fromW = (rowW - (tubesInRow - 1) * ROW_GAP) / tubesInRow - PADH * 2 - BORDER * 2;
+  const fromH = (vh * 0.68 - 120) / 10;
+  return Math.max(26, Math.min(52, Math.floor(Math.min(fromW, fromH))));
+}
 
 function isComplete(tube: Tube): boolean {
   return tube.length === TUBE_CAPACITY && tube.every((c) => c === tube[0]);
@@ -39,13 +46,21 @@ function isComplete(tube: Tube): boolean {
 
 // ── Ball ─────────────────────────────────────────────────────────────
 
-function Ball({ colorIndex, animate }: { colorIndex: number; animate?: boolean }) {
+function Ball({
+  colorIndex,
+  size,
+  animate,
+}: {
+  colorIndex: number;
+  size: number;
+  animate?: boolean;
+}) {
   const { hex } = BALL_COLORS[colorIndex];
   return (
     <div
       style={{
-        width: BALL,
-        height: BALL,
+        width: size,
+        height: size,
         borderRadius: '50%',
         flexShrink: 0,
         backgroundColor: hex,
@@ -61,16 +76,22 @@ function Ball({ colorIndex, animate }: { colorIndex: number; animate?: boolean }
 function TubeCol({
   tube,
   index,
+  ball,
   isSelected,
   isShaking,
   onClick,
 }: {
   tube: Tube;
   index: number;
+  ball: number;
   isSelected: boolean;
   isShaking: boolean;
   onClick: (i: number) => void;
 }) {
+  const tubeOuterW = ball + PADH * 2 + BORDER * 2;
+  const tubeBodyH = TUBE_CAPACITY * (ball + GAP) - GAP + PADB + BORDER;
+  const floatH = ball + 14;
+
   const group = topGroup(tube);
   const floating = isSelected && group ? group : null;
   const complete = isComplete(tube);
@@ -100,17 +121,22 @@ function TubeCol({
     <div
       className="flex flex-col items-center"
       style={{
-        width: TUBE_OUTER_W,
+        width: tubeOuterW,
         animation: isShaking ? 'tube-shake 0.4s ease' : undefined,
       }}
     >
       {/* Float zone — always reserved; ball appears when selected */}
       <div
-        style={{ height: FLOAT_H, width: TUBE_OUTER_W }}
+        style={{ height: floatH, width: tubeOuterW }}
         className="flex flex-col items-center justify-end pb-1"
       >
         {floating && (
-          <Ball key={`float-${index}-${floating.color}`} colorIndex={floating.color} animate />
+          <Ball
+            key={`float-${index}-${floating.color}`}
+            colorIndex={floating.color}
+            size={ball}
+            animate
+          />
         )}
       </div>
 
@@ -119,8 +145,8 @@ function TubeCol({
         onClick={() => onClick(index)}
         className="cursor-pointer"
         style={{
-          width: TUBE_OUTER_W,
-          height: TUBE_BODY_H,
+          width: tubeOuterW,
+          height: tubeBodyH,
           borderWidth: BORDER,
           borderTopWidth: 0,
           borderStyle: 'solid',
@@ -139,7 +165,7 @@ function TubeCol({
         }}
       >
         {[...innerBalls].reverse().map((colorIdx, i) => (
-          <Ball key={i} colorIndex={colorIdx} />
+          <Ball key={i} colorIndex={colorIdx} size={ball} />
         ))}
       </div>
 
@@ -161,193 +187,6 @@ function TubeCol({
             ×{floating.count}
           </span>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Mini tube (used in modal) ─────────────────────────────────────────
-
-const MINI = 13;
-const MINI_GAP = 2;
-const MINI_PAD = 3;
-
-function MiniTube({
-  colors = [],
-  highlight = false,
-  complete = false,
-}: {
-  colors?: number[];
-  highlight?: boolean;
-  complete?: boolean;
-}) {
-  const tubeColor = complete && colors.length > 0 ? BALL_COLORS[colors[0]].hex : null;
-  return (
-    <div
-      style={{
-        width: MINI + MINI_PAD * 2 + 2,
-        height: TUBE_CAPACITY * (MINI + MINI_GAP) - MINI_GAP + MINI_PAD + 2,
-        borderWidth: 1.5,
-        borderTopWidth: 0,
-        borderStyle: 'solid',
-        borderColor: complete ? (tubeColor ?? '#22c55e') + 'cc' : highlight ? '#22c55e' : '#1a4a2a',
-        borderBottomLeftRadius: 9999,
-        borderBottomRightRadius: 9999,
-        boxShadow: complete
-          ? `0 0 10px ${tubeColor}55`
-          : highlight
-            ? '0 0 8px #22c55e44'
-            : undefined,
-        background: 'rgba(6,21,16,0.55)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingBottom: MINI_PAD,
-        gap: MINI_GAP,
-      }}
-    >
-      {[...colors].reverse().map((c, i) => (
-        <div
-          key={i}
-          style={{
-            width: MINI,
-            height: MINI,
-            borderRadius: '50%',
-            backgroundColor: BALL_COLORS[c].hex,
-            boxShadow: 'inset -1px -1px 3px rgba(0,0,0,0.5)',
-            flexShrink: 0,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── How To Play modal ─────────────────────────────────────────────────
-
-function HowToPlay({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm p-6 shadow-2xl"
-        style={{
-          background: '#040e07',
-          border: BORDER_GREEN_DIM,
-          borderRadius: '2px',
-          boxShadow: '0 0 40px #22c55e22, inset 0 0 40px #00000060',
-          animation: 'modal-in 0.22s ease',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2
-          className="font-display text-center text-xs tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
-          }}
-        >
-          CONTAINMENT PROTOCOL
-        </h2>
-        <div className="mt-1 text-center text-sm tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          OPERATIONAL BRIEFING
-        </div>
-
-        <div
-          className="my-3 h-px"
-          style={{
-            background:
-              'linear-gradient(to right, transparent, #1a6632 20%, #22c55e 50%, #1a6632 80%, transparent)',
-            boxShadow: '0 0 4px #22c55e44',
-          }}
-        />
-
-        <div className="mt-4 space-y-5">
-          <ModalStep n={1} text="Select a vessel to extract its top compound">
-            <div className="flex items-end gap-2">
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  style={{
-                    width: MINI,
-                    height: MINI,
-                    borderRadius: '50%',
-                    backgroundColor: BALL_COLORS[2].hex,
-                    boxShadow: 'inset -1px -1px 3px rgba(0,0,0,0.4)',
-                    animation: 'float-bob 1.5s ease-in-out infinite',
-                  }}
-                />
-                <MiniTube colors={[1, 0, 2]} highlight />
-              </div>
-              <MiniTube colors={[0, 1]} />
-            </div>
-          </ModalStep>
-
-          <ModalStep n={2} text="Transfer to a vessel with matching compound on top">
-            <div className="flex items-end gap-1.5">
-              <MiniTube colors={[1, 0]} />
-              <span className="mb-4 text-base" style={{ color: '#3f9e68' }}>
-                →
-              </span>
-              <MiniTube colors={[0, 2, 2]} highlight />
-            </div>
-          </ModalStep>
-
-          <ModalStep n={3} text="Isolate each compound to complete containment">
-            <div className="flex items-end gap-1.5">
-              <MiniTube colors={[0, 0, 0, 0]} complete />
-              <MiniTube colors={[1, 1, 1, 1]} complete />
-              <MiniTube colors={[2, 2, 2, 2]} complete />
-              <MiniTube colors={[]} />
-            </div>
-          </ModalStep>
-        </div>
-
-        <p className="mt-5 text-center text-xs tracking-wider" style={{ color: '#0f4a22' }}>
-          ROLLBACK AVAILABLE AT ANY CHECKPOINT
-        </p>
-
-        <button
-          onClick={onClose}
-          className="mt-4 w-full py-2.5 text-sm font-bold tracking-[0.2em] transition-all hover:scale-105"
-          style={{
-            background: '#040e07',
-            border: BORDER_GREEN_BRIGHT,
-            color: '#4ade80',
-            boxShadow: '0 0 10px #22c55e44',
-            borderRadius: '2px',
-          }}
-        >
-          INITIATE PROTOCOL
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ModalStep({ n, text, children }: { n: number; text: string; children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center text-xs font-bold"
-        style={{
-          background: '#0a2a14',
-          border: BORDER_GREEN_DIM,
-          borderRadius: '2px',
-          color: '#4ade80',
-          fontFamily: 'monospace',
-        }}
-      >
-        {n}
-      </span>
-      <div className="flex-1">
-        <p className="text-xs leading-snug tracking-wider" style={{ color: '#86efac' }}>
-          {text}
-        </p>
-        <div className="mt-2 flex items-end gap-2">{children}</div>
       </div>
     </div>
   );
@@ -429,10 +268,10 @@ function WinModal({
                 animation: 'title-glow 2s ease-in-out infinite',
               }}
             >
-              CONTAINED
+              SOLVED
             </div>
             <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#1a6632' }}>
-              ALL COMPOUNDS ISOLATED
+              EVERY TUBE MATCHED
             </div>
           </div>
 
@@ -450,7 +289,7 @@ function WinModal({
             >
               <span style={{ color: '#fbbf24', textShadow: '0 0 8px #f59e0b' }}>★</span>
               <span className="text-xs font-bold tracking-[0.2em]" style={{ color: '#4ade80' }}>
-                NEW PERSONAL RECORD
+                NEW PERSONAL BEST
               </span>
               <span style={{ color: '#fbbf24', textShadow: '0 0 8px #f59e0b' }}>★</span>
             </div>
@@ -466,7 +305,7 @@ function WinModal({
                 {moves}
               </div>
               <div className="text-xs tracking-widest" style={{ color: '#1a6632' }}>
-                OPERATIONS
+                MOVES
               </div>
             </div>
             {bestScore !== null && !isNewRecord && (
@@ -505,10 +344,7 @@ function WinModal({
             }}
           />
 
-          <Leaderboard
-            result={lb}
-            title={`CONTAINMENT LEADERBOARD · ${difficulty.toUpperCase()}`}
-          />
+          <Leaderboard result={lb} title={`LEADERBOARD · ${difficulty.toUpperCase()}`} />
 
           {/* CTA */}
           <button
@@ -522,7 +358,7 @@ function WinModal({
               borderRadius: '2px',
             }}
           >
-            NEW ENGAGEMENT
+            PLAY AGAIN
           </button>
         </div>
       </div>
@@ -538,17 +374,18 @@ const DIFF_LABELS: Record<DifficultyKey, string> = {
   hard: 'HARD',
 };
 
-const TUTORIAL_KEY = 'ball-sort-tutorial-v2';
-
 export default function BallSort() {
   const [difficulty, setDifficulty] = useState<DifficultyKey>('easy');
   const [game, setGame] = useState<GameState>(() => createGame('easy'));
   const [bestScore, setBestScore] = useState<number | null>(() => getBestScore('easy'));
-  const [showModal, setShowModal] = useState(() => !localStorage.getItem(TUTORIAL_KEY));
   const [showWinModal, setShowWinModal] = useState(false);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [shakingTube, setShakingTube] = useState<number | null>(null);
   const [opsFlash, setOpsFlash] = useState(false);
+  const [viewport, setViewport] = useState(() => ({
+    w: window.innerWidth,
+    h: window.innerHeight,
+  }));
 
   const gameRef = useRef(game);
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -557,7 +394,14 @@ export default function BallSort() {
     gameRef.current = game;
   });
 
-  // Flash OPS counter on each increment
+  // Track viewport for ball sizing
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Flash MOVES counter on each increment
   useEffect(() => {
     if (game.moves > prevMoves.current && !game.won) {
       prevMoves.current = game.moves;
@@ -570,11 +414,6 @@ export default function BallSort() {
     }
     prevMoves.current = game.moves;
   }, [game.moves, game.won]);
-
-  const closeModal = useCallback(() => {
-    localStorage.setItem(TUTORIAL_KEY, '1');
-    setShowModal(false);
-  }, []);
 
   const restart = useCallback((diff?: DifficultyKey) => {
     const d = diff ?? gameRef.current.difficulty;
@@ -621,15 +460,17 @@ export default function BallSort() {
 
   const n = game.tubes.length;
   const mid = Math.ceil(n / 2);
+  const ball = computeBall(viewport.w, viewport.h, mid);
 
   function renderRow(indices: number[]) {
     return (
-      <div className="flex gap-3">
+      <div className="flex" style={{ gap: ROW_GAP }}>
         {indices.map((i) => (
           <TubeCol
             key={i}
             tube={game.tubes[i]}
             index={i}
+            ball={ball}
             isSelected={game.selected === i}
             isShaking={shakingTube === i}
             onClick={handleClick}
@@ -639,57 +480,11 @@ export default function BallSort() {
     );
   }
 
-  return (
-    <div
-      className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
-
-      {showModal && <HowToPlay onClose={closeModal} />}
-
-      {/* Nav */}
-      <div className="mb-3 w-full max-w-md">
-        <BackLink />
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em] sm:text-2xl"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          BALL SORT
-        </h1>
-        <div className="mt-1 flex items-center justify-center gap-2">
-          <div className="text-xs tracking-[0.35em]" style={{ color: '#3f9e68' }}>
-            CHEMICAL CONTAINMENT SYSTEM v1.0
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            aria-label="How to play"
-            className="flex h-5 w-5 items-center justify-center text-xs font-bold transition-all hover:scale-105"
-            style={{
-              background: '#040e07',
-              border: BORDER_GREEN_DIM,
-              color: '#3f9e68',
-              borderRadius: '2px',
-            }}
-          >
-            ?
-          </button>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider className="my-2 max-w-md" />
-
+  const status = (
+    <div>
       {/* Status bar */}
       <div
-        className="mb-3 w-full max-w-md px-3 py-2"
+        className="w-full px-3 py-2"
         style={{
           background: '#040e07',
           border: '1px solid #0f3018',
@@ -705,16 +500,22 @@ export default function BallSort() {
               boxShadow: game.won ? '0 0 8px #22c55e' : '0 0 4px #22c55e66',
             }}
           />
-          <span className="font-mono text-xs tracking-wider" style={{ color: '#86efac' }}>
-            {game.won ? 'CONTAINMENT ACHIEVED' : 'CONTAINMENT IN PROGRESS'}
+          <span
+            className="font-mono text-xs tracking-wider lg:text-sm"
+            style={{ color: '#86efac' }}
+          >
+            {game.won ? 'ALL SORTED!' : 'SORT THE TUBES'}
           </span>
           <div className="ml-auto flex items-center gap-3">
             <div className="flex items-baseline gap-1">
-              <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
-                OPS
+              <span
+                className="font-mono text-xs tracking-widest lg:text-sm"
+                style={{ color: '#1a6632' }}
+              >
+                MOVES
               </span>
               <span
-                className="font-mono text-lg font-bold leading-none"
+                className="font-mono text-lg font-bold leading-none lg:text-xl"
                 style={{
                   color: opsFlash ? '#ffffff' : '#4ade80',
                   textShadow: opsFlash ? '0 0 16px #4ade80, 0 0 32px #22c55e' : '0 0 8px #22c55e66',
@@ -729,11 +530,14 @@ export default function BallSort() {
               <>
                 <span style={{ color: '#26714a', fontFamily: 'monospace' }}>|</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-mono text-xs tracking-widest" style={{ color: '#1a6632' }}>
+                  <span
+                    className="font-mono text-xs tracking-widest lg:text-sm"
+                    style={{ color: '#1a6632' }}
+                  >
                     BEST
                   </span>
                   <span
-                    className="font-mono text-lg font-bold leading-none"
+                    className="font-mono text-lg font-bold leading-none lg:text-xl"
                     style={{ color: '#3f9e68', textShadow: '0 0 6px #22c55e33' }}
                   >
                     {bestScore}
@@ -745,14 +549,14 @@ export default function BallSort() {
         </div>
       </div>
 
-      {/* Difficulty + controls row */}
-      <div className="mb-4 flex items-center gap-3">
+      {/* Difficulty + undo row */}
+      <div className="mt-3 flex items-center justify-center gap-3">
         <div className="flex gap-1.5">
           {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map((d) => (
             <button
               key={d}
               onClick={() => restart(d)}
-              className="px-3 py-1.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105"
+              className="px-3 py-1.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105 lg:text-sm"
               style={{
                 background: difficulty === d ? '#0a2a14' : '#040e07',
                 border: `1px solid ${difficulty === d ? '#22c55e' : '#1a4a2a'}`,
@@ -768,45 +572,48 @@ export default function BallSort() {
 
         <div className="h-4 w-px" style={{ background: '#1a4a2a' }} />
 
-        <div className="flex gap-1.5">
-          <button
-            onClick={handleUndo}
-            disabled={game.history.length === 0 || game.won}
-            className="px-3 py-1.5 text-xs font-bold tracking-[0.1em] transition-all hover:scale-105 disabled:opacity-25"
-            style={{
-              background: '#040e07',
-              border: '1px solid #1a4a2a',
-              color: '#3f9e68',
-              borderRadius: '2px',
-            }}
-          >
-            ↩ ROLLBACK
-          </button>
-          <button
-            onClick={() => restart()}
-            className="px-3 py-1.5 text-xs font-bold tracking-[0.1em] transition-all hover:scale-105"
-            style={{
-              background: '#040e07',
-              border: '1px solid #1a4a2a',
-              color: '#3f9e68',
-              borderRadius: '2px',
-            }}
-          >
-            ↺ REINIT
-          </button>
-        </div>
+        <button
+          onClick={handleUndo}
+          disabled={game.history.length === 0 || game.won}
+          className="px-3 py-1.5 text-xs font-bold tracking-[0.1em] transition-all hover:scale-105 disabled:opacity-25 lg:text-sm"
+          style={{
+            background: '#040e07',
+            border: '1px solid #1a4a2a',
+            color: '#3f9e68',
+            borderRadius: '2px',
+          }}
+        >
+          ↩ UNDO
+        </button>
       </div>
+    </div>
+  );
 
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· TAP A TUBE TO LIFT ITS TOP BALLS</li>
+      <li>· TAP ANOTHER TUBE TO POUR THEM IN</li>
+      <li>· BALLS ONLY LAND ON A MATCHING COLOR OR AN EMPTY TUBE</li>
+      <li>· FILL A TUBE WITH ONE COLOR TO LOCK IT IN</li>
+      <li>· SORT EVERY TUBE IN AS FEW MOVES AS YOU CAN — UNDO IS FREE</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="BALL SORT"
+      subtitle="SORT EVERY TUBE TO A SINGLE COLOR"
+      tag="Puzzle"
+      record={bestScore !== null ? `BEST ${bestScore} MOVES` : undefined}
+      onRestart={() => restart()}
+      status={status}
+      rules={rules}
+    >
       {/* Board */}
-      <div
-        className="relative overflow-hidden p-3"
-        style={{
-          background: '#040e07',
-          border: '1px solid #0f2a18',
-          borderRadius: '4px',
-          boxShadow: '0 0 20px #22c55e11, inset 0 0 20px #00000066',
-        }}
-      >
+      <div className="relative w-full overflow-hidden">
         {/* Board scan line */}
         <div
           className="pointer-events-none absolute inset-x-0 z-10"
@@ -880,6 +687,6 @@ export default function BallSort() {
           100% { opacity: 1; transform: scale(1);   }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

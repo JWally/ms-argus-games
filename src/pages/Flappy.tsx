@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -21,6 +22,8 @@ export default function Flappy() {
   const [phase, setPhase] = useState<string>('ready');
   const [highScore, setHighScore] = useState(() => getHighScore());
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
+  // Canvas aspect ratio (w/h) — drives the CSS upscale on desktop
+  const [aspect, setAspect] = useState(400 / 600);
 
   const getCanvasSize = useCallback(() => {
     const w = Math.min(window.innerWidth - 16, 400);
@@ -34,6 +37,7 @@ export default function Flappy() {
     if (!canvas) return;
     canvas.width = w;
     canvas.height = h;
+    setAspect(w / h);
 
     stateRef.current = initGame(w, h);
     setScore(0);
@@ -122,78 +126,63 @@ export default function Flappy() {
     return () => window.removeEventListener('resize', onResize);
   }, [startGame]);
 
-  return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
+  const status = (
+    <div>
+      <div
+        className="flex items-center justify-center gap-4 font-mono text-xs lg:text-sm"
+        style={{ color: '#86efac' }}
+      >
+        <span>
+          SCORE <span style={{ color: '#4ade80' }}>{score}</span>
+        </span>
+        {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore}</span>}
+      </div>
+      <p
+        className="mt-2 text-center font-mono text-xs tracking-widest lg:text-sm"
+        style={{ color: '#3f9e68' }}
+      >
+        {phase === 'ready' ? 'TAP OR SPACE TO FLAP' : phase === 'dead' ? 'TAP TO TRY AGAIN' : ' '}
+      </p>
+    </div>
+  );
+
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
     >
-      <CrtOverlay />
+      <li>· TAP OR PRESS SPACE TO FLAP</li>
+      <li>· SQUEEZE THROUGH THE PIPE GAPS</li>
+      <li>· EVERY PIPE YOU PASS SCORES 1 POINT</li>
+      <li>· THE LONGER YOU FLY, THE FASTER IT GETS</li>
+    </ul>
+  );
 
-      {/* Header row */}
-      <div className="mb-2 flex w-full max-w-[400px] items-center justify-between px-1">
-        <BackLink />
-        <div className="flex gap-3 font-mono text-xs" style={{ color: '#86efac' }}>
-          <span>
-            SCORE <span style={{ color: '#4ade80' }}>{score}</span>
-          </span>
-          {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore}</span>}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          FLAPPY BIRD
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          AERIAL EVASION PROTOCOL
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider />
-
-      {/* Canvas */}
+  return (
+    <GameCabinet
+      title="FLAPPY BIRD"
+      subtitle="FLAP THROUGH THE PIPES"
+      tag="Arcade"
+      record={highScore > 0 ? `BEST ${highScore}` : undefined}
+      onRestart={startGame}
+      status={status}
+      rules={rules}
+      sidebar={phase === 'dead' && lb ? <Leaderboard result={lb} className="w-full" /> : undefined}
+    >
       <canvas
         ref={canvasRef}
         className="touch-none"
         onClick={handleTap}
         style={{
+          // Upscale via CSS only — internal resolution (and physics) unchanged;
+          // tap/space input is coordinate-free, so scaling can't break it.
+          width: `min(100vw - 64px, calc(clamp(400px, 68vh, 620px) * ${aspect}))`,
+          height: 'auto',
           maxWidth: '100%',
-          maxHeight: 'calc(100dvh - 140px)',
           border: '1px solid #1a6632',
           borderRadius: '2px',
         }}
       />
-
-      {/* Hint / leaderboard */}
-      {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-          TAP OR SPACE TO FLAP
-        </p>
-      )}
-      {phase === 'dead' && lb && <Leaderboard result={lb} className="mt-2 w-full max-w-[400px]" />}
-
-      <style>{`
-        @keyframes bs-victory {
-          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
-          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-        }
-        @keyframes bs-defeat {
-          0%   { transform: translate(0,0) rotate(0deg); }
-          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
-          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
-          100% { transform: translate(0,0) rotate(0deg); }
-        }
-      `}</style>
-    </div>
+    </GameCabinet>
   );
 }

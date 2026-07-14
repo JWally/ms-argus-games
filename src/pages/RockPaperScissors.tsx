@@ -7,7 +7,7 @@ import {
   type MutableRefObject,
   type ReactElement,
 } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
 import {
   CHOICES,
   TOTAL_ROUNDS,
@@ -45,7 +45,7 @@ const ICONS: Record<Choice, ReactElement> = {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-7 w-7 sm:h-8 sm:w-8"
+      className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
     >
       <polygon points="16,2 23,5 28,11 27,21 21,29 11,29 5,21 4,11 9,5" />
       <path d="M10,11 L17,8" strokeWidth="0.8" opacity="0.4" />
@@ -59,7 +59,7 @@ const ICONS: Record<Choice, ReactElement> = {
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
-      className="h-7 w-7 sm:h-8 sm:w-8"
+      className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
     >
       <path d="M7,3 L22,3 L25,6 L25,29 L7,29 Z" />
       <path d="M22,3 L22,6 L25,6" strokeWidth="1" opacity="0.55" />
@@ -75,7 +75,7 @@ const ICONS: Record<Choice, ReactElement> = {
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
-      className="h-7 w-7 sm:h-8 sm:w-8"
+      className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
     >
       <line x1="6" y1="4" x2="26" y2="28" />
       <line x1="26" y1="4" x2="6" y2="28" />
@@ -93,7 +93,7 @@ const LOCK_ICON = (
     stroke="currentColor"
     strokeWidth="1.5"
     strokeLinecap="round"
-    className="h-7 w-7 sm:h-8 sm:w-8"
+    className="h-7 w-7 sm:h-8 sm:w-8 lg:h-9 lg:w-9"
   >
     <path d="M10,14 L10,11 A6,6 0 0,1 22,11 L22,14" />
     <rect x="6" y="14" width="20" height="14" rx="1" />
@@ -268,7 +268,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
             textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
           }}
         >
-          OPERATIONAL BRIEFING
+          HOW TO PLAY
         </h2>
         <div
           className="mt-1 text-center font-mono tracking-[0.25em]"
@@ -308,7 +308,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
                 className="font-mono font-bold tracking-[0.12em]"
                 style={{ fontSize: FSZ_SM, color: '#4ade80' }}
               >
-                STANDARD COMBAT
+                VS THE AI
               </div>
               <p className="mt-1.5 leading-relaxed" style={{ fontSize: FSZ_MD, color: '#86efac' }}>
                 Best of {TOTAL_ROUNDS} rounds against the AI. The system{' '}
@@ -432,7 +432,7 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
             borderRadius: '2px',
           }}
         >
-          BEGIN ENGAGEMENT
+          LET&apos;S PLAY
         </button>
       </div>
 
@@ -609,7 +609,7 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         ctx.fillStyle = '#f87171';
         ctx.shadowColor = '#ef4444';
         ctx.shadowBlur = 8;
-        ctx.fillText('// ACCESSING SEALED DATA //', W / 2, 26);
+        ctx.fillText('// SNEAK PEEK //', W / 2, 26);
         ctx.shadowBlur = 20;
         drawChoiceIcon(ctx, lockedAiChoice, { cx: W / 2, cy: H / 2 - 8 }, 38, '#f87171');
         ctx.shadowBlur = 0;
@@ -639,7 +639,7 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         ctx.fillStyle = '#4ade80';
         ctx.shadowColor = '#22c55e';
         ctx.shadowBlur = 10;
-        ctx.fillText('SYSTEM HAS COMMITTED', W / 2, H / 2 + 34);
+        ctx.fillText('AI CHOICE LOCKED IN', W / 2, H / 2 + 34);
         ctx.shadowBlur = 0;
         ctx.font = '9px monospace';
         ctx.fillStyle = '#1a4a2a';
@@ -663,7 +663,7 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         opts;
       if (phase !== 'result' || mode !== 'vs-ai' || !outcome) return;
       const txtClr = streaking ? '#fcd34d' : isWin ? '#4ade80' : isLose ? '#f87171' : '#9ca3af';
-      const big = isWin ? 'PLAYER WINS' : isLose ? 'SYSTEM WINS' : 'DRAW';
+      const big = isWin ? 'YOU WIN' : isLose ? 'AI WINS' : 'DRAW';
       ctx.save();
       ctx.textAlign = 'center';
       if (streaking) {
@@ -710,8 +710,8 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         ctx.fillText('VS', W / 2, H / 2 + 34);
         ctx.font = '8px monospace';
         ctx.fillStyle = '#1a3a2a';
-        ctx.fillText('PLAYER', W / 2 - 62, H / 2 + 64);
-        ctx.fillText('SYSTEM', W / 2 + 62, H / 2 + 64);
+        ctx.fillText('YOU', W / 2 - 62, H / 2 + 64);
+        ctx.fillText('AI', W / 2 + 62, H / 2 + 64);
       }
       ctx.restore();
     }
@@ -824,9 +824,9 @@ function statusMsg(
 ): string {
   if (seriesOver) {
     if (mode === 'coach') return 'CYBORG SESSION COMPLETE';
-    if (seriesWinner === 'human') return 'SERIES VICTORY — PLAYER WINS';
-    if (seriesWinner === 'ai') return 'SERIES DEFEAT — SYSTEM WINS';
-    return 'SERIES CONCLUDED — DRAW';
+    if (seriesWinner === 'human') return 'SERIES OVER — YOU WIN!';
+    if (seriesWinner === 'ai') return 'SERIES OVER — AI WINS';
+    return 'SERIES OVER — ALL TIED UP';
   }
   if (phase === 'idle')
     return mode === 'coach' ? "PLAY THE SUGGESTION · ENTER OPPONENT'S THROW" : 'AI DECIDING...';
@@ -840,7 +840,7 @@ function statusMsg(
         : outcome === 'lose'
           ? 'HUMAN WINS THIS ROUND'
           : 'DRAW — NO ROUND COUNTED';
-    if (outcome === 'win') return 'HUMAN WINS THIS ROUND';
+    if (outcome === 'win') return 'YOU WIN THIS ROUND';
     if (outcome === 'lose') return 'AI WINS THIS ROUND';
     return 'DRAW — NO ROUND COUNTED';
   }
@@ -1049,70 +1049,39 @@ export default function RockPaperScissors() {
   const btnRow =
     'group relative flex w-full items-center gap-0 bg-transparent py-[16px] sm:py-[20px] pl-0 pr-5 transition-colors duration-150';
 
-  return (
-    <div
-      className="flex min-h-screen flex-col items-center px-3 pb-12 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      {showModal && <HowToPlay onClose={closeModal} />}
-
-      <CrtOverlay />
-
-      {/* Back link */}
-      <div className="mb-3 w-full max-w-lg flex items-center justify-between">
-        <BackLink />
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowModal(true)}
-            className="rounded px-2 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
-            style={{
-              background: '#040e07',
-              border: BORDER_DARK,
-              color: '#1a6632',
-              boxShadow: '0 0 6px #22c55e11',
-            }}
-          >
-            ?
-          </button>
-          <button
-            onClick={toggleMode}
-            className="rounded px-3 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
-            style={{
-              background: '#040e07',
-              border: BORDER_DARK,
-              color: '#1a6632',
-              boxShadow: '0 0 6px #22c55e11',
-            }}
-          >
-            {mode === 'vs-ai' ? '[ CYBORG MODE ]' : '[ VS SYSTEM ]'}
-          </button>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-base tracking-[0.2em] sm:text-2xl sm:tracking-[0.3em] whitespace-nowrap"
+  const status = (
+    <div className="flex flex-col gap-2">
+      {/* Help + mode toggle */}
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={() => setShowModal(true)}
+          className="rounded px-2 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
           style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+            background: '#040e07',
+            border: BORDER_DARK,
+            color: '#1a6632',
+            boxShadow: '0 0 6px #22c55e11',
           }}
         >
-          ROCK.PAPER.SCISSORS
-        </h1>
-        <div className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          {mode === 'vs-ai'
-            ? 'PATTERN ANALYSIS COMBAT'
-            : 'CYBORG SUBSYSTEM v1.4 · USE AI TO CRUSH YOUR FRIENDS'}
-        </div>
+          ?
+        </button>
+        <button
+          onClick={toggleMode}
+          className="rounded px-3 py-1 text-xs font-bold tracking-widest transition-all hover:scale-105"
+          style={{
+            background: '#040e07',
+            border: BORDER_DARK,
+            color: '#1a6632',
+            boxShadow: '0 0 6px #22c55e11',
+          }}
+        >
+          {mode === 'vs-ai' ? '[ CYBORG MODE ]' : '[ VS THE AI ]'}
+        </button>
       </div>
-
-      {/* Divider */}
-      <GameDivider className="my-2 max-w-lg" />
 
       {/* Status bar */}
       <div
-        className="mb-2 w-full max-w-lg rounded px-3 py-2"
+        className="w-full rounded px-3 py-2"
         style={{
           background: '#040e07',
           border: BORDER_DARK,
@@ -1148,7 +1117,7 @@ export default function RockPaperScissors() {
             }}
           />
           <span
-            className="font-mono text-xs tracking-wider"
+            className="font-mono text-xs tracking-wider lg:text-sm"
             style={{
               color: isOver
                 ? game.seriesWinner === 'human'
@@ -1168,7 +1137,7 @@ export default function RockPaperScissors() {
             {!isOver && phase !== 'thinking' && <span style={{ opacity: blinkOn ? 1 : 0 }}>_</span>}
           </span>
           {!isOver && (
-            <span className="ml-auto font-mono text-xs" style={{ color: '#1a5c2a' }}>
+            <span className="ml-auto font-mono text-xs lg:text-sm" style={{ color: '#1a5c2a' }}>
               RND {String(Math.min(game.rounds.length + 1, TOTAL_ROUNDS)).padStart(2, '0')} /{' '}
               {TOTAL_ROUNDS}
             </span>
@@ -1187,32 +1156,41 @@ export default function RockPaperScissors() {
       >
         <div className="flex items-center px-4 py-2.5">
           <div className="flex-1 text-left">
-            <div className="font-mono text-sm tracking-[0.25em]" style={{ color: '#4ade80' }}>
-              {mode === 'coach' ? 'CYBORG' : 'HUMAN'}
+            <div
+              className="font-mono text-sm tracking-[0.25em] lg:text-base"
+              style={{ color: '#4ade80' }}
+            >
+              {mode === 'coach' ? 'CYBORG' : 'YOU'}
             </div>
             <div
-              className="font-mono text-2xl leading-none tabular-nums"
+              className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
               style={{ color: '#4ade80', textShadow: '0 0 12px #22c55e88' }}
             >
               {String(game.humanScore).padStart(2, '0')}
             </div>
           </div>
           <div className="flex flex-col items-center gap-0.5 px-4">
-            <div className="font-mono text-sm tracking-[0.2em]" style={{ color: '#1a6632' }}>
+            <div
+              className="font-mono text-sm tracking-[0.2em] lg:text-base"
+              style={{ color: '#1a6632' }}
+            >
               {mode === 'coach' ? 'RND' : 'VS'}
             </div>
-            <div className="font-mono text-xs tabular-nums" style={{ color: '#4ade80' }}>
+            <div className="font-mono text-xs tabular-nums lg:text-sm" style={{ color: '#4ade80' }}>
               {String(Math.min(game.rounds.length + 1, TOTAL_ROUNDS)).padStart(2, '0')}
               <span style={{ color: '#1a6632' }}> / </span>
               {TOTAL_ROUNDS}
             </div>
           </div>
           <div className="flex-1 text-right">
-            <div className="font-mono text-sm tracking-[0.25em]" style={{ color: '#f87171' }}>
+            <div
+              className="font-mono text-sm tracking-[0.25em] lg:text-base"
+              style={{ color: '#f87171' }}
+            >
               {mode === 'coach' ? 'HUMAN' : 'AI'}
             </div>
             <div
-              className="font-mono text-2xl leading-none tabular-nums"
+              className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
               style={{ color: '#f87171', textShadow: '0 0 12px #dc262688' }}
             >
               {mode === 'coach'
@@ -1222,10 +1200,43 @@ export default function RockPaperScissors() {
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  const rulesJsx = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· BEST OF {TOTAL_ROUNDS} ROUNDS — DRAWS DON&apos;T COUNT</li>
+      <li>· THE AI STUDIES YOUR PATTERNS, SO MIX IT UP</li>
+      <li>· IT LOCKS ITS MOVE BEFORE YOU PICK — HIT PEEK TO SEE IT</li>
+      <li>· CYBORG MODE: THE AI CALLS THROWS TO BEAT A FRIEND</li>
+      <li>· TAP ? UP TOP FOR THE FULL RUNDOWN</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="ROCK PAPER SCISSORS"
+      subtitle={
+        mode === 'vs-ai' ? 'OUTSMART A MIND-READING AI' : 'CYBORG MODE · THE AI CALLS YOUR THROWS'
+      }
+      tag="Brain"
+      record={
+        mode === 'vs-ai' && (record.wins > 0 || record.losses > 0)
+          ? `${record.wins}W – ${record.losses}L`
+          : undefined
+      }
+      onRestart={restart}
+      status={status}
+      rules={rulesJsx}
+    >
+      {showModal && <HowToPlay onClose={closeModal} />}
 
       {/* Canvas — glow frame */}
       <div
-        className="relative w-full max-w-lg"
+        className="relative w-full max-w-lg lg:max-w-[600px]"
         style={{
           padding: '2px',
           background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
@@ -1296,7 +1307,10 @@ export default function RockPaperScissors() {
 
       {/* Choice + Peek buttons */}
       {showChoiceButtons && !isOver && (
-        <div className="w-full max-w-lg" style={{ background: '#040e07', border: BORDER_DARKEST }}>
+        <div
+          className="w-full max-w-lg lg:max-w-[600px]"
+          style={{ background: '#040e07', border: BORDER_DARKEST }}
+        >
           {/* Peek (vs-ai locked) */}
           {mode === 'vs-ai' && phase === 'locked' && (
             <button
@@ -1319,7 +1333,7 @@ export default function RockPaperScissors() {
                 {LOCK_ICON}
               </span>
               <span
-                className="ml-4 flex-1 font-mono text-[13px] sm:text-[15px] tracking-[0.18em] transition-colors"
+                className="ml-4 flex-1 font-mono text-[13px] sm:text-[15px] lg:text-[17px] tracking-[0.18em] transition-colors"
                 style={{ color: '#dc262666' }}
                 data-hover="#f87171"
               >
@@ -1356,7 +1370,7 @@ export default function RockPaperScissors() {
                 {ICONS[c]}
               </span>
               <span
-                className="ml-4 flex-1 font-mono text-[13px] sm:text-[15px] tracking-[0.18em] transition-colors"
+                className="ml-4 flex-1 font-mono text-[13px] sm:text-[15px] lg:text-[17px] tracking-[0.18em] transition-colors"
                 style={{ color: '#86efac' }}
               >
                 {LABEL[c]}
@@ -1380,7 +1394,7 @@ export default function RockPaperScissors() {
       {/* Series over */}
       {isOver && (
         <div
-          className="w-full max-w-lg rounded p-6 text-center"
+          className="w-full max-w-lg rounded p-6 text-center lg:max-w-[600px]"
           style={{
             background:
               game.seriesWinner === 'human'
@@ -1406,7 +1420,7 @@ export default function RockPaperScissors() {
           {mode === 'vs-ai' ? (
             <>
               <div
-                className="font-display text-3xl tracking-widest"
+                className="font-display text-3xl tracking-widest lg:text-4xl"
                 style={{
                   color:
                     game.seriesWinner === 'human'
@@ -1423,9 +1437,9 @@ export default function RockPaperScissors() {
                 }}
               >
                 {game.seriesWinner === 'human'
-                  ? 'VICTORY'
+                  ? 'YOU WIN'
                   : game.seriesWinner === 'ai'
-                    ? 'DEFEAT'
+                    ? 'YOU LOSE'
                     : 'DRAW'}
               </div>
               <div
@@ -1440,10 +1454,10 @@ export default function RockPaperScissors() {
                 }}
               >
                 {game.seriesWinner === 'human'
-                  ? 'HUMAN WINS THE SERIES'
+                  ? 'YOU TOOK THE SERIES'
                   : game.seriesWinner === 'ai'
-                    ? 'AI WINS THE SERIES'
-                    : 'SERIES CONCLUDED — EVEN MATCH'}
+                    ? 'THE AI TOOK THIS ONE'
+                    : 'DEAD EVEN — REMATCH?'}
               </div>
               <div className="mt-4 flex justify-center gap-8">
                 <div>
@@ -1473,7 +1487,7 @@ export default function RockPaperScissors() {
           ) : (
             <>
               <div
-                className="font-display text-3xl tracking-widest"
+                className="font-display text-3xl tracking-widest lg:text-4xl"
                 style={{
                   color: game.humanScore >= 8 ? '#4ade80' : '#f87171',
                   textShadow:
@@ -1542,16 +1556,9 @@ export default function RockPaperScissors() {
               boxShadow: '0 0 10px #22c55e44',
             }}
           >
-            NEW ENGAGEMENT
+            PLAY AGAIN
           </button>
         </div>
-      )}
-
-      {/* W/L record (idle, not over) */}
-      {!isOver && mode === 'vs-ai' && (record.wins > 0 || record.losses > 0) && (
-        <p className="mt-3 font-mono text-xs tracking-[0.2em]" style={{ color: '#26714a' }}>
-          RECORD&nbsp;&nbsp;{record.wins}W / {record.losses}L
-        </p>
       )}
 
       <style>{`
@@ -1579,6 +1586,6 @@ export default function RockPaperScissors() {
           100% { transform: translate(0,0) rotate(0deg); filter: brightness(1); }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import {
   type GameState,
@@ -16,6 +17,12 @@ import {
 } from '../games/peg-solitaire/engine';
 import { launchConfetti } from '../games/confetti';
 
+// Fixed canvas backing resolution — the engine lays out the board in px
+// against these. Display size is scaled with CSS only; the click handler
+// maps through getBoundingClientRect so input stays correct at any scale.
+const CANVAS_W = 400;
+const CANVAS_H = 450;
+
 export default function PegSolitaire() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState | null>(null);
@@ -26,29 +33,28 @@ export default function PegSolitaire() {
   const [highScore, setHighScore] = useState(() => getHighScore());
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
-  const getCanvasSize = useCallback(() => {
-    const w = Math.min(window.innerWidth - 16, 400);
-    const h = Math.min(window.innerHeight - 120, 450);
-    return { w: Math.max(w, 280), h: Math.max(h, 340) };
-  }, []);
-
   const resetGame = useCallback(() => {
-    const { w, h } = getCanvasSize();
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = CANVAS_W;
+    canvas.height = CANVAS_H;
 
-    stateRef.current = initGame(w, h);
+    stateRef.current = initGame(CANVAS_W, CANVAS_H);
     setPegsLeft(14);
     setPhase('ready');
     setHighScore(getHighScore());
     setLb(null);
-  }, [getCanvasSize]);
+  }, []);
 
-  // Game loop
+  // Game loop. Mount setup skips resetGame() — the React state initializers
+  // already match, so only the canvas + engine state need initializing.
   useEffect(() => {
-    resetGame();
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
+      stateRef.current = initGame(CANVAS_W, CANVAS_H);
+    }
 
     const loop = () => {
       const state = stateRef.current;
@@ -84,7 +90,6 @@ export default function PegSolitaire() {
 
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Click / tap handler
@@ -145,55 +150,47 @@ export default function PegSolitaire() {
     return () => window.removeEventListener('keydown', onKey);
   }, [resetGame]);
 
-  // Resize
-  useEffect(() => {
-    const onResize = () => {
-      if (stateRef.current?.phase === 'ready') {
-        resetGame();
-      }
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [resetGame]);
+  const status = (
+    <div
+      className="flex items-center justify-center gap-4 font-mono text-xs lg:text-sm"
+      style={{ color: '#86efac' }}
+    >
+      <span>
+        PEGS <span style={{ color: '#4ade80' }}>{pegsLeft}</span>
+      </span>
+      {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore.toFixed(1)}s</span>}
+    </div>
+  );
+
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· TAP A PEG, THEN TAP WHERE IT LANDS</li>
+      <li>· EVERY JUMP GOES OVER A NEIGHBOR INTO AN EMPTY HOLE</li>
+      <li>· THE PEG YOU JUMPED OVER IS REMOVED</li>
+      <li>· LEAVE JUST ONE PEG TO WIN</li>
+      <li>· FASTEST CLEAR SETS YOUR BEST TIME</li>
+    </ul>
+  );
 
   return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
+    <GameCabinet
+      title="PEG SOLITAIRE"
+      subtitle="JUMP PEGS — LEAVE JUST ONE"
+      tag="Puzzle"
+      record={highScore > 0 ? `BEST ${highScore.toFixed(1)}S` : undefined}
+      onRestart={resetGame}
+      status={status}
+      rules={rules}
+      sidebar={
+        phase === 'done' && lb ? (
+          <Leaderboard result={lb} format={(s) => `${s.toFixed(1)}s`} />
+        ) : undefined
+      }
     >
-      <CrtOverlay />
-
-      {/* Header row */}
-      <div className="mb-2 flex w-full max-w-[400px] items-center justify-between px-1">
-        <BackLink />
-        <div className="flex gap-3 font-mono text-xs" style={{ color: '#86efac' }}>
-          <span>
-            PEGS <span style={{ color: '#4ade80' }}>{pegsLeft}</span>
-          </span>
-          {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore.toFixed(1)}s</span>}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          PEG SOLITAIRE
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          SINGLE UNIT ELIMINATION DRILL
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider />
-
-      {/* Canvas */}
+      {/* Canvas — backing stays 400×450, CSS scales it up on desktop */}
       <canvas
         ref={canvasRef}
         className="touch-none"
@@ -201,21 +198,19 @@ export default function PegSolitaire() {
         style={{
           border: '1px solid #1a6632',
           borderRadius: '2px',
+          width: 'min(100vw - 80px, clamp(320px, 54vh, 540px))',
+          height: 'auto',
         }}
       />
 
-      {/* Hint / leaderboard */}
+      {/* Hint */}
       {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-          TAP TO BEGIN — JUMP PEGS TO ELIMINATE THEM
+        <p
+          className="mt-2 font-mono text-xs tracking-widest lg:text-sm"
+          style={{ color: '#3f9e68' }}
+        >
+          TAP TO START — JUMP PEGS TO CLEAR THEM
         </p>
-      )}
-      {phase === 'done' && lb && (
-        <Leaderboard
-          result={lb}
-          className="mt-3 w-full max-w-[400px]"
-          format={(s) => `${s.toFixed(1)}s`}
-        />
       )}
 
       <style>{`
@@ -232,6 +227,6 @@ export default function PegSolitaire() {
           100% { transform: translate(0,0) rotate(0deg); }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

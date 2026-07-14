@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   initGame,
@@ -25,6 +26,8 @@ export default function Breakout() {
   const [level, setLevel] = useState(1);
   const [highScore, setHighScore] = useState(() => getHighScore());
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
+  // Canvas aspect ratio (w/h) — drives the CSS upscale on desktop
+  const [aspect, setAspect] = useState(400 / 560);
 
   // ── Canvas sizing (portrait-optimized) ────────────────────────────
 
@@ -42,6 +45,7 @@ export default function Breakout() {
     if (!canvas) return;
     canvas.width = w;
     canvas.height = h;
+    setAspect(w / h);
 
     const state = initGame(w, h);
     stateRef.current = state;
@@ -102,6 +106,8 @@ export default function Breakout() {
   }, []);
 
   // ── Touch / mouse controls ────────────────────────────────────────
+  // Coordinates map through getBoundingClientRect, so the CSS upscale
+  // below never skews paddle position.
 
   const handlePointerMove = useCallback((e: { clientX: number }) => {
     const canvas = canvasRef.current;
@@ -137,65 +143,28 @@ export default function Breakout() {
 
   // ── Render ────────────────────────────────────────────────────────
 
-  return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-8 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
-
-      {/* Header row */}
-      <div className="mb-3 flex w-full max-w-[400px] items-center justify-between px-1">
-        <BackLink />
-        <div className="flex gap-3 font-mono text-xs" style={{ color: '#86efac' }}>
-          <span>
-            LVL <span style={{ color: '#4ade80' }}>{level}</span>
-          </span>
-          <span>
-            SCORE <span style={{ color: '#4ade80' }}>{score}</span>
-          </span>
-          {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore}</span>}
-        </div>
+  const status = (
+    <div>
+      <div
+        className="flex items-center justify-between font-mono text-xs lg:text-sm"
+        style={{ color: '#86efac' }}
+      >
+        <span>
+          LVL <span style={{ color: '#4ade80' }}>{level}</span>
+        </span>
+        <span>
+          SCORE <span style={{ color: '#4ade80' }}>{score}</span>
+        </span>
+        {highScore > 0 && <span style={{ color: '#3f9e68' }}>BEST {highScore}</span>}
       </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          BREAKOUT
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          BRICK DEMOLITION SYSTEM
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider />
-
-      {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="touch-none"
-        onPointerMove={handlePointerMove}
-        onClick={handleTap}
-        style={{
-          maxWidth: '100%',
-          border: '1px solid #1a6632',
-          borderRadius: '2px',
-        }}
-      />
-
-      {/* Status messages */}
-      <div className="mt-3 text-center font-mono text-sm" style={{ color: '#4ade80' }}>
+      <div
+        className="mt-2 flex items-center justify-center text-center font-mono text-sm tracking-widest lg:text-base"
+        style={{ color: '#4ade80' }}
+      >
         {phase === 'ready' && 'TAP TO LAUNCH'}
         {phase === 'dead' && 'TAP TO CONTINUE'}
         {phase === 'game-over' && (
-          <span style={{ color: '#dc2626' }}>MISSION FAILED — TAP TO RETRY</span>
+          <span style={{ color: '#dc2626' }}>GAME OVER — TAP TO RETRY</span>
         )}
         {phase === 'playing' && lives > 0 && (
           <span className="flex items-center justify-center gap-1" style={{ color: '#dc2626' }}>
@@ -205,24 +174,50 @@ export default function Breakout() {
           </span>
         )}
       </div>
-      {phase === 'game-over' && lb && (
-        <Leaderboard result={lb} className="mt-3 w-full max-w-[400px]" />
-      )}
-
-      <style>{`
-        @keyframes bs-victory {
-          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
-          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-        }
-        @keyframes bs-defeat {
-          0%   { transform: translate(0,0) rotate(0deg); }
-          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
-          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
-          100% { transform: translate(0,0) rotate(0deg); }
-        }
-      `}</style>
     </div>
+  );
+
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· SLIDE YOUR POINTER TO MOVE THE PADDLE</li>
+      <li>· TAP TO LAUNCH THE BALL</li>
+      <li>· CHAIN BRICK HITS FOR COMBO BONUSES</li>
+      <li>· CLEAR THE WALL TO LEVEL UP</li>
+      <li>· THREE BALLS — KEEP THEM OFF THE FLOOR</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="BREAKOUT"
+      subtitle="SMASH EVERY BRICK"
+      tag="Arcade"
+      record={highScore > 0 ? `BEST ${highScore}` : undefined}
+      onRestart={startGame}
+      status={status}
+      rules={rules}
+      sidebar={
+        phase === 'game-over' && lb ? <Leaderboard result={lb} className="w-full" /> : undefined
+      }
+    >
+      <canvas
+        ref={canvasRef}
+        className="touch-none"
+        onPointerMove={handlePointerMove}
+        onClick={handleTap}
+        style={{
+          // Upscale via CSS only — internal resolution (and physics) unchanged;
+          // pointer input maps through getBoundingClientRect so it stays exact.
+          width: `min(100vw - 64px, calc(clamp(400px, 68vh, 620px) * ${aspect}))`,
+          height: 'auto',
+          maxWidth: '100%',
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+        }}
+      />
+    </GameCabinet>
   );
 }

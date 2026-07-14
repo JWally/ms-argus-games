@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 import {
   type GameState,
@@ -23,8 +24,12 @@ export default function HanoiHilton() {
   const [phase, setPhase] = useState<string>('menu');
   const [lb, setLb] = useState<LeaderboardResult | null>(null);
 
+  // Internal resolution stays at the engine's designed ~440x420 (its disk
+  // sizes cap in internal px); desktop bigification happens via CSS width
+  // on the <canvas>. Clicks stay correct at any CSS size because the
+  // handler maps through getBoundingClientRect.
   const getCanvasSize = useCallback(() => {
-    const w = Math.min(window.innerWidth - 16, 440);
+    const w = Math.min(window.innerWidth - 60, 440);
     const h = Math.min(window.innerHeight - 100, 420);
     return { w: Math.max(w, 300), h: Math.max(h, 320) };
   }, []);
@@ -143,56 +148,55 @@ export default function HanoiHilton() {
     return () => window.removeEventListener('resize', onResize);
   }, [resetGame]);
 
-  return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
+  const status = (
+    <p
+      className="text-center font-mono text-xs tracking-widest lg:text-sm"
+      style={{ color: '#86efac' }}
     >
-      <CrtOverlay />
+      {phase === 'playing'
+        ? 'CLICK A PEG — OR KEYS A / B / C, 1 / 2 / 3'
+        : phase === 'done'
+          ? 'SOLVED! CLICK THE BOARD FOR THE MENU'
+          : 'PICK A DISK COUNT TO START'}
+    </p>
+  );
 
-      {/* Header row */}
-      <div className="mb-2 flex w-full max-w-[440px] items-center justify-between px-1">
-        <BackLink />
-        {phase === 'playing' && (
-          <div className="font-mono text-xs" style={{ color: '#8b5cf6' }}>
-            CLICK PEG TO MOVE
-          </div>
-        )}
-      </div>
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· MOVE THE WHOLE STACK TO THE RIGHT PEG</li>
+      <li>· CLICK A PEG TO PICK UP ITS TOP DISK</li>
+      <li>· CLICK ANOTHER PEG TO DROP IT THERE</li>
+      <li>· NO DISK MAY SIT ON A SMALLER DISK</li>
+      <li>· MATCH PAR FOR A PERFECT SOLVE</li>
+    </ul>
+  );
 
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          TOWER OF HANOI
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          RECURSIVE DISK RELOCATION EXERCISE
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider className="my-2 max-w-[440px]" />
-
-      {/* Canvas */}
+  return (
+    <GameCabinet
+      title="TOWER OF HANOI"
+      subtitle="MOVE THE STACK, ONE DISK AT A TIME"
+      tag="Puzzle"
+      onRestart={resetGame}
+      status={status}
+      rules={rules}
+      sidebar={phase === 'done' && lb ? <Leaderboard result={lb} /> : undefined}
+    >
       <canvas
         ref={canvasRef}
-        className="touch-none"
+        className="max-w-full touch-none"
         onClick={handleClick}
-        style={{ border: '1px solid #1a6632', borderRadius: '2px' }}
+        style={{
+          border: '1px solid #1a6632',
+          borderRadius: '2px',
+          // Phone → natural size; desktop → CSS-upscale toward the cabinet
+          // column, height-capped so the page never scrolls.
+          width: 'min(100%, clamp(400px, 62vh, 600px))',
+          height: 'auto',
+        }}
       />
-
-      {phase === 'playing' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-          KEYS A / B / C OR 1 / 2 / 3 TO SELECT PEG
-        </p>
-      )}
-      {phase === 'done' && lb && <Leaderboard result={lb} className="mt-2 w-full max-w-[440px]" />}
-    </div>
+    </GameCabinet>
   );
 }
