@@ -81,11 +81,6 @@ export default function ColorFlood() {
     [game.won, boardSize]
   );
 
-  // Board sizing: phone → viewport width; desktop → grow with viewport
-  // height (so the board + chrome never scrolls) up to a 620px cap.
-  const boardCss = 'min(100vw - 64px, clamp(400px, 68vh, 620px))';
-  const cellSize = `calc((${boardCss} - ${(boardSize - 1) * 2}px) / ${boardSize})`;
-
   const status = (
     <div>
       {/* Size selector */}
@@ -174,11 +169,12 @@ export default function ColorFlood() {
       rules={rules}
       sidebar={game.won && lb ? <Leaderboard result={lb} /> : undefined}
     >
-      {/* Board */}
+      {/* Board — fills the bezel; cells scale as equal fractions */}
       <div
+        className="w-full"
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${boardSize}, ${cellSize})`,
+          gridTemplateColumns: `repeat(${boardSize}, minmax(0, 1fr))`,
           gap: '2px',
         }}
       >
@@ -188,10 +184,8 @@ export default function ColorFlood() {
             return (
               <div
                 key={`${r},${c}`}
-                className="transition-colors duration-200"
+                className="aspect-square w-full transition-colors duration-200"
                 style={{
-                  width: cellSize,
-                  height: cellSize,
                   backgroundColor: COLORS[colorIdx].hex,
                   borderRadius: '2px',
                   boxShadow: isOwned ? 'inset 0 0 0 1.5px rgba(255,255,255,0.25)' : 'none',

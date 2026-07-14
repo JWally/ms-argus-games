@@ -488,7 +488,7 @@ export default function SpellingBee() {
 
           {/* Display-only input (no native keyboard) */}
           <div
-            className="mt-2 w-full max-w-[360px] px-4 py-2.5 text-center text-xl font-bold transition-colors min-h-[48px] lg:max-w-[460px] lg:text-2xl"
+            className="mt-2 w-full px-4 py-2.5 text-center text-xl font-bold transition-colors min-h-[48px] lg:text-2xl"
             style={{
               background: '#040e07',
               border: `2px solid ${
@@ -518,7 +518,7 @@ export default function SpellingBee() {
                       e.preventDefault();
                       handleKey(letter.toLowerCase());
                     }}
-                    className="flex h-11 w-[10%] max-w-[40px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-sm font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14] lg:h-12 lg:max-w-[52px] lg:text-base"
+                    className="flex h-11 w-[10%] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-sm font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14] lg:h-12 lg:text-base"
                   >
                     {letter}
                   </button>
@@ -534,7 +534,7 @@ export default function SpellingBee() {
                 e.preventDefault();
                 handleBackspace();
               }}
-              className="flex h-11 w-[15%] max-w-[60px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg text-[#86efac] transition-colors hover:border-[#7f1d1d] hover:bg-[#1c0607] hover:text-[#f87171] lg:h-12 lg:max-w-[76px] lg:text-xl"
+              className="flex h-11 w-[15%] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg text-[#86efac] transition-colors hover:border-[#7f1d1d] hover:bg-[#1c0607] hover:text-[#f87171] lg:h-12 lg:text-xl"
             >
               {'⌫'}
             </button>
@@ -543,7 +543,7 @@ export default function SpellingBee() {
                 e.preventDefault();
                 handleKey("'");
               }}
-              className="flex h-11 w-[10%] max-w-[40px] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14] lg:h-12 lg:max-w-[52px] lg:text-xl"
+              className="flex h-11 w-[10%] select-none items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-lg font-bold text-[#86efac] transition-colors hover:border-[#22c55e] hover:bg-[#0a2a14] lg:h-12 lg:text-xl"
             >
               {"'"}
             </button>
@@ -554,7 +554,7 @@ export default function SpellingBee() {
                 handleSubmit();
               }}
               disabled={input.trim() === ''}
-              className="flex h-11 flex-1 max-w-[140px] items-center justify-center text-sm font-bold select-none transition-all active:scale-95 disabled:opacity-30 lg:h-12 lg:max-w-[180px] lg:text-base"
+              className="flex h-11 flex-1 items-center justify-center text-sm font-bold select-none transition-all active:scale-95 disabled:opacity-30 lg:h-12 lg:text-base"
               style={{
                 background: '#040e07',
                 border: BORDER_GREEN_BRIGHT,
@@ -571,7 +571,7 @@ export default function SpellingBee() {
                 buzz();
                 handleSkip();
               }}
-              className="flex h-11 w-[15%] max-w-[60px] items-center justify-center text-xs font-semibold select-none transition-colors lg:h-12 lg:max-w-[76px] lg:text-sm"
+              className="flex h-11 w-[15%] items-center justify-center text-xs font-semibold select-none transition-colors lg:h-12 lg:text-sm"
               style={{
                 background: '#040e07',
                 border: '1px solid #1a4a2a',

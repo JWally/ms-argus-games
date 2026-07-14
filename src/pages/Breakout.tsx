@@ -209,11 +209,12 @@ export default function Breakout() {
         onPointerMove={handlePointerMove}
         onClick={handleTap}
         style={{
-          // Upscale via CSS only — internal resolution (and physics) unchanged;
-          // pointer input maps through getBoundingClientRect so it stays exact.
-          width: `min(100vw - 64px, calc(clamp(400px, 68vh, 620px) * ${aspect}))`,
+          // Fill the bezel — upscale via CSS only; internal resolution (and
+          // physics) unchanged. Pointer input maps through
+          // getBoundingClientRect so it stays exact at any display size.
+          width: '100%',
           height: 'auto',
-          maxWidth: '100%',
+          aspectRatio: `${aspect}`,
           border: '1px solid #1a6632',
           borderRadius: '2px',
         }}

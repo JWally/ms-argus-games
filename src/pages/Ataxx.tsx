@@ -63,11 +63,6 @@ export default function Ataxx() {
     setGame((prev) => handleCellClick(prev, r, c));
   }, []);
 
-  // Board sizing: phone → viewport width; desktop → grow with viewport
-  // height (so the board + chrome never scrolls) up to a 620px cap.
-  const boardSize = 'min(100vw - 64px, clamp(400px, 68vh, 620px))';
-  const cellSize = `calc((${boardSize} - ${(game.size - 1) * 3}px) / ${game.size})`;
-
   const resultText =
     game.winner === 'blue' ? 'YOU WIN' : game.winner === 'red' ? 'CPU WINS' : 'DRAW';
 
@@ -132,11 +127,12 @@ export default function Ataxx() {
       status={status}
       rules={rules}
     >
-      {/* Board */}
+      {/* Board — fills the bezel; cells scale as equal fractions */}
       <div
+        className="w-full"
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${game.size}, ${cellSize})`,
+          gridTemplateColumns: `repeat(${game.size}, minmax(0, 1fr))`,
           gap: '3px',
         }}
       >
@@ -195,10 +191,8 @@ export default function Ataxx() {
               <button
                 key={k}
                 onClick={() => onCellClick(r, c)}
-                className="transition-all duration-200"
+                className="aspect-square w-full transition-all duration-200"
                 style={{
-                  width: cellSize,
-                  height: cellSize,
                   backgroundColor: bg,
                   borderRadius: '4px',
                   border: `2px solid ${border}`,

@@ -1236,7 +1236,7 @@ export default function RockPaperScissors() {
 
       {/* Canvas — glow frame */}
       <div
-        className="relative w-full max-w-lg lg:max-w-[600px]"
+        className="relative w-full"
         style={{
           padding: '2px',
           background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
@@ -1299,6 +1299,8 @@ export default function RockPaperScissors() {
           className="w-full"
           style={{
             display: 'block',
+            width: '100%',
+            height: 'auto',
             opacity: phase === 'idle' ? 0 : 1,
             transition: 'opacity 0.6s ease-out',
           }}
@@ -1307,10 +1309,7 @@ export default function RockPaperScissors() {
 
       {/* Choice + Peek buttons */}
       {showChoiceButtons && !isOver && (
-        <div
-          className="w-full max-w-lg lg:max-w-[600px]"
-          style={{ background: '#040e07', border: BORDER_DARKEST }}
-        >
+        <div className="w-full" style={{ background: '#040e07', border: BORDER_DARKEST }}>
           {/* Peek (vs-ai locked) */}
           {mode === 'vs-ai' && phase === 'locked' && (
             <button
@@ -1394,7 +1393,7 @@ export default function RockPaperScissors() {
       {/* Series over */}
       {isOver && (
         <div
-          className="w-full max-w-lg rounded p-6 text-center lg:max-w-[600px]"
+          className="w-full rounded p-6 text-center"
           style={{
             background:
               game.seriesWinner === 'human'

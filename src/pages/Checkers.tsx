@@ -25,10 +25,11 @@ export default function Checkers() {
   const [stats, setStats] = useState({ wins: 0, losses: 0 });
 
   const getCanvasSize = useCallback(() => {
-    // Ataxx-style desktop-first sizing: the 8×8 board tracks viewport
-    // height (min(100vw - 64px, clamp(320px, 62vh, 520px))) up to the
-    // engine's 65px-cell cap (520px board). The canvas adds 24px side
-    // margin and ~130px vertical HUD chrome around the board.
+    // Backing (internal) resolution only — the canvas element itself is
+    // CSS-scaled to fill the bezel (width: 100%, height: auto). The 8×8
+    // board's backing size caps at the engine's 65px-cell limit (520px
+    // board); the canvas adds 24px side margin and ~130px vertical HUD
+    // chrome around the board.
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const board = Math.min(vw - 64, Math.max(320, Math.min(vh * 0.62, 520)));
@@ -213,7 +214,7 @@ export default function Checkers() {
         className="touch-none"
         onClick={handleClick}
         style={{
-          maxWidth: '100%',
+          width: '100%',
           height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',

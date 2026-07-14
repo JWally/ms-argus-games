@@ -222,10 +222,11 @@ export default function TicTacToe() {
   const best = getBestScore();
 
   const getCanvasSize = useCallback(() => {
-    // Ataxx-style desktop-first sizing: the 3×3 grid tracks viewport
-    // height — min(100vw - 64px, clamp(300px, 55vh, 500px)) — up to the
-    // engine's 500px grid cap. The canvas adds 40px side margin and
-    // ~210px vertical chrome (timer boxes above, status line below).
+    // Backing (internal) resolution only — the canvas element itself is
+    // CSS-scaled to fill the bezel (width: 100%, height: auto). The 3×3
+    // grid's backing size caps at the engine's 500px grid limit. The
+    // canvas adds 40px side margin and ~210px vertical chrome (timer
+    // boxes above, status line below).
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const grid = Math.min(vw - 64, Math.max(300, Math.min(vh * 0.55, 500)));
@@ -462,7 +463,7 @@ export default function TicTacToe() {
         ref={canvasRef}
         className="touch-none"
         style={{
-          maxWidth: '100%',
+          width: '100%',
           height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',

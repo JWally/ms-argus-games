@@ -26,10 +26,10 @@ export default function Connect4() {
   const [stats, setStats] = useState({ wins: 0, losses: 0 });
 
   const getCanvasSize = useCallback(() => {
-    // Ataxx-style desktop-first sizing, adapted for the 7-wide × 6-tall
-    // board: width is the driver — min(100vw - 64px, clamp(320px, 55vh,
-    // 444px)) — where 444px is the width that reaches the engine's
-    // 60px-cell cap. Height adds ~90px so the vertical constraint
+    // Backing (internal) resolution only — the canvas element itself is
+    // CSS-scaled to fill the bezel (width: 100%, height: auto). For the
+    // 7-wide × 6-tall board, backing width caps at 444px (the engine's
+    // 60px-cell limit). Height adds ~90px so the vertical constraint
     // ((h - 100) / 7 rows incl. hover) never shrinks the cells.
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -243,7 +243,7 @@ export default function Connect4() {
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         style={{
-          maxWidth: '100%',
+          width: '100%',
           height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',

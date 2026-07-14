@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { GameCabinet } from '../components/GameCabinet';
 import { Leaderboard } from '../components/GameShell';
 import {
@@ -63,18 +63,10 @@ const LB_CONFIG = {
 };
 
 // ── Board sizing ──────────────────────────────────────────────────────
-// Mirrors the cabinet formula min(100vw - 64px, clamp(400px, 68vh, 620px))
-// numerically, because the board's absolute-positioned px math needs a
-// number, not a CSS string. Total board footprint = (SIZE + 1) cells
-// (8 gaps + a cell of label padding on each side).
-
-function computeCellSize(): number {
-  const board = Math.min(
-    window.innerWidth - 64,
-    Math.min(Math.max(window.innerHeight * 0.68, 400), 620)
-  );
-  return Math.max(28, Math.floor(board / (SIZE + 1)));
-}
+// The board's absolute-positioned px math needs a number, not a CSS
+// string, so the bezel container width is measured (ResizeObserver) and
+// divided by the total footprint of (SIZE + 1) cells (8 gaps + a cell of
+// label padding on each side). The board then fills the bezel exactly.
 
 // ── Go Board ──────────────────────────────────────────────────────────
 
@@ -96,7 +88,7 @@ function GoBoard({ game, cellSize, hoverIdx, onPlace, onHover, disabled }: Board
   const territory = game.phase === 'done' ? game.score?.territory : null;
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex w-full items-center justify-center">
       {/* Outer frame */}
       <div
         style={{
@@ -485,7 +477,8 @@ export default function Go() {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
   const [blinkOn, setBlinkOn] = useState(true);
-  const [cellSize, setCellSize] = useState<number>(computeCellSize);
+  const [cellSize, setCellSize] = useState<number>(40);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
 
   // Blink cursor
   useEffect(() => {
@@ -493,11 +486,19 @@ export default function Go() {
     return () => clearInterval(t);
   }, []);
 
-  // Board resize
+  // Board sizing — track the bezel container's actual width so the board
+  // footprint of (SIZE + 1) cells fills it exactly at any size.
   useEffect(() => {
-    const onResize = () => setCellSize(computeCellSize());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const el = boardWrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      if (w > 0) setCellSize(Math.max(16, w / (SIZE + 1)));
+    };
+    measure();
+    const ro = new window.ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   const handlePlace = useCallback(
@@ -677,14 +678,16 @@ export default function Go() {
         game.phase === 'done' ? <GoLeaderboard score={game.score?.playerTotal ?? 0} /> : undefined
       }
     >
-      <GoBoard
-        game={game}
-        cellSize={cellSize}
-        hoverIdx={hoverIdx}
-        onPlace={handlePlace}
-        onHover={setHoverIdx}
-        disabled={boardDisabled}
-      />
+      <div ref={boardWrapRef} className="w-full">
+        <GoBoard
+          game={game}
+          cellSize={cellSize}
+          hoverIdx={hoverIdx}
+          onPlace={handlePlace}
+          onHover={setHoverIdx}
+          disabled={boardDisabled}
+        />
+      </div>
 
       {/* Controls */}
       {game.phase === 'playing' && (

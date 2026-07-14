@@ -21,10 +21,6 @@ const BORDER_DARK = '1px solid #0f2a18';
 const BORDER_GREEN = '1px solid #22c55e';
 const GLOW_GREEN = '0 0 6px #22c55e';
 
-// Grid sizing: phone → viewport width; desktop → 300px each so the two
-// boards sit side-by-side inside the cabinet's 680px column.
-const GRID_WIDTH = 'min(calc(100vw - 88px), 300px)';
-
 type CellVariant = 'empty' | 'ship' | 'hit' | 'miss' | 'sunk' | 'target-hover';
 
 const CELL_STYLES: Record<CellVariant, CSSProperties> = {
@@ -92,7 +88,7 @@ function BattleGrid({
   disabled = false,
 }: GridProps) {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex w-full flex-col items-center gap-1">
       {/* Grid label */}
       <div
         className="w-full text-center text-xs font-bold tracking-[0.25em] lg:text-sm"
@@ -106,6 +102,7 @@ function BattleGrid({
 
       {/* Outer glow frame */}
       <div
+        className="w-full"
         style={{
           padding: '2px',
           background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
@@ -132,10 +129,10 @@ function BattleGrid({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '14px repeat(8, 1fr)',
+            gridTemplateColumns: '14px repeat(8, minmax(0, 1fr))',
             gridTemplateRows: '14px repeat(8, 1fr)',
             gap: '2px',
-            width: GRID_WIDTH,
+            width: '100%',
           }}
         >
           {/* [0,0] corner */}
@@ -516,10 +513,10 @@ export default function Battleship() {
       {/* ── Playing / Game over phase ── */}
       {(isPlaying || isOver) && (
         <div className="flex w-full flex-col gap-4">
-          {/* Grids row */}
-          <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
+          {/* Grids row — the two grids share the bezel width on desktop */}
+          <div className="flex w-full flex-col items-center gap-6 lg:flex-row lg:items-start">
             {/* Enemy grid */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex w-full flex-col items-center gap-2 lg:min-w-0 lg:flex-1">
               <BattleGrid
                 grid={displayEnemyGrid}
                 isEnemy={true}
@@ -533,7 +530,7 @@ export default function Battleship() {
               />
               {/* Enemy ship status */}
               <div
-                className="w-full max-w-[300px] rounded p-2"
+                className="w-full rounded p-2"
                 style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div
@@ -547,7 +544,7 @@ export default function Battleship() {
             </div>
 
             {/* Player grid */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex w-full flex-col items-center gap-2 lg:min-w-0 lg:flex-1">
               <BattleGrid
                 grid={game.playerGrid}
                 isEnemy={false}
@@ -557,7 +554,7 @@ export default function Battleship() {
               />
               {/* Friendly ship status */}
               <div
-                className="w-full max-w-[300px] rounded p-2"
+                className="w-full rounded p-2"
                 style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div

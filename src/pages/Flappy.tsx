@@ -174,11 +174,12 @@ export default function Flappy() {
         className="touch-none"
         onClick={handleTap}
         style={{
-          // Upscale via CSS only — internal resolution (and physics) unchanged;
-          // tap/space input is coordinate-free, so scaling can't break it.
-          width: `min(100vw - 64px, calc(clamp(400px, 68vh, 620px) * ${aspect}))`,
+          // Fill the bezel — upscale via CSS only; internal resolution (and
+          // physics) unchanged. Tap/space input is coordinate-free, so
+          // scaling can't break it.
+          width: '100%',
           height: 'auto',
-          maxWidth: '100%',
+          aspectRatio: `${aspect}`,
           border: '1px solid #1a6632',
           borderRadius: '2px',
         }}
