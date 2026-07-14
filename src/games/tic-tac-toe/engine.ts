@@ -287,8 +287,6 @@ const BG_COLOR = '#0a0a1a';
 const GRID_COLOR = '#2563eb';
 const X_COLOR = '#ef4444';
 const O_COLOR = '#facc15';
-const TEXT_DIM = '#64748b';
-const WIN_GLOW = '#22c55e';
 const GREEN = '#4ade80';
 const GREEN_DIM = '#3f9e68';
 
@@ -300,17 +298,23 @@ interface Layout {
 }
 
 function fpx(base: number, width: number): number {
-  return Math.round(base * Math.min(width / 380, 1.5));
+  // Scale chrome with the backing resolution (canvas is sized from
+  // display px now), so overlay text reads the same at any size.
+  return Math.round(base * (width / 380));
 }
 function fs(base: number, width: number): string {
   return `${fpx(base, width)}px`;
 }
 
 function getLayout(width: number, height: number): Layout {
-  const gridSize = Math.min(width - 40, height - 210, 500);
+  // The grid IS the canvas, minus a slim margin — clock/score/status
+  // chrome lives in the page shell, not in-canvas. No grid cap: the
+  // backing resolution is set from the display size, so bigger canvas
+  // = bigger, still-crisp grid.
+  const gridSize = Math.min(width - 24, height - 24);
   const cellSize = gridSize / 3;
   const gridX = (width - gridSize) / 2;
-  const gridY = Math.max(120, Math.round((height - gridSize) / 2 - 10));
+  const gridY = (height - gridSize) / 2;
   return { cellSize, gridX, gridY, gridSize };
 }
 
@@ -320,129 +324,16 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.fillStyle = BG_COLOR;
   ctx.fillRect(0, 0, width, height);
 
-  drawScanLine(ctx, state);
-
   if (state.sessionPhase === 'idle') {
     drawIdleBackground(ctx, state);
     return;
   }
 
   const layout = getLayout(width, height);
-  drawTopHud(ctx, state);
   drawGrid(ctx, state, layout);
-  drawStatusLine(ctx, state, layout);
-
-  if (state.phase === 'result') {
-    drawResultBanner(ctx, state, layout);
-  }
 
   if (state.sessionPhase === 'finished') {
     drawFinishedOverlay(ctx, state);
-  }
-}
-
-// ── Scan line ─────────────────────────────────────────────────────────────
-
-function drawScanLine(ctx: CanvasRenderingContext2D, state: GameState): void {
-  const { width, height, frameCount } = state;
-  const period = 300;
-  const y = ((frameCount % period) / period) * (height + 60) - 30;
-  const grad = ctx.createLinearGradient(0, y - 6, 0, y + 6);
-  grad.addColorStop(0, 'transparent');
-  grad.addColorStop(0.5, 'rgba(34,197,94,0.045)');
-  grad.addColorStop(1, 'transparent');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, y - 6, width, 12);
-}
-
-// ── HUD ───────────────────────────────────────────────────────────────────
-
-function drawTopHud(ctx: CanvasRenderingContext2D, state: GameState): void {
-  const { width } = state;
-  const boxW = Math.round(width * 0.26);
-  const boxH = 52;
-  const boxY = 12;
-
-  // ── Clock (left) ──────────────────────────────────────────────────────
-  const { timeLeft, frameCount } = state;
-  const isRed = timeLeft <= 10;
-  const isFlashing = timeLeft <= 5;
-  const flashVisible = Math.floor(frameCount / 12) % 2 === 0;
-  const clockAlpha = isFlashing && !flashVisible ? 0.18 : 1.0;
-  const clockColor = isRed ? '#ef4444' : GREEN;
-  const clockGlow = isRed ? '#ef444488' : '#22c55e66';
-  const mins = Math.floor(timeLeft / 60);
-  const secs = Math.floor(timeLeft % 60);
-  const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-  const clockX = 12;
-
-  ctx.save();
-  ctx.globalAlpha = clockAlpha;
-
-  ctx.fillStyle = 'rgba(0,6,2,0.7)';
-  ctx.fillRect(clockX, boxY, boxW, boxH);
-  drawCornerBrackets(ctx, clockX, boxY, boxW, boxH, 8, clockColor + '99', 1.5);
-
-  ctx.font = `${fs(9, width)} monospace`;
-  ctx.fillStyle = clockColor + '88';
-  ctx.textAlign = 'left';
-  ctx.fillText('COUNTDOWN', clockX + 5, boxY + 11);
-
-  ctx.font = `bold ${fs(28, width)} monospace`;
-  ctx.fillStyle = clockColor;
-  ctx.textAlign = 'center';
-  ctx.shadowColor = clockGlow;
-  ctx.shadowBlur = isRed ? 18 : 10;
-  ctx.fillText(timeStr, clockX + boxW / 2, boxY + boxH - 10);
-  ctx.shadowBlur = 0;
-
-  ctx.restore();
-
-  // ── Boards cleared (right) ────────────────────────────────────────────
-  const scoreX = width - boxW - 12;
-
-  ctx.fillStyle = 'rgba(0,6,2,0.7)';
-  ctx.fillRect(scoreX, boxY, boxW, boxH);
-  drawCornerBrackets(ctx, scoreX, boxY, boxW, boxH, 8, GREEN + '99', 1.5);
-
-  ctx.font = `${fs(9, width)} monospace`;
-  ctx.fillStyle = GREEN + '88';
-  ctx.textAlign = 'left';
-  ctx.fillText('CLEARED', scoreX + 5, boxY + 11);
-
-  ctx.font = `bold ${fs(28, width)} monospace`;
-  ctx.fillStyle = GREEN;
-  ctx.textAlign = 'center';
-  ctx.shadowColor = '#22c55e55';
-  ctx.shadowBlur = 8;
-  ctx.fillText(String(state.boardsCleared), scoreX + boxW / 2, boxY + boxH - 10);
-  ctx.shadowBlur = 0;
-}
-
-function drawStatusLine(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
-  if (state.phase !== 'playing') return;
-  const { width, frameCount } = state;
-  const y = layout.gridY + layout.gridSize + 30;
-
-  ctx.font = `${fs(13, width)} monospace`;
-  ctx.textAlign = 'center';
-
-  if (state.turn === 1) {
-    const cursor = Math.floor(frameCount / 30) % 2 === 0 ? ' ▌' : '  ';
-    ctx.fillStyle = X_COLOR;
-    ctx.fillText(`AWAITING INPUT${cursor}`, width / 2, y);
-    ctx.font = `${fs(10, width)} monospace`;
-    ctx.fillStyle = TEXT_DIM;
-    ctx.fillText('YOU ARE  X', width / 2, y + 18);
-  } else {
-    ctx.fillStyle = O_COLOR;
-    ctx.shadowColor = O_COLOR;
-    ctx.shadowBlur = 6;
-    ctx.fillText('CPU PROCESSING...', width / 2, y);
-    ctx.shadowBlur = 0;
-    ctx.font = `${fs(10, width)} monospace`;
-    ctx.fillStyle = TEXT_DIM;
-    ctx.fillText('AI IS  O', width / 2, y + 18);
   }
 }
 
@@ -558,50 +449,6 @@ function drawO(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number)
 
 // ── Overlays ──────────────────────────────────────────────────────────────
 
-function drawResultBanner(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
-  const { width } = state;
-  const bannerY = layout.gridY + layout.gridSize + 14;
-  const progress =
-    1 - state.resultFrames / (state.lastResult === 'loss' ? LOSS_RESULT_FRAMES : RESULT_FRAMES);
-
-  let text: string;
-  let color: string;
-  if (state.lastResult === 'win') {
-    text = 'BOARD CLEARED!';
-    color = WIN_GLOW;
-  } else if (state.lastResult === 'draw') {
-    text = 'DRAW — SURVIVED';
-    color = O_COLOR;
-  } else {
-    text = 'ELIMINATED!';
-    color = '#ef4444';
-  }
-
-  const alpha = Math.min(1, progress * 6);
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.font = `bold ${fs(16, width)} monospace`;
-  ctx.fillStyle = color;
-  ctx.textAlign = 'center';
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 14;
-  ctx.fillText(text, width / 2, bannerY);
-  ctx.shadowBlur = 0;
-
-  if (state.lastResult !== 'loss') {
-    const barW = 160;
-    const barH = 3;
-    const barX = (width - barW) / 2;
-    const barY = bannerY + 14;
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    ctx.fillRect(barX, barY, barW, barH);
-    ctx.fillStyle = color + 'aa';
-    ctx.fillRect(barX, barY, barW * progress, barH);
-  }
-
-  ctx.restore();
-}
-
 function drawIdleBackground(ctx: CanvasRenderingContext2D, state: GameState): void {
   const { width, height } = state;
   const step = width / 12;
@@ -633,10 +480,13 @@ function drawFinishedOverlay(ctx: CanvasRenderingContext2D, state: GameState): v
   const cx = width / 2;
   const cy = height / 2;
 
-  drawCornerBrackets(ctx, 20, 20, width - 40, height - 40, 20, GREEN_DIM, 1);
+  // Scale overlay chrome with the backing resolution (see fpx).
+  const u = width / 380;
 
-  const headerColor = state.lastResult === 'loss' ? '#ef4444' : '#ef4444';
-  const headerGlow = state.lastResult === 'loss' ? '#ef444466' : '#ef444466';
+  drawCornerBrackets(ctx, 20 * u, 20 * u, width - 40 * u, height - 40 * u, 20 * u, GREEN_DIM, 1);
+
+  const headerColor = '#ef4444';
+  const headerGlow = '#ef444466';
   const headerText = state.lastResult === 'loss' ? 'ELIMINATED!' : "TIME'S UP";
 
   ctx.font = `bold ${fs(20, width)} monospace`;
@@ -644,19 +494,19 @@ function drawFinishedOverlay(ctx: CanvasRenderingContext2D, state: GameState): v
   ctx.textAlign = 'center';
   ctx.shadowColor = headerGlow;
   ctx.shadowBlur = 16;
-  ctx.fillText(headerText, cx, cy - 50);
+  ctx.fillText(headerText, cx, cy - 50 * u);
   ctx.shadowBlur = 0;
 
   ctx.font = `bold ${fs(52, width)} monospace`;
   ctx.fillStyle = GREEN;
   ctx.shadowColor = '#22c55e88';
   ctx.shadowBlur = 22;
-  ctx.fillText(String(state.boardsCleared), cx, cy + 18);
+  ctx.fillText(String(state.boardsCleared), cx, cy + 18 * u);
   ctx.shadowBlur = 0;
 
   ctx.font = `${fs(11, width)} monospace`;
   ctx.fillStyle = GREEN + 'aa';
-  ctx.fillText('BOARDS CLEARED', cx, cy + 38);
+  ctx.fillText('BOARDS CLEARED', cx, cy + 38 * u);
 }
 
 // ── Canvas helpers ────────────────────────────────────────────────────────

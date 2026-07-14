@@ -148,7 +148,7 @@ export default function Flappy() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· TAP OR PRESS SPACE TO FLAP</li>
@@ -174,10 +174,12 @@ export default function Flappy() {
         className="touch-none"
         onClick={handleTap}
         style={{
-          // Fill the bezel — upscale via CSS only; internal resolution (and
-          // physics) unchanged. Tap/space input is coordinate-free, so
-          // scaling can't break it.
-          width: '100%',
+          // Fill the bezel width, but never grow taller than ~65vh — a
+          // portrait canvas at full column width would tower past the
+          // fold on desktop. Upscale is CSS-only; internal resolution
+          // (and physics) unchanged. Tap/space input is coordinate-free,
+          // so scaling can't break it.
+          width: `min(100%, calc(65vh * ${aspect}))`,
           height: 'auto',
           aspectRatio: `${aspect}`,
           border: '1px solid #1a6632',

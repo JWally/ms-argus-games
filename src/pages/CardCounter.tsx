@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { GameCabinet } from '../components/GameCabinet';
 import {
   type GameState,
@@ -669,82 +669,79 @@ export default function CardCounter() {
   const isPlaying = game.phase === 'playing' && !animLock;
   const odds = calculateOdds(game);
 
+  const statTile = (label: string, value: ReactNode) => (
+    <div
+      className="px-2.5 py-2"
+      style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
+    >
+      <div className="font-mono text-[10px] tracking-widest" style={{ color: '#3f9e68' }}>
+        {label}
+      </div>
+      <div className="mt-0.5 font-mono text-base font-bold tabular-nums lg:text-lg">{value}</div>
+    </div>
+  );
+
   const status = (
     <div>
-      <div className="flex items-center justify-between">
-        <button
-          onClick={handleToggleCount}
-          className="px-2.5 py-1 text-xs font-semibold transition-all hover:scale-105 active:scale-95 lg:text-sm"
-          style={{
-            background: BG_SURFACE,
-            border: BORDER_GREEN_DIM,
-            color: '#3f9e68',
-            borderRadius: '2px',
-          }}
-        >
-          {game.showCount ? 'Hide Count' : 'Show Count'}
-        </button>
-
-        {game.showCount ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
-              Count:
-            </span>
+      {/* COUNT / BANK / SHOE as uniform tiles; the toggle completes the grid */}
+      <div className="grid grid-cols-2 gap-2">
+        {statTile(
+          'COUNT',
+          game.showCount ? (
             <span
-              className="rounded px-2 py-0.5 text-base font-bold lg:text-lg"
-              style={
-                game.runningCount > 0
-                  ? { background: '#0a2a14', color: '#4ade80' }
-                  : game.runningCount < 0
-                    ? { background: '#1c0607', color: '#f87171' }
-                    : { background: BG_SURFACE, color: '#3f9e68' }
-              }
+              style={{
+                color:
+                  game.runningCount > 0 ? '#4ade80' : game.runningCount < 0 ? '#f87171' : '#86efac',
+              }}
             >
               {game.runningCount > 0 ? '+' : ''}
               {game.runningCount}
             </span>
-          </div>
-        ) : (
-          <span className="text-xs italic lg:text-sm" style={{ color: '#3f9e68' }}>
-            Track it yourself!
-          </span>
+          ) : (
+            <span style={{ color: '#3f9e68' }}>—</span>
+          )
         )}
-
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-1">
-            <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
-              Bank:
-            </span>
-            <span className="text-base font-bold lg:text-lg" style={{ color: '#f59e0b' }}>
-              ${game.bankroll.toLocaleString()}
-            </span>
-          </div>
-          <div className="text-[10px] lg:text-xs" style={{ color: '#3f9e68' }}>
-            {remaining} cards left
-          </div>
-        </div>
-      </div>
-
-      {/* Count betting advice */}
-      {game.showCount && game.phase === 'betting' && (
-        <div
-          className="mt-1.5 px-3 py-1 text-center text-xs lg:text-sm"
+        {statTile(
+          'BANK',
+          <span style={{ color: '#f59e0b' }}>${game.bankroll.toLocaleString()}</span>
+        )}
+        {statTile('SHOE', <span style={{ color: '#86efac' }}>{remaining} CARDS</span>)}
+        <button
+          onClick={handleToggleCount}
+          className="flex items-center justify-center font-mono text-xs tracking-widest transition-colors duration-150 hover:text-[#86efac]"
           style={{
             background: BG_SURFACE,
             border: BORDER_GREEN_DIM,
+            color: '#4ade80',
             borderRadius: '2px',
-            color: '#3f9e68',
           }}
         >
-          {countAdvice(game.runningCount)}
-        </div>
-      )}
+          {game.showCount ? 'HIDE COUNT' : 'SHOW COUNT'}
+        </button>
+      </div>
+
+      {/* Advice line — fixed slot so the layout never jumps */}
+      <div
+        className="mt-2 flex min-h-[2.25rem] items-center justify-center px-3 py-1 text-center font-mono text-xs lg:text-sm"
+        style={{
+          background: BG_SURFACE,
+          border: BORDER_GREEN_DIM,
+          borderRadius: '2px',
+          color: '#3f9e68',
+        }}
+      >
+        {game.showCount
+          ? game.phase === 'betting'
+            ? countAdvice(game.runningCount)
+            : 'COUNT THE CARDS AS THEY FALL'
+          : 'TRACK THE COUNT YOURSELF'}
+      </div>
     </div>
   );
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· CLASSIC BLACKJACK — GET CLOSER TO 21 THAN THE DEALER</li>

@@ -452,11 +452,9 @@ function HowToPlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Matrix rain canvas ───────────────────────────────────────────────────────
+// ─── Round display canvas ─────────────────────────────────────────────────────
 
-const RAIN_CHARS = '01アイウエオカキクケ0123456789ABCDEFabcdef∆∑∏Ωβγφ#@!%&<>'.split('');
-
-interface RainState {
+interface CanvasState {
   phase: Phase;
   outcome: Outcome | null;
   humanChoice: Choice | null;
@@ -469,10 +467,9 @@ interface RainState {
   peekStartTime: number;
 }
 
-function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
+function useRoundCanvas(active: boolean, stateRef: MutableRefObject<CanvasState>) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(0);
-  const dropsRef = useRef<number[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -484,89 +481,11 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
     }
 
     const W = 400,
-      H = 260,
-      fs = 11;
-    const cols = Math.floor(W / fs);
-    if (dropsRef.current.length !== cols) {
-      dropsRef.current = Array.from({ length: cols }, () => -Math.random() * (H / fs));
-    }
+      H = 220;
     ctx.clearRect(0, 0, W, H);
     let lastT = 0;
 
-    // ── Helpers (close over ctx / W / H / fs / cols / dropsRef) ────────────
-
-    function computeColors(
-      phase: Phase,
-      outcome: Outcome | null,
-      winStreak: number,
-      peeking: boolean
-    ) {
-      const isWin = outcome === 'win';
-      const isLose = outcome === 'lose';
-      const streaking = isWin && winStreak >= 2;
-      const isLocked = phase === 'locked';
-      const slow = phase === 'result' || isLocked;
-      // Green palette — shifts red on lose/peek, gold on streak
-      const headClr =
-        isLose || peeking ? '#fca5a5' : streaking ? '#fde68a' : isWin ? '#86efac' : '#4ade80';
-      const bodyClr1 = isLose
-        ? '#ef4444'
-        : streaking
-          ? '#f59e0b'
-          : isWin
-            ? '#22c55e'
-            : peeking
-              ? '#dc2626'
-              : '#16a34a';
-      const bodyClr2 = isLose
-        ? '#b91c1c'
-        : streaking
-          ? '#d97706'
-          : isWin
-            ? '#3f9e68'
-            : peeking
-              ? '#b91c1c'
-              : '#14532d';
-      return {
-        isWin,
-        isLose,
-        streaking,
-        isLocked,
-        headClr,
-        bodyClr1,
-        bodyClr2,
-        speed: slow ? 0.4 : 0.72,
-        slow,
-      };
-    }
-
-    function drawRain(
-      headClr: string,
-      bodyClr1: string,
-      bodyClr2: string,
-      speed: number,
-      slow: boolean
-    ) {
-      ctx.fillStyle = `rgba(3,12,6,${slow ? 0.12 : 0.18})`;
-      ctx.fillRect(0, 0, W, H);
-      ctx.font = `${fs}px 'Courier New', monospace`;
-      const drops = dropsRef.current;
-      for (let i = 0; i < cols; i++) {
-        const y = Math.floor(drops[i]) * fs;
-        if (y < -fs) {
-          drops[i] += speed;
-          continue;
-        }
-        const bright = Math.random() > 0.88;
-        ctx.globalAlpha = bright ? 1 : 0.28 + Math.random() * 0.38;
-        ctx.fillStyle = bright ? headClr : Math.random() > 0.5 ? bodyClr1 : bodyClr2;
-        if (y >= 0)
-          ctx.fillText(RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)], i * fs + 1, y);
-        drops[i] += speed + Math.random() * 0.25;
-        if (y > H + fs && Math.random() > 0.96) drops[i] = -Math.random() * 18;
-      }
-      ctx.globalAlpha = 1;
-    }
+    // ── Helpers (close over ctx / W / H) ────────────────────────────────────
 
     function drawIdle(phase: Phase, mode: Mode, suggestion: Choice | null) {
       if (phase !== 'idle' || mode !== 'coach' || !suggestion) return;
@@ -629,11 +548,6 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         ctx.fillRect(24, H - 14, (W - 48) * progress, 3);
         ctx.shadowBlur = 0;
       } else {
-        const scanY = ((Date.now() % 2400) / 2400) * H;
-        ctx.globalAlpha = 0.06;
-        ctx.fillStyle = '#4ade80';
-        ctx.fillRect(0, scanY - 10, W, 20);
-        ctx.globalAlpha = 1;
         drawLockIcon(ctx, W / 2, H / 2 - 22, 32, '#4ade80');
         ctx.font = 'bold 11px monospace';
         ctx.fillStyle = '#4ade80';
@@ -786,11 +700,12 @@ function useMatrixRain(active: boolean, stateRef: MutableRefObject<RainState>) {
         peeking,
         peekStartTime,
       } = stateRef.current;
-      const { isWin, isLose, streaking, isLocked, headClr, bodyClr1, bodyClr2, speed, slow } =
-        computeColors(phase, outcome, winStreak, peeking);
-      drawRain(headClr, bodyClr1, bodyClr2, speed, slow);
+      const isWin = outcome === 'win';
+      const isLose = outcome === 'lose';
+      const streaking = isWin && winStreak >= 2;
+      ctx.clearRect(0, 0, W, H);
       drawIdle(phase, mode, suggestion);
-      drawLocked(isLocked, peeking, lockedAiChoice, peekStartTime);
+      drawLocked(phase === 'locked', peeking, lockedAiChoice, peekStartTime);
       drawResultVsAi({
         phase,
         mode,
@@ -860,6 +775,7 @@ export default function RockPaperScissors() {
   const [winStreak, setWinStreak] = useState(0);
   const [peeking, setPeeking] = useState(false);
   const [peekStartTime, setPeekStartTime] = useState(0);
+  const [peekCount, setPeekCount] = useState(0);
   const [blinkOn, setBlinkOn] = useState(true);
 
   const closeModal = useCallback(() => {
@@ -873,7 +789,7 @@ export default function RockPaperScissors() {
   const peekTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedRef = useRef(false);
 
-  const rainStateRef = useRef<RainState>({
+  const canvasStateRef = useRef<CanvasState>({
     phase,
     outcome,
     humanChoice: roundChoice,
@@ -886,7 +802,7 @@ export default function RockPaperScissors() {
     peekStartTime,
   });
   useLayoutEffect(() => {
-    rainStateRef.current = {
+    canvasStateRef.current = {
       phase,
       outcome,
       humanChoice: roundChoice,
@@ -901,10 +817,8 @@ export default function RockPaperScissors() {
   });
 
   // Canvas is active whenever not idle; in cyborg mode also active at idle so suggestion shows
-  const canvasRef = useMatrixRain(
-    phase !== 'idle' || (mode === 'coach' && !game.seriesOver),
-    rainStateRef
-  );
+  const canvasActive = phase !== 'idle' || (mode === 'coach' && !game.seriesOver);
+  const canvasRef = useRoundCanvas(canvasActive, canvasStateRef);
 
   // Blinking cursor
   useEffect(() => {
@@ -997,6 +911,7 @@ export default function RockPaperScissors() {
     if (peekTimer.current) clearTimeout(peekTimer.current);
     setPeekStartTime(Date.now());
     setPeeking(true);
+    setPeekCount((n) => n + 1);
     peekTimer.current = setTimeout(() => setPeeking(false), PEEK_MS);
   }, [peeking, phase]);
 
@@ -1011,6 +926,7 @@ export default function RockPaperScissors() {
     setOutcome(null);
     setSuggestion(null);
     setWinStreak(0);
+    setPeekCount(0);
     setPeeking(false);
   }, [mode, clearTimers]);
 
@@ -1031,8 +947,11 @@ export default function RockPaperScissors() {
   }, [mode, clearTimers]);
 
   const streaking = phase === 'result' && outcome === 'win' && winStreak >= 2;
-  const showChoiceButtons =
-    mode === 'coach' ? phase === 'idle' && !!suggestion : phase === 'locked';
+  // vs-ai: keep the menu mounted through reveal/result so it doesn't
+  // vanish (and the layout jump) every time you throw — buttons just
+  // disable until the next round locks in.
+  const showChoiceButtons = mode === 'coach' ? phase === 'idle' && !!suggestion : phase !== 'idle';
+  const choicesEnabled = mode === 'coach' || phase === 'locked';
   const isOver = game.seriesOver;
   const msg = statusMsg(phase, outcome, mode, isOver, game.seriesWinner);
 
@@ -1047,7 +966,7 @@ export default function RockPaperScissors() {
 
   // Shared choice-button row style
   const btnRow =
-    'group relative flex w-full items-center gap-0 bg-transparent py-[16px] sm:py-[20px] pl-0 pr-5 transition-colors duration-150';
+    'group relative flex w-full items-center gap-0 bg-transparent py-3 sm:py-4 pl-0 pr-5 transition-colors duration-150';
 
   const status = (
     <div className="flex flex-col gap-2">
@@ -1144,59 +1063,68 @@ export default function RockPaperScissors() {
           )}
         </div>
       </div>
+    </div>
+  );
 
-      {/* HUD scoreboard */}
-      <div
-        className="w-full max-w-lg"
-        style={{
-          background: '#040e07',
-          border: BORDER_DARKEST,
-          boxShadow: 'inset 0 0 12px #00000050',
-        }}
-      >
-        <div className="flex items-center px-4 py-2.5">
-          <div className="flex-1 text-left">
-            <div
-              className="font-mono text-sm tracking-[0.25em] lg:text-base"
-              style={{ color: '#4ade80' }}
-            >
-              {mode === 'coach' ? 'CYBORG' : 'YOU'}
-            </div>
-            <div
-              className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
-              style={{ color: '#4ade80', textShadow: '0 0 12px #22c55e88' }}
-            >
-              {String(game.humanScore).padStart(2, '0')}
-            </div>
+  // HUD scoreboard — lives in the playfield column so it shares the exact
+  // width of the canvas frame / choice panel above it.
+  const scoreboard = (
+    <div
+      className="mt-3 w-full"
+      style={{
+        background: '#040e07',
+        border: BORDER_DARKEST,
+        boxShadow: 'inset 0 0 12px #00000050',
+      }}
+    >
+      <div className="flex items-center px-4 py-2.5">
+        <div className="flex-1 text-left">
+          <div
+            className="font-mono text-sm tracking-[0.25em] lg:text-base"
+            style={{ color: '#4ade80' }}
+          >
+            {mode === 'coach' ? 'CYBORG' : 'YOU'}
           </div>
-          <div className="flex flex-col items-center gap-0.5 px-4">
-            <div
-              className="font-mono text-sm tracking-[0.2em] lg:text-base"
-              style={{ color: '#1a6632' }}
-            >
-              {mode === 'coach' ? 'RND' : 'VS'}
-            </div>
-            <div className="font-mono text-xs tabular-nums lg:text-sm" style={{ color: '#4ade80' }}>
-              {String(Math.min(game.rounds.length + 1, TOTAL_ROUNDS)).padStart(2, '0')}
-              <span style={{ color: '#1a6632' }}> / </span>
-              {TOTAL_ROUNDS}
-            </div>
+          <div
+            className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
+            style={{ color: '#4ade80', textShadow: '0 0 12px #22c55e88' }}
+          >
+            {String(game.humanScore).padStart(2, '0')}
           </div>
-          <div className="flex-1 text-right">
-            <div
-              className="font-mono text-sm tracking-[0.25em] lg:text-base"
-              style={{ color: '#f87171' }}
-            >
-              {mode === 'coach' ? 'HUMAN' : 'AI'}
-            </div>
-            <div
-              className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
-              style={{ color: '#f87171', textShadow: '0 0 12px #dc262688' }}
-            >
-              {mode === 'coach'
-                ? String(game.rounds.length - game.humanScore).padStart(2, '0')
-                : String(game.aiScore).padStart(2, '0')}
-            </div>
+        </div>
+        <div className="flex flex-col items-center gap-0.5 px-4">
+          <div
+            className="font-mono text-sm tracking-[0.2em] lg:text-base"
+            style={{ color: '#1a6632' }}
+          >
+            {mode === 'coach' ? 'RND' : 'VS'}
+          </div>
+          <div className="font-mono text-xs tabular-nums lg:text-sm" style={{ color: '#4ade80' }}>
+            {String(Math.min(game.rounds.length + 1, TOTAL_ROUNDS)).padStart(2, '0')}
+            <span style={{ color: '#1a6632' }}> / </span>
+            {TOTAL_ROUNDS}
+          </div>
+          <div
+            className="font-mono text-[10px] tracking-widest tabular-nums lg:text-xs"
+            style={{ color: '#3f9e68' }}
+          >
+            PEEKS {peekCount}
+          </div>
+        </div>
+        <div className="flex-1 text-right">
+          <div
+            className="font-mono text-sm tracking-[0.25em] lg:text-base"
+            style={{ color: '#f87171' }}
+          >
+            {mode === 'coach' ? 'HUMAN' : 'AI'}
+          </div>
+          <div
+            className="font-mono text-2xl leading-none tabular-nums lg:text-3xl"
+            style={{ color: '#f87171', textShadow: '0 0 12px #dc262688' }}
+          >
+            {mode === 'coach'
+              ? String(game.rounds.length - game.humanScore).padStart(2, '0')
+              : String(game.aiScore).padStart(2, '0')}
           </div>
         </div>
       </div>
@@ -1205,7 +1133,7 @@ export default function RockPaperScissors() {
 
   const rulesJsx = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· BEST OF {TOTAL_ROUNDS} ROUNDS — DRAWS DON&apos;T COUNT</li>
@@ -1234,25 +1162,16 @@ export default function RockPaperScissors() {
     >
       {showModal && <HowToPlay onClose={closeModal} />}
 
-      {/* Canvas — glow frame */}
+      {/* Canvas — flat frame; edge color still tracks the round result */}
       <div
         className="relative w-full"
         style={{
           padding: '2px',
-          background: 'linear-gradient(135deg, #0f3a1a, #071510, #0f3a1a)',
-          boxShadow: `0 0 20px ${frameGlow}33, inset 0 0 20px #00000066`,
+          background: '#0f2a18',
+          boxShadow: `0 0 20px ${frameGlow}33`,
           transition: 'box-shadow 0.4s ease',
         }}
       >
-        {/* Scan line */}
-        <div
-          className="pointer-events-none absolute inset-x-0 z-10"
-          style={{
-            height: '2px',
-            background: `linear-gradient(to right, transparent, ${frameGlow}44 20%, ${frameGlow}88 50%, ${frameGlow}44 80%, transparent)`,
-            animation: 'rps-scan 3.5s linear infinite',
-          }}
-        />
         {/* Corner brackets */}
         <div className="pointer-events-none absolute inset-0 z-20">
           <div
@@ -1284,24 +1203,19 @@ export default function RockPaperScissors() {
             }}
           />
         </div>
-        {/* Scanline overlay */}
-        <div
-          className="pointer-events-none absolute inset-0 z-10"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)',
-          }}
-        />
         <canvas
           ref={canvasRef}
           width={400}
-          height={260}
+          height={220}
           className="w-full"
           style={{
             display: 'block',
             width: '100%',
             height: 'auto',
-            opacity: phase === 'idle' ? 0 : 1,
+            // Canvas paints transparent — without its own background the
+            // frame color bleeds through the whole play area.
+            background: '#030c06',
+            opacity: canvasActive ? 1 : 0,
             transition: 'opacity 0.6s ease-out',
           }}
         />
@@ -1310,11 +1224,12 @@ export default function RockPaperScissors() {
       {/* Choice + Peek buttons */}
       {showChoiceButtons && !isOver && (
         <div className="w-full" style={{ background: '#040e07', border: BORDER_DARKEST }}>
-          {/* Peek (vs-ai locked) */}
-          {mode === 'vs-ai' && phase === 'locked' && (
+          {/* Peek (vs-ai) — stays mounted through reveal/result so the
+              menu height never jumps; only clickable while locked */}
+          {mode === 'vs-ai' && (
             <button
               onClick={handlePeek}
-              disabled={peeking}
+              disabled={peeking || phase !== 'locked'}
               className={`${btnRow} hover:bg-red-950/20 disabled:opacity-40`}
               style={{ borderBottom: BORDER_DARKEST }}
             >
@@ -1347,15 +1262,18 @@ export default function RockPaperScissors() {
             </button>
           )}
 
-          {/* R/P/S choices */}
+          {/* R/P/S choices — dim while a round resolves; your throw stays lit */}
           {CHOICES.map((c, i) => (
             <button
               key={c}
               onClick={() => handleChoice(c)}
-              className={`${btnRow} hover:bg-[#061a0c]`}
+              disabled={!choicesEnabled}
+              className={`${btnRow} hover:bg-[#061a0c] ${
+                !choicesEnabled && roundChoice !== c ? 'opacity-35' : ''
+              }`}
               style={{
-                borderTop:
-                  i > 0 || (mode === 'vs-ai' && phase === 'locked') ? BORDER_DARKEST : undefined,
+                borderTop: i > 0 || mode === 'vs-ai' ? BORDER_DARKEST : undefined,
+                background: !choicesEnabled && roundChoice === c ? '#071a0e' : undefined,
               }}
             >
               <div className="mr-4 w-px self-stretch bg-[#22c55e33] transition-colors group-hover:bg-[#22c55e99]" />
@@ -1393,7 +1311,7 @@ export default function RockPaperScissors() {
       {/* Series over */}
       {isOver && (
         <div
-          className="w-full rounded p-6 text-center"
+          className="w-full rounded p-4 text-center"
           style={{
             background:
               game.seriesWinner === 'human'
@@ -1539,7 +1457,7 @@ export default function RockPaperScissors() {
           )}
 
           <div
-            className="my-4 h-px"
+            className="my-3 h-px"
             style={{
               background: `linear-gradient(to right, transparent, ${game.seriesWinner === 'ai' ? '#7f1d1d' : '#1a6632'} 20%, ${game.seriesWinner === 'ai' ? '#dc2626' : '#22c55e'} 50%, ${game.seriesWinner === 'ai' ? '#7f1d1d' : '#1a6632'} 80%, transparent)`,
             }}
@@ -1560,13 +1478,9 @@ export default function RockPaperScissors() {
         </div>
       )}
 
+      {scoreboard}
+
       <style>{`
-        @keyframes rps-scan {
-          0%   { top: -2px; opacity: 0; }
-          5%   { opacity: 1; }
-          95%  { opacity: 1; }
-          100% { top: calc(100% + 2px); opacity: 0; }
-        }
         @keyframes rps-victory {
           0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
           15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }

@@ -163,7 +163,7 @@ export default function HanoiHilton() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· MOVE THE WHOLE STACK TO THE RIGHT PEG</li>

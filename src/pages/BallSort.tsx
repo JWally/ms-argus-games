@@ -22,6 +22,7 @@ import { launchConfetti } from '../games/confetti';
 
 const BORDER_GREEN_DIM = '1px solid #1a6632';
 const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
+const BORDER_STRIP = '1px solid #0f2a18';
 
 const GAP = 4;
 const PADH = 6;
@@ -561,38 +562,40 @@ export default function BallSort() {
         </div>
       </div>
 
-      {/* Difficulty + undo row */}
-      <div className="mt-3 flex items-center justify-center gap-3">
-        <div className="flex gap-1.5">
-          {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map((d) => (
+      {/* Difficulty tabstrip + undo — spans the full container width */}
+      <div
+        className="mt-2 flex w-full items-stretch overflow-hidden rounded-[2px]"
+        style={{ border: BORDER_STRIP, background: '#040e07' }}
+      >
+        {(Object.keys(DIFFICULTIES) as DifficultyKey[]).map((d, i) => {
+          const active = difficulty === d;
+          return (
             <button
               key={d}
               onClick={() => restart(d)}
-              className="px-3 py-1.5 text-xs font-bold tracking-[0.15em] transition-all hover:scale-105 lg:text-sm"
+              className="flex-1 px-2 py-1.5 font-mono text-xs font-bold tracking-widest transition-colors lg:text-sm"
               style={{
-                background: difficulty === d ? '#0a2a14' : '#040e07',
-                border: `1px solid ${difficulty === d ? '#22c55e' : '#1a4a2a'}`,
-                color: difficulty === d ? '#4ade80' : '#3f9e68',
-                boxShadow: difficulty === d ? '0 0 8px #22c55e33' : undefined,
-                borderRadius: '2px',
+                background: active ? '#071a0e' : 'transparent',
+                color: active ? '#4ade80' : '#3f9e68',
+                borderLeft: i > 0 ? BORDER_STRIP : 'none',
+                borderTop: `2px solid ${active ? '#22c55e' : 'transparent'}`,
+                borderBottom: `2px solid ${active ? '#22c55e' : 'transparent'}`,
               }}
             >
               {DIFF_LABELS[d]}
             </button>
-          ))}
-        </div>
-
-        <div className="h-4 w-px" style={{ background: '#1a4a2a' }} />
-
+          );
+        })}
         <button
           onClick={handleUndo}
           disabled={game.history.length === 0 || game.won}
-          className="px-3 py-1.5 text-xs font-bold tracking-[0.1em] transition-all hover:scale-105 disabled:opacity-25 lg:text-sm"
+          className="flex-none px-3 py-1.5 font-mono text-xs font-bold tracking-widest transition-colors disabled:opacity-25 lg:text-sm"
           style={{
-            background: '#040e07',
-            border: '1px solid #1a4a2a',
+            background: 'transparent',
             color: '#3f9e68',
-            borderRadius: '2px',
+            borderLeft: BORDER_STRIP,
+            borderTop: '2px solid transparent',
+            borderBottom: '2px solid transparent',
           }}
         >
           ↩ UNDO
@@ -603,7 +606,7 @@ export default function BallSort() {
 
   const rules = (
     <ul
-      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      className="flex flex-col gap-3 font-mono text-xs leading-relaxed lg:text-sm"
       style={{ color: '#3f9e68' }}
     >
       <li>· TAP A TUBE TO LIFT ITS TOP BALLS</li>

@@ -401,15 +401,18 @@ interface Layout {
 }
 
 function getLayout(width: number, height: number): Layout {
+  // Reserve exactly one hover-disc row above the board plus slim
+  // margins — turn text and W/D/L moved out to the page shell, so the
+  // old 100px chrome band is gone.
   const maxCellW = Math.floor((width - 24) / COLS);
-  const maxCellH = Math.floor((height - 100) / (ROWS + 1));
+  const maxCellH = Math.floor((height - 30) / (ROWS + 1));
   const cellSize = Math.min(maxCellW, maxCellH, 60);
   const padX = 3;
   const padY = 3;
   const boardW = COLS * cellSize + padX * 2;
   const boardH = ROWS * cellSize + padY * 2;
   const boardX = (width - boardW) / 2;
-  const boardY = height - boardH - 16;
+  const boardY = height - boardH - 12;
   return { cellSize, padX, padY, boardX, boardY, boardW, boardH };
 }
 
@@ -421,7 +424,6 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
 
   const layout = getLayout(width, height);
 
-  drawHud(ctx, state, layout);
   drawHoverDisc(ctx, state, layout);
   drawBoard(ctx, state, layout);
 
@@ -430,29 +432,6 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   } else if (state.phase === 'done') {
     drawDoneOverlay(ctx, state);
   }
-}
-
-function drawHud(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
-  const { width } = state;
-  const y = layout.boardY - 40;
-
-  ctx.font = '13px sans-serif';
-  ctx.textAlign = 'center';
-
-  if (state.phase === 'playing') {
-    ctx.fillStyle = state.turn === 1 ? PLAYER_COLOR : AI_COLOR;
-    ctx.fillText(state.turn === 1 ? 'Your turn' : 'AI thinking...', width / 2, y);
-  }
-
-  // Win/loss/draw stats
-  ctx.font = '11px sans-serif';
-  ctx.fillStyle = TEXT_DIM;
-  ctx.textAlign = 'left';
-  ctx.fillText(`W: ${state.wins}`, layout.boardX, y - 18);
-  ctx.textAlign = 'center';
-  ctx.fillText(`D: ${state.draws}`, width / 2, y - 18);
-  ctx.textAlign = 'right';
-  ctx.fillText(`L: ${state.losses}`, layout.boardX + layout.boardW, y - 18);
 }
 
 function drawHoverDisc(ctx: CanvasRenderingContext2D, state: GameState, layout: Layout): void {
