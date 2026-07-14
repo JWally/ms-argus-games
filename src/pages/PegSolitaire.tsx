@@ -190,7 +190,7 @@ export default function PegSolitaire() {
         ) : undefined
       }
     >
-      {/* Canvas — backing stays 400×450, CSS scales it up on desktop */}
+      {/* Canvas — backing stays 400×450, CSS scales it to fill the bezel */}
       <canvas
         ref={canvasRef}
         className="touch-none"
@@ -198,7 +198,7 @@ export default function PegSolitaire() {
         style={{
           border: '1px solid #1a6632',
           borderRadius: '2px',
-          width: 'min(100vw - 80px, clamp(320px, 54vh, 540px))',
+          width: '100%',
           height: 'auto',
         }}
       />

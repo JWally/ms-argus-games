@@ -881,7 +881,7 @@ export default function CardCounter() {
 
           {/* Live odds bar */}
           {game.phase === 'playing' && !animLock && (
-            <div className="flex w-full max-w-[400px] justify-center gap-3 text-sm sm:gap-4 sm:text-xs lg:max-w-[520px] lg:text-sm">
+            <div className="flex w-full justify-center gap-3 text-sm sm:gap-4 sm:text-xs lg:text-sm">
               <div
                 className="px-2.5 py-1.5"
                 style={{ background: BG_SURFACE, border: BORDER_GREEN_DIM, borderRadius: '2px' }}
@@ -931,7 +931,7 @@ export default function CardCounter() {
           {/* Advice panel */}
           {showAdvice && advice && (
             <div
-              className="w-full max-w-[380px] px-4 py-2.5 text-center text-sm lg:max-w-[520px] lg:text-base"
+              className="w-full px-4 py-2.5 text-center text-sm lg:text-base"
               style={{
                 background: BG_SURFACE,
                 border: BORDER_GREEN_DIM,
@@ -946,7 +946,7 @@ export default function CardCounter() {
           {/* Count check quiz */}
           {game.phase === PHASE_COUNT_CHECK && !animLock && (
             <div
-              className="w-full max-w-[340px] p-5 text-center lg:max-w-[420px]"
+              className="w-full p-5 text-center"
               style={{
                 background: BG_SURFACE,
                 border: BORDER_GREEN_DIM,
@@ -1019,7 +1019,7 @@ export default function CardCounter() {
         <div className="w-full pt-4">
           {/* Betting phase */}
           {game.phase === 'betting' && (
-            <div className="mx-auto max-w-[420px] lg:max-w-[560px]">
+            <div className="w-full">
               <p className="mb-3 text-center text-sm lg:text-base" style={{ color: '#3f9e68' }}>
                 Place your bet
               </p>
@@ -1046,7 +1046,7 @@ export default function CardCounter() {
 
           {/* Playing phase */}
           {isPlaying && (
-            <div className="mx-auto max-w-[420px] lg:max-w-[560px]">
+            <div className="w-full">
               <div className="flex gap-2.5">
                 <button
                   onClick={handleHit}
@@ -1107,7 +1107,7 @@ export default function CardCounter() {
             !animLock &&
             !showResultOverlay &&
             game.phase !== PHASE_COUNT_CHECK && (
-              <div className="mx-auto flex max-w-[420px] flex-col gap-2 lg:max-w-[560px]">
+              <div className="flex w-full flex-col gap-2">
                 <button
                   onClick={handleNext}
                   className="w-full py-3.5 text-base font-bold shadow-lg transition-all hover:scale-[1.02] active:scale-95 lg:text-lg"
@@ -1138,7 +1138,7 @@ export default function CardCounter() {
 
           {/* Stats bar */}
           <div
-            className="mx-auto mt-2 flex max-w-[420px] justify-between text-xs lg:max-w-[560px] lg:text-sm"
+            className="mt-2 flex w-full justify-between text-xs lg:text-sm"
             style={{ color: '#3f9e68' }}
           >
             <span>Hands: {game.handsPlayed}</span>

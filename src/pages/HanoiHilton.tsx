@@ -191,9 +191,9 @@ export default function HanoiHilton() {
         style={{
           border: '1px solid #1a6632',
           borderRadius: '2px',
-          // Phone → natural size; desktop → CSS-upscale toward the cabinet
-          // column, height-capped so the page never scrolls.
-          width: 'min(100%, clamp(400px, 62vh, 600px))',
+          // CSS-upscale to fill the bezel column at any width; clicks stay
+          // correct because the handler maps through getBoundingClientRect.
+          width: '100%',
           height: 'auto',
         }}
       />

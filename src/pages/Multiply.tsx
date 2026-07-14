@@ -272,7 +272,7 @@ export default function Multiply() {
 
 function MenuGrid({ onStart }: { onStart: (factor: number | null) => void }) {
   return (
-    <div className="grid w-full max-w-[340px] grid-cols-3 gap-3 lg:max-w-[440px]">
+    <div className="grid w-full grid-cols-3 gap-3">
       {FACTORS_GRID.map((n) => {
         const factorBest = getBestTime(n);
         return (
@@ -468,7 +468,7 @@ function PlayingView({
       )}
 
       <div
-        className={`w-full max-w-[320px] py-6 text-center lg:max-w-[400px] ${flashBorderAnim} ${
+        className={`w-full py-6 text-center ${flashBorderAnim} ${
           game.freezeActive ? 'border-2 border-cyan-400/40' : ''
         }`}
       >

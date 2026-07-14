@@ -29,15 +29,15 @@ const PADB = 8;
 const BORDER = 2;
 const ROW_GAP = 12; // gap-3 between tubes in a row
 
-// Ball diameter scales with the viewport: fill the cabinet column width on
-// desktop, stay height-bounded so two tube rows + chrome never scroll.
+// Ball diameter scales with the actual board width (the bezel column, measured
+// via ResizeObserver) so tube rows span the bezel, and stays height-bounded so
+// two tube rows + chrome never scroll on short windows.
 // Row height = FLOAT_H + TUBE_BODY_H + badge ≈ 5·ball + 56, so two rows
 // plus the row gap ≈ 10·ball + 120.
-function computeBall(vw: number, vh: number, tubesInRow: number): number {
-  const rowW = Math.min(vw - 64, 600);
+function computeBall(rowW: number, vh: number, tubesInRow: number): number {
   const fromW = (rowW - (tubesInRow - 1) * ROW_GAP) / tubesInRow - PADH * 2 - BORDER * 2;
   const fromH = (vh * 0.68 - 120) / 10;
-  return Math.max(26, Math.min(52, Math.floor(Math.min(fromW, fromH))));
+  return Math.max(26, Math.floor(Math.min(fromW, fromH)));
 }
 
 function isComplete(tube: Tube): boolean {
@@ -382,10 +382,9 @@ export default function BallSort() {
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [shakingTube, setShakingTube] = useState<number | null>(null);
   const [opsFlash, setOpsFlash] = useState(false);
-  const [viewport, setViewport] = useState(() => ({
-    w: window.innerWidth,
-    h: window.innerHeight,
-  }));
+  const [viewportH, setViewportH] = useState(() => window.innerHeight);
+  const [boardW, setBoardW] = useState(0);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   const gameRef = useRef(game);
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -394,11 +393,24 @@ export default function BallSort() {
     gameRef.current = game;
   });
 
-  // Track viewport for ball sizing
+  // Track viewport height for the ball-size sanity bound
   useEffect(() => {
-    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    const onResize = () => setViewportH(window.innerHeight);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Measure the board container (bezel column) for ball sizing
+  useLayoutEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    setBoardW(el.clientWidth);
+    const ro = new window.ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w) setBoardW(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // Flash MOVES counter on each increment
@@ -460,7 +472,7 @@ export default function BallSort() {
 
   const n = game.tubes.length;
   const mid = Math.ceil(n / 2);
-  const ball = computeBall(viewport.w, viewport.h, mid);
+  const ball = computeBall(boardW, viewportH, mid);
 
   function renderRow(indices: number[]) {
     return (
@@ -613,7 +625,7 @@ export default function BallSort() {
       rules={rules}
     >
       {/* Board */}
-      <div className="relative w-full overflow-hidden">
+      <div ref={boardRef} className="relative w-full overflow-hidden">
         {/* Board scan line */}
         <div
           className="pointer-events-none absolute inset-x-0 z-10"
