@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import { getLeaderboard } from '../games/leaderboard';
 import {
   COLORS,
@@ -80,47 +81,20 @@ export default function ColorFlood() {
     [game.won, boardSize]
   );
 
-  // Cell pixel size — fill available width (max 400px), minus gaps.
-  const cellSize = `calc((min(100vw - 32px, 400px) - ${(boardSize - 1) * 2}px) / ${boardSize})`;
+  // Board sizing: phone → viewport width; desktop → grow with viewport
+  // height (so the board + chrome never scrolls) up to a 620px cap.
+  const boardCss = 'min(100vw - 64px, clamp(400px, 68vh, 620px))';
+  const cellSize = `calc((${boardCss} - ${(boardSize - 1) * 2}px) / ${boardSize})`;
 
-  return (
-    <div
-      className="flex min-h-screen flex-col items-center px-4 pb-12 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
-
-      {/* Back link */}
-      <div className="mb-4 w-full max-w-[400px]">
-        <BackLink />
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          COLOR FLOOD
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          CHROMATIC SATURATION PROTOCOL
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider />
-
+  const status = (
+    <div>
       {/* Size selector */}
-      <div className="mt-2 flex gap-2">
+      <div className="flex justify-center gap-2">
         {SIZE_OPTIONS.map((opt) => (
           <button
             key={opt.size}
             onClick={() => restart(opt.size)}
-            className="px-4 py-1.5 text-xs font-bold tracking-widest transition-all hover:scale-105"
+            className="px-4 py-1.5 text-xs font-bold tracking-widest transition-all hover:scale-105 lg:text-sm"
             style={
               boardSize === opt.size
                 ? {
@@ -144,9 +118,9 @@ export default function ColorFlood() {
       </div>
 
       {/* Stats row */}
-      <div className="mt-4 flex w-full max-w-[400px] items-center justify-between font-mono text-sm">
+      <div className="mt-4 flex w-full items-center justify-between font-mono text-sm lg:text-base">
         <span style={{ color: '#86efac' }}>
-          OPS:{' '}
+          MOVES:{' '}
           <span
             style={{ color: game.moves > game.par ? '#dc2626' : '#4ade80', fontWeight: 'bold' }}
           >
@@ -159,7 +133,7 @@ export default function ColorFlood() {
 
       {/* Progress bar */}
       <div
-        className="mt-2 h-2 w-full max-w-[400px] overflow-hidden"
+        className="mt-2 h-2 w-full overflow-hidden lg:h-2.5"
         style={{
           background: '#040e07',
           border: '1px solid #0f2a18',
@@ -171,10 +145,37 @@ export default function ColorFlood() {
           style={{ width: `${pct}%`, background: '#22c55e' }}
         />
       </div>
+    </div>
+  );
 
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· YOUR BLOB STARTS AT THE TOP-LEFT CELL</li>
+      <li>· PICK A COLOR — YOUR WHOLE BLOB SWITCHES TO IT</li>
+      <li>· TOUCHING CELLS OF THAT COLOR JOIN THE BLOB</li>
+      <li>· FLOOD THE WHOLE BOARD IN ONE COLOR TO WIN</li>
+      <li>· FINISH AT OR UNDER PAR FOR A PERFECT RUN</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="COLOR FLOOD"
+      subtitle="PAINT THE WHOLE BOARD ONE COLOR"
+      tag="Puzzle"
+      record={
+        bestScore !== null ? `BEST ${bestScore} MOVE${bestScore !== 1 ? 'S' : ''}` : undefined
+      }
+      onRestart={() => restart()}
+      status={status}
+      rules={rules}
+      sidebar={game.won && lb ? <Leaderboard result={lb} /> : undefined}
+    >
       {/* Board */}
       <div
-        className="mt-4"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${boardSize}, ${cellSize})`,
@@ -211,7 +212,7 @@ export default function ColorFlood() {
               disabled={isActive || game.won}
               onClick={() => pick(idx as ColorIndex)}
               aria-label={`Pick ${color.name}`}
-              className="h-12 w-12 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14"
+              className="h-12 w-12 transition-all active:scale-95 disabled:opacity-30 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
               style={{
                 backgroundColor: color.hex,
                 borderRadius: '4px',
@@ -222,17 +223,10 @@ export default function ColorFlood() {
         })}
       </div>
 
-      {/* Best score */}
-      {bestScore !== null && !game.won && (
-        <p className="mt-4 font-mono text-xs" style={{ color: '#3f9e68' }}>
-          BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''} ({boardSize}x{boardSize})
-        </p>
-      )}
-
       {/* Win screen */}
       {game.won && (
         <div
-          className="mt-6 w-full max-w-[400px] p-6 text-center"
+          className="mt-6 w-full p-6 text-center"
           style={{
             background: '#030f06',
             border: '1px solid #1a6632',
@@ -242,15 +236,18 @@ export default function ColorFlood() {
           }}
         >
           <p
-            className="font-display text-2xl tracking-widest"
+            className="font-display text-2xl tracking-widest lg:text-3xl"
             style={{ color: '#4ade80', textShadow: '0 0 20px #22c55e, 0 0 60px #22c55e66' }}
           >
-            SECTOR FLOODED
+            YOU WIN
           </p>
-          <p className="mt-1 font-mono text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-            ALL SECTORS SATURATED
+          <p
+            className="mt-1 font-mono text-xs tracking-[0.3em] lg:text-sm"
+            style={{ color: '#3f9e68' }}
+          >
+            THE WHOLE BOARD IS ONE COLOR
           </p>
-          <p className="mt-3 font-mono text-lg" style={{ color: '#86efac' }}>
+          <p className="mt-3 font-mono text-lg lg:text-xl" style={{ color: '#86efac' }}>
             {game.moves} MOVE{game.moves !== 1 ? 'S' : ''}{' '}
             {game.moves <= game.par ? (
               <span style={{ color: '#4ade80' }}>(UNDER PAR)</span>
@@ -259,11 +256,10 @@ export default function ColorFlood() {
             )}
           </p>
           {bestScore !== null && (
-            <p className="mt-1 font-mono text-xs" style={{ color: '#3f9e68' }}>
+            <p className="mt-1 font-mono text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
               BEST: {bestScore} MOVE{bestScore !== 1 ? 'S' : ''}
             </p>
           )}
-          {lb && <Leaderboard result={lb} className="mt-4 text-left" />}
           <button
             onClick={() => restart()}
             className="mt-5 px-6 py-2.5 text-sm font-bold tracking-widest transition-all hover:scale-105"
@@ -275,7 +271,7 @@ export default function ColorFlood() {
               borderRadius: '2px',
             }}
           >
-            NEW OPERATION
+            PLAY AGAIN
           </button>
         </div>
       )}
@@ -287,13 +283,7 @@ export default function ColorFlood() {
           30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
           100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
         }
-        @keyframes bs-defeat {
-          0%   { transform: translate(0,0) rotate(0deg); }
-          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
-          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
-          100% { transform: translate(0,0) rotate(0deg); }
-        }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

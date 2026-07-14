@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, type CSSProperties } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
 import {
   createGame,
   reshuffleFleet,
@@ -20,6 +20,10 @@ const SHIP_DEFS = getShipDefs();
 const BORDER_DARK = '1px solid #0f2a18';
 const BORDER_GREEN = '1px solid #22c55e';
 const GLOW_GREEN = '0 0 6px #22c55e';
+
+// Grid sizing: phone → viewport width; desktop → 300px each so the two
+// boards sit side-by-side inside the cabinet's 680px column.
+const GRID_WIDTH = 'min(calc(100vw - 88px), 300px)';
 
 type CellVariant = 'empty' | 'ship' | 'hit' | 'miss' | 'sunk' | 'target-hover';
 
@@ -91,7 +95,7 @@ function BattleGrid({
     <div className="flex flex-col items-center gap-1">
       {/* Grid label */}
       <div
-        className="w-full text-center text-xs font-bold tracking-[0.25em]"
+        className="w-full text-center text-xs font-bold tracking-[0.25em] lg:text-sm"
         style={{
           color: isEnemy ? '#f87171' : '#3f9e68',
           textShadow: isEnemy ? '0 0 10px #dc2626, 0 0 20px #dc262666' : 'none',
@@ -131,7 +135,7 @@ function BattleGrid({
             gridTemplateColumns: '14px repeat(8, 1fr)',
             gridTemplateRows: '14px repeat(8, 1fr)',
             gap: '2px',
-            width: 'min(calc(100vw - 56px), 290px)',
+            width: GRID_WIDTH,
           }}
         >
           {/* [0,0] corner */}
@@ -373,6 +377,14 @@ export default function Battleship() {
     [game, aiPending]
   );
 
+  const restart = useCallback(() => {
+    setGame(createGame());
+    setHoverPos(null);
+    setAiPending(false);
+    setAnimEnemyKey(null);
+    setAnimPlayerKey(null);
+  }, []);
+
   const accuracy = game.totalShots > 0 ? Math.round((game.hits / game.totalShots) * 100) : 0;
 
   const isOver = game.phase === 'won' || game.phase === 'lost';
@@ -383,111 +395,98 @@ export default function Battleship() {
   const enemySunkCount = game.enemyShips.filter((s) => s.sunk).length;
   const playerSunkCount = game.playerShips.filter((s) => s.sunk).length;
 
-  return (
+  const status = (
     <div
-      className="flex min-h-screen flex-col items-center px-3 pb-12 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
+      className="rounded px-3 py-2"
+      style={{
+        background: '#040e07',
+        border: '1px solid #0f3018',
+        boxShadow: 'inset 0 0 20px #00000060',
+      }}
     >
-      <CrtOverlay />
-
-      {/* Back link */}
-      <div className="mb-3 w-full max-w-2xl">
-        <BackLink />
-      </div>
-
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em] sm:text-2xl"
+      <div className="flex items-center gap-2">
+        <div
+          className="h-2 w-2 rounded-full"
           style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
+            background: isOver
+              ? game.phase === 'won'
+                ? '#22c55e'
+                : '#dc2626'
+              : aiPending
+                ? '#f59e0b'
+                : '#22c55e',
+            boxShadow: isOver
+              ? game.phase === 'won'
+                ? GLOW_GREEN
+                : '0 0 6px #dc2626'
+              : aiPending
+                ? '0 0 6px #f59e0b'
+                : GLOW_GREEN,
+          }}
+        />
+        <span
+          className="font-mono text-xs tracking-wider lg:text-sm"
+          style={{
+            color: isOver ? (game.phase === 'won' ? '#4ade80' : '#dc2626') : '#86efac',
+            textShadow: isOver
+              ? game.phase === 'won'
+                ? GLOW_GREEN
+                : '0 0 6px #dc2626'
+              : undefined,
           }}
         >
-          BATTLESHIP
-        </h1>
-        <div className="mt-1 text-xs tracking-[0.4em]" style={{ color: '#3f9e68' }}>
-          NAVAL COMBAT SYSTEM v4.2
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider className="my-2 max-w-2xl" />
-
-      {/* Status bar */}
-      <div
-        className="mb-3 w-full max-w-2xl rounded px-3 py-2"
-        style={{
-          background: '#040e07',
-          border: '1px solid #0f3018',
-          boxShadow: 'inset 0 0 20px #00000060',
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{
-              background: isOver
-                ? game.phase === 'won'
-                  ? '#22c55e'
-                  : '#dc2626'
-                : aiPending
-                  ? '#f59e0b'
-                  : '#22c55e',
-              boxShadow: isOver
-                ? game.phase === 'won'
-                  ? GLOW_GREEN
-                  : '0 0 6px #dc2626'
-                : aiPending
-                  ? '0 0 6px #f59e0b'
-                  : GLOW_GREEN,
-            }}
-          />
-          <span
-            className="font-mono text-xs tracking-wider"
-            style={{
-              color: isOver ? (game.phase === 'won' ? '#4ade80' : '#dc2626') : '#86efac',
-              textShadow: isOver
-                ? game.phase === 'won'
-                  ? GLOW_GREEN
-                  : '0 0 6px #dc2626'
-                : undefined,
-            }}
-          >
-            {game.message}
-            {!isOver && <span style={{ opacity: blinkOn ? 1 : 0 }}>_</span>}
+          {game.message}
+          {!isOver && <span style={{ opacity: blinkOn ? 1 : 0 }}>_</span>}
+        </span>
+        {aiPending && (
+          <span className="ml-auto font-mono text-xs lg:text-sm" style={{ color: '#f59e0b' }}>
+            CPU TAKING AIM...
           </span>
-          {aiPending && (
-            <span className="ml-auto font-mono text-xs" style={{ color: '#f59e0b' }}>
-              ENEMY CALCULATING...
-            </span>
-          )}
-          {isPlaying && !aiPending && (
-            <span className="ml-auto font-mono text-xs" style={{ color: '#3f9e68' }}>
-              SHOTS: {game.totalShots} | ACC: {accuracy}%
-            </span>
-          )}
-        </div>
+        )}
+        {isPlaying && !aiPending && (
+          <span className="ml-auto font-mono text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+            SHOTS: {game.totalShots} | ACC: {accuracy}%
+          </span>
+        )}
       </div>
+    </div>
+  );
 
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· RESHUFFLE YOUR FLEET UNTIL YOU LIKE IT, THEN OPEN FIRE</li>
+      <li>· TAP A SQUARE IN ENEMY WATERS TO SHOOT</li>
+      <li>· RED ✕ = HIT, BLUE RING = MISS</li>
+      <li>· THE CPU FIRES BACK AFTER EVERY SHOT</li>
+      <li>· SINK ALL 5 ENEMY SHIPS TO WIN</li>
+    </ul>
+  );
+
+  return (
+    <GameCabinet
+      title="BATTLESHIP"
+      subtitle="SINK THE ENEMY FLEET BEFORE THEY SINK YOURS"
+      tag="Strategy"
+      onRestart={restart}
+      status={status}
+      rules={rules}
+    >
       {/* ── Staging phase ── */}
       {isStaging && (
-        <div className="flex w-full max-w-2xl flex-col items-center gap-4">
-          <BattleGrid
-            grid={game.playerGrid}
-            isEnemy={false}
-            label="YOUR FLEET — DEPLOY ZONE"
-            disabled
-          />
+        <div className="flex w-full flex-col items-center gap-4">
+          <BattleGrid grid={game.playerGrid} isEnemy={false} label="YOUR FLEET" disabled />
 
           <div className="flex flex-col items-center gap-2">
-            <p className="text-center text-xs" style={{ color: '#0f4a22' }}>
+            <p className="text-center text-xs lg:text-sm" style={{ color: '#0f4a22' }}>
               KEEP SHUFFLING UNTIL YOU LIKE THE LAYOUT
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setGame((prev) => reshuffleFleet(prev))}
-                className="rounded px-4 py-2 text-sm font-bold tracking-widest transition-all hover:scale-105"
+                className="rounded px-4 py-2 text-sm font-bold tracking-widest transition-all hover:scale-105 lg:text-base"
                 style={{
                   background: '#040e07',
                   border: BORDER_GREEN,
@@ -499,7 +498,7 @@ export default function Battleship() {
               </button>
               <button
                 onClick={() => setGame((prev) => startGame(prev))}
-                className="rounded px-4 py-2 text-sm font-bold tracking-widest transition-all hover:scale-105"
+                className="rounded px-4 py-2 text-sm font-bold tracking-widest transition-all hover:scale-105 lg:text-base"
                 style={{
                   background: '#0a2a14',
                   border: '1px solid #1a6632',
@@ -516,15 +515,15 @@ export default function Battleship() {
 
       {/* ── Playing / Game over phase ── */}
       {(isPlaying || isOver) && (
-        <div className="flex w-full max-w-2xl flex-col gap-4">
+        <div className="flex w-full flex-col gap-4">
           {/* Grids row */}
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
+          <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
             {/* Enemy grid */}
             <div className="flex flex-col items-center gap-2">
               <BattleGrid
                 grid={displayEnemyGrid}
                 isEnemy={true}
-                label="▶ ENEMY WATERS — ATTACK"
+                label="▶ ENEMY WATERS — FIRE!"
                 hoverKey={isPlaying && !aiPending ? hoverKey : null}
                 animKey={animEnemyKey}
                 onCellClick={isPlaying && !aiPending ? handleShootClick : undefined}
@@ -534,14 +533,14 @@ export default function Battleship() {
               />
               {/* Enemy ship status */}
               <div
-                className="w-full max-w-[290px] rounded p-2"
+                className="w-full max-w-[300px] rounded p-2"
                 style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div
                   className="mb-1.5 text-xs font-bold tracking-[0.2em]"
                   style={{ color: '#1a4a2a' }}
                 >
-                  ENEMY FLEET STATUS — {enemySunkCount}/{SHIP_DEFS.length} SUNK
+                  ENEMY FLEET — {enemySunkCount}/{SHIP_DEFS.length} SUNK
                 </div>
                 <ShipStatus ships={game.enemyShips} />
               </div>
@@ -552,20 +551,20 @@ export default function Battleship() {
               <BattleGrid
                 grid={game.playerGrid}
                 isEnemy={false}
-                label="FRIENDLY WATERS — DEFENSIVE"
+                label="YOUR WATERS"
                 animKey={animPlayerKey}
                 disabled
               />
               {/* Friendly ship status */}
               <div
-                className="w-full max-w-[290px] rounded p-2"
+                className="w-full max-w-[300px] rounded p-2"
                 style={{ background: '#040e07', border: BORDER_DARK }}
               >
                 <div
                   className="mb-1.5 text-xs font-bold tracking-[0.2em]"
                   style={{ color: '#1a4a2a' }}
                 >
-                  FRIENDLY FLEET — {playerSunkCount}/{SHIP_DEFS.length} LOST
+                  YOUR FLEET — {playerSunkCount}/{SHIP_DEFS.length} SUNK
                 </div>
                 <ShipStatus ships={game.playerShips} />
               </div>
@@ -588,7 +587,7 @@ export default function Battleship() {
               }}
             >
               <div
-                className="font-display text-3xl tracking-widest"
+                className="font-display text-3xl tracking-widest lg:text-4xl"
                 style={{
                   color: game.phase === 'won' ? '#4ade80' : '#dc2626',
                   textShadow:
@@ -597,51 +596,45 @@ export default function Battleship() {
                       : '0 0 20px #dc2626, 0 0 60px #dc262666',
                 }}
               >
-                {game.phase === 'won' ? 'VICTORY' : 'DEFEAT'}
+                {game.phase === 'won' ? 'YOU WIN' : 'CPU WINS'}
               </div>
               <div
-                className="mt-1 text-xs tracking-[0.3em]"
+                className="mt-1 text-xs tracking-[0.3em] lg:text-sm"
                 style={{ color: game.phase === 'won' ? '#3f9e68' : '#7f1d1d' }}
               >
-                {game.phase === 'won' ? 'ENEMY FLEET ELIMINATED' : 'FRIENDLY FLEET ANNIHILATED'}
+                {game.phase === 'won' ? 'ENEMY FLEET SUNK' : 'YOUR FLEET WENT DOWN'}
               </div>
 
               <div className="mt-4 flex justify-center gap-6">
                 <div>
-                  <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
+                  <div className="text-2xl font-bold lg:text-3xl" style={{ color: '#4ade80' }}>
                     {game.totalShots}
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-                    ROUNDS FIRED
+                  <div className="text-xs tracking-widest lg:text-sm" style={{ color: '#3f9e68' }}>
+                    SHOTS FIRED
                   </div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
+                  <div className="text-2xl font-bold lg:text-3xl" style={{ color: '#4ade80' }}>
                     {accuracy}%
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
+                  <div className="text-xs tracking-widest lg:text-sm" style={{ color: '#3f9e68' }}>
                     ACCURACY
                   </div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold" style={{ color: '#4ade80' }}>
+                  <div className="text-2xl font-bold lg:text-3xl" style={{ color: '#4ade80' }}>
                     {game.hits}
                   </div>
-                  <div className="text-xs tracking-widest" style={{ color: '#3f9e68' }}>
+                  <div className="text-xs tracking-widest lg:text-sm" style={{ color: '#3f9e68' }}>
                     DIRECT HITS
                   </div>
                 </div>
               </div>
 
               <button
-                onClick={() => {
-                  setGame(createGame());
-                  setHoverPos(null);
-                  setAiPending(false);
-                  setAnimEnemyKey(null);
-                  setAnimPlayerKey(null);
-                }}
-                className="mt-6 rounded px-8 py-2.5 text-xs font-bold tracking-[0.2em] transition-all hover:scale-105"
+                onClick={restart}
+                className="mt-6 rounded px-8 py-2.5 text-xs font-bold tracking-[0.2em] transition-all hover:scale-105 lg:text-sm"
                 style={{
                   background: '#040e07',
                   border: BORDER_GREEN,
@@ -649,7 +642,7 @@ export default function Battleship() {
                   boxShadow: '0 0 12px #22c55e44',
                 }}
               >
-                NEW ENGAGEMENT
+                PLAY AGAIN
               </button>
             </div>
           )}
@@ -697,6 +690,6 @@ export default function Battleship() {
           100% { transform: translate(0, 0) rotate(0deg); filter: brightness(1); }
         }
       `}</style>
-    </div>
+    </GameCabinet>
   );
 }

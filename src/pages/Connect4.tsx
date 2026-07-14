@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackLink, CrtOverlay, GameDivider } from '../components/GameShell';
+import { GameCabinet } from '../components/GameCabinet';
 import {
   type GameState,
   initGame,
@@ -23,11 +23,19 @@ export default function Connect4() {
 
   const [phase, setPhase] = useState<string>('ready');
   const [turn, setTurn] = useState<1 | 2>(1);
+  const [stats, setStats] = useState({ wins: 0, losses: 0 });
 
   const getCanvasSize = useCallback(() => {
-    const w = Math.min(window.innerWidth - 16, 420);
-    const h = Math.min(window.innerHeight - 100, 520);
-    return { w: Math.max(w, 280), h: Math.max(h, 380) };
+    // Ataxx-style desktop-first sizing, adapted for the 7-wide × 6-tall
+    // board: width is the driver — min(100vw - 64px, clamp(320px, 55vh,
+    // 444px)) — where 444px is the width that reaches the engine's
+    // 60px-cell cap. Height adds ~90px so the vertical constraint
+    // ((h - 100) / 7 rows incl. hover) never shrinks the cells.
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = Math.max(280, Math.round(Math.min(vw - 64, Math.max(320, Math.min(vh * 0.55, 444)))));
+    const h = Math.max(380, Math.round(Math.min(w + 90, vh - 160)));
+    return { w, h };
   }, []);
 
   const resetGame = useCallback(() => {
@@ -37,10 +45,20 @@ export default function Connect4() {
     canvas.width = w;
     canvas.height = h;
 
-    stateRef.current = initGame(w, h);
+    const s = initGame(w, h);
+    stateRef.current = s;
     setPhase('ready');
     setTurn(1);
+    setStats({ wins: s.wins, losses: s.losses });
   }, [getCanvasSize]);
+
+  // Restart button — fresh board (stats persist in the engine)
+  const restart = useCallback(() => {
+    clearTimeout(aiTimerRef.current);
+    if (stateRef.current) {
+      stateRef.current = startPlaying(stateRef.current);
+    }
+  }, []);
 
   // Game loop
   useEffect(() => {
@@ -65,6 +83,7 @@ export default function Connect4() {
       if (s.phase !== prevPhase) {
         lastPhaseRef.current = s.phase;
         setPhase(s.phase);
+        setStats({ wins: s.wins, losses: s.losses });
       }
       if (s.turn !== prevTurn) {
         lastTurnRef.current = s.turn;
@@ -110,12 +129,7 @@ export default function Connect4() {
     const px = ((e.clientX - rect.left) / rect.width) * canvas.width;
     const py = ((e.clientY - rect.top) / rect.height) * canvas.height;
 
-    if (state.phase === 'ready') {
-      stateRef.current = startPlaying(state);
-      return;
-    }
-
-    if (state.phase === 'done') {
+    if (state.phase === 'ready' || state.phase === 'done') {
       stateRef.current = startPlaying(state);
       return;
     }
@@ -183,44 +197,45 @@ export default function Connect4() {
     return () => window.removeEventListener('resize', onResize);
   }, [resetGame]);
 
-  return (
-    <div
-      className="flex h-[100dvh] flex-col items-center px-2 pb-3 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
+  const status = (
+    <p
+      className="text-center font-mono text-xs tracking-widest lg:text-sm"
+      style={{
+        color: phase === 'playing' ? (turn === 1 ? '#4ade80' : '#f59e0b') : '#86efac',
+      }}
     >
-      <CrtOverlay />
+      {phase === 'ready'
+        ? 'TAP THE BOARD TO START'
+        : phase === 'done'
+          ? 'GAME OVER — TAP THE BOARD FOR A REMATCH'
+          : turn === 1
+            ? 'YOUR TURN'
+            : 'CPU THINKING...'}
+    </p>
+  );
 
-      {/* Header row */}
-      <div className="mb-2 flex w-full max-w-[420px] items-center justify-between px-1">
-        <BackLink />
-        <div className="font-mono text-xs">
-          {phase === 'playing' && turn === 1 && <span style={{ color: '#4ade80' }}>YOUR TURN</span>}
-          {phase === 'playing' && turn === 2 && (
-            <span style={{ color: '#f59e0b' }}>AI CALCULATING...</span>
-          )}
-        </div>
-      </div>
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· CLICK A COLUMN TO DROP A DISC (KEYS 1–7 WORK TOO)</li>
+      <li>· DISCS FALL TO THE LOWEST OPEN SLOT</li>
+      <li>· LINE UP FOUR — ACROSS, DOWN, OR DIAGONAL — TO WIN</li>
+      <li>· BLOCK THE CPU BEFORE IT CONNECTS FOUR</li>
+    </ul>
+  );
 
-      {/* Title */}
-      <div className="mb-1 text-center">
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          CONNECT 4
-        </h1>
-        <div className="text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          FOUR-IN-LINE DOMINANCE PROTOCOL
-        </div>
-      </div>
-
-      {/* Divider */}
-      <GameDivider className="my-2 max-w-[420px]" />
-
-      {/* Canvas */}
+  return (
+    <GameCabinet
+      title="CONNECT 4"
+      subtitle="DROP DISCS & LINE UP FOUR"
+      tag="Strategy"
+      record={stats.wins > 0 || stats.losses > 0 ? `${stats.wins}W – ${stats.losses}L` : undefined}
+      onRestart={restart}
+      status={status}
+      rules={rules}
+    >
       <canvas
         ref={canvasRef}
         className="touch-none"
@@ -228,32 +243,12 @@ export default function Connect4() {
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         style={{
+          maxWidth: '100%',
+          height: 'auto',
           border: '1px solid #1a6632',
           borderRadius: '2px',
         }}
       />
-
-      {/* Hint */}
-      {phase === 'ready' && (
-        <p className="mt-2 font-mono text-xs tracking-widest" style={{ color: '#3f9e68' }}>
-          TAP TO BEGIN — DROP DISCS, CONNECT 4 TO WIN
-        </p>
-      )}
-
-      <style>{`
-        @keyframes bs-victory {
-          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-          30%  { transform: scale(0.97) rotate(-1deg); filter: brightness(1.4); }
-          100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-        }
-        @keyframes bs-defeat {
-          0%   { transform: translate(0,0) rotate(0deg); }
-          10%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8) saturate(2); }
-          30%  { transform: translate(-6px,1px) rotate(-1.5deg); }
-          100% { transform: translate(0,0) rotate(0deg); }
-        }
-      `}</style>
-    </div>
+    </GameCabinet>
   );
 }

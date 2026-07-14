@@ -1,5 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { BackLink, CrtOverlay, GameDivider, Leaderboard } from '../components/GameShell';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
+import { GameCabinet } from '../components/GameCabinet';
+import { Leaderboard } from '../components/GameShell';
 import {
   type GameState,
   startRound,
@@ -12,7 +21,7 @@ import {
   tickFreeze,
 } from '../games/multiply/engine';
 import { launchConfetti } from '../games/confetti';
-import { getLeaderboard } from '../games/leaderboard';
+import { getLeaderboard, type LeaderboardResult } from '../games/leaderboard';
 
 const BORDER_GREEN_BRIGHT = '1px solid #22c55e';
 const FACTORS_GRID = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -144,283 +153,99 @@ export default function Multiply() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // ── Menu ──────────────────────────────────────────────────────────
+  // Results leaderboard (done phase)
+  const doneLb = useMemo(() => {
+    if (game.phase !== 'done') return null;
+    const t = totalTime(game);
+    const perfect = correctCount(game) === game.problems.length;
+    return getLeaderboard(
+      {
+        gameId: `multiply-${game.factor ?? 'random'}`,
+        baseScore: 25000,
+        lowerIsBetter: true,
+        count: 6,
+      },
+      perfect ? t : undefined
+    );
+  }, [game]);
 
-  if (game.phase === 'menu') {
-    return (
-      <div
-        className="flex h-[100dvh] flex-col items-center px-4 pb-6 pt-4"
-        style={{ background: '#030c06', color: '#4ade80' }}
+  const best = game.phase !== 'menu' ? getBestTime(game.factor) : null;
+
+  const status =
+    game.phase === 'menu' ? (
+      <p
+        className="text-center font-mono text-xs tracking-widest lg:text-sm"
+        style={{ color: '#86efac' }}
       >
-        <CrtOverlay />
-
-        <div className="mb-3 w-full max-w-[400px]">
-          <BackLink />
-        </div>
-
-        <h1
-          className="font-display text-lg tracking-[0.3em]"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66, 0 0 60px #22c55e33',
-          }}
-        >
-          MULTIPLY
-        </h1>
-        <p className="mt-1 text-xs tracking-[0.3em]" style={{ color: '#3f9e68' }}>
-          COMPUTATION SPEED DRILL
-        </p>
-
-        <GameDivider className="my-2 max-w-md" />
-
-        <p className="mb-3 text-xs tracking-[0.2em]" style={{ color: '#3f9e68' }}>
-          SELECT A FACTOR TO BEGIN
-        </p>
-
-        <div className="mt-1 grid w-full max-w-[320px] flex-1 grid-cols-3 grid-rows-5 gap-3 sm:max-w-[360px]">
-          {FACTORS_GRID.map((n) => {
-            const best = getBestTime(n);
-            return (
-              <button
-                key={n}
-                onClick={() => handleStart(n)}
-                className="flex flex-col items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-[#86efac] transition-all hover:border-[#22c55e] hover:text-[#4ade80] active:scale-95"
-              >
-                <span className="text-3xl font-bold">{n}</span>
-                {best !== null && (
-                  <span className="mt-1 text-xs" style={{ color: '#3f9e68' }}>
-                    {formatTime(best)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          <div />
-          <button
-            onClick={() => handleStart(null)}
-            className="flex flex-col items-center justify-center transition-all active:scale-95"
-            style={{
-              border: '1px solid #7f1d1d',
-              background: '#1c0607',
-              color: '#f87171',
-              borderRadius: '2px',
-            }}
-          >
-            <span className="text-3xl font-bold">?</span>
-            {getBestTime(null) !== null && (
-              <span className="mt-1 text-xs" style={{ color: '#7f1d1d' }}>
-                {formatTime(getBestTime(null)!)}
-              </span>
-            )}
-          </button>
-          <div />
-        </div>
-
-        <style>{`
-          @keyframes bs-victory {
-            0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-            15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-            100% { transform: scale(1); filter: brightness(1); }
-          }
-          @keyframes bs-defeat {
-            0%,100% { transform: translate(0,0); }
-            20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
-            50%  { transform: translate(6px,-1px) rotate(1deg); }
-          }
-          @keyframes multiply-correct {
-            0%   { box-shadow: inset 0 0 0 2px #22c55e; }
-            100% { box-shadow: inset 0 0 0 0px #22c55e00; }
-          }
-          @keyframes multiply-wrong {
-            0%,20%,60% { transform: translateX(-4px); }
-            40%,80%    { transform: translateX(4px); }
-            100%       { transform: translateX(0); }
-          }
-          @keyframes multiply-streak {
-            0%,100% { transform: scale(1); }
-            50%     { transform: scale(1.15); }
-          }
-          @keyframes freeze-pulse {
-            0%,100% { opacity: 0.6; }
-            50%     { opacity: 1; }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // ── Results ───────────────────────────────────────────────────────
-
-  if (game.phase === 'done') {
-    return (
-      <MultiplyResults
+        PICK A NUMBER TO START — ? IS A MYSTERY MIX
+      </p>
+    ) : game.phase === 'playing' ? (
+      <PlayingStatus
         game={game}
-        onAgain={() => handleStart(game.factor)}
-        onMenu={() => setGame((prev) => ({ ...prev, phase: 'menu' }))}
+        elapsed={elapsed}
+        freezeCountdown={freezeCountdown}
+        onFreeze={handleFreeze}
       />
-    );
-  }
+    ) : doneLb ? (
+      <DoneStatus game={game} lb={doneLb} />
+    ) : null;
 
-  // ── Playing ───────────────────────────────────────────────────────
-
-  const problem = game.problems[game.current];
-  const progress = game.current + 1;
-
-  const flashBorderAnim =
-    flash === 'correct'
-      ? 'animate-[multiply-correct_0.4s_ease-out]'
-      : flash === 'wrong'
-        ? 'animate-[multiply-wrong_0.3s_ease-out]'
-        : '';
+  const rules = (
+    <ul
+      className="flex flex-col gap-1.5 font-mono text-xs leading-relaxed lg:text-sm"
+      style={{ color: '#3f9e68' }}
+    >
+      <li>· PICK A NUMBER TO PRACTICE ITS TIMES TABLE — ? MIXES THEM ALL</li>
+      <li>· TYPE YOUR ANSWER AND HIT ENTER</li>
+      <li>· BUILD A STREAK TO UNLOCK ❄️ FREEZE — IT STOPS THE CLOCK</li>
+      <li>· ANSWER EVERY ONE RIGHT TO SET YOUR BEST TIME</li>
+    </ul>
+  );
 
   return (
-    <div
-      className={`h-[100dvh] overflow-hidden px-4 pt-2 ${flashBorderAnim} ${
-        game.freezeActive ? 'border-2 border-cyan-400/40' : ''
-      }`}
-      style={{ background: '#030c06', color: '#4ade80' }}
+    <GameCabinet
+      title="MULTIPLY"
+      subtitle="TIMES TABLES AT TOP SPEED"
+      tag="Brain"
+      record={best !== null ? `BEST ${formatTime(best)}` : undefined}
+      onRestart={game.phase !== 'menu' ? () => handleStart(game.factor) : undefined}
+      status={status}
+      rules={rules}
+      sidebar={
+        game.phase === 'done' && doneLb ? (
+          <Leaderboard
+            result={doneLb}
+            title={`LEADERBOARD — ${game.factor !== null ? `${game.factor}s` : 'Random'}`}
+            format={formatTime}
+            className="w-full"
+          />
+        ) : undefined
+      }
     >
-      <CrtOverlay />
+      {game.phase === 'menu' && <MenuGrid onStart={handleStart} />}
 
-      {/* Freeze overlay */}
-      {game.freezeActive && (
-        <div className="pointer-events-none fixed inset-0 z-10 animate-[freeze-pulse_1s_ease-in-out_infinite] bg-cyan-500/10" />
+      {game.phase === 'playing' && (
+        <PlayingView
+          game={game}
+          flash={flash}
+          flashAnswer={flashAnswer}
+          showStreakPop={showStreakPop}
+          input={input}
+          onInput={setInput}
+          onSubmit={handleSubmit}
+          inputRef={inputRef}
+        />
       )}
 
-      {/* Header: pips + timer */}
-      <div className="mx-auto flex max-w-[400px] items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: '#3f9e68' }}>
-            {progress}/{game.problems.length}
-          </span>
-          <div className="flex gap-0.5">
-            {game.problems.map((_, i) => (
-              <div
-                key={i}
-                className="h-1.5 w-1.5 rounded-full"
-                style={{
-                  background:
-                    i < game.current
-                      ? game.answered[i]?.correct
-                        ? '#22c55e'
-                        : '#dc2626'
-                      : i === game.current
-                        ? '#86efac'
-                        : '#0f2a18',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Streak */}
-          {game.streak >= 2 && (
-            <span
-              className={`text-sm ${game.streak >= 3 ? 'animate-[multiply-streak_0.5s_ease-in-out_infinite]' : ''}`}
-            >
-              {game.streak >= 5 ? '🔥🔥' : game.streak >= 3 ? '🔥' : '✨'}{' '}
-              <span className="text-xs font-bold text-orange-400">{game.streak}x</span>
-            </span>
-          )}
-
-          {/* Freeze button */}
-          {game.freezeAvailable && !game.freezeActive && (
-            <button
-              onClick={handleFreeze}
-              className="animate-[multiply-streak_0.8s_ease-in-out_infinite] rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-400 active:scale-95"
-            >
-              ❄️ FREEZE
-            </button>
-          )}
-          {game.freezeActive && (
-            <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-300">
-              ❄️ {freezeCountdown}s
-            </span>
-          )}
-
-          <span
-            className="font-mono text-sm"
-            style={{ color: game.freezeActive ? '#67e8f9' : '#86efac' }}
-          >
-            {formatTime(elapsed)}
-          </span>
-        </div>
-      </div>
-
-      {/* Problem + input */}
-      <div className="mx-auto mt-10 max-w-[320px] text-center">
-        <div
-          style={{
-            color: flash === 'correct' ? '#4ade80' : flash === 'wrong' ? '#f87171' : '#86efac',
-            transition: 'color 150ms',
-          }}
-        >
-          <p className="text-6xl font-bold sm:text-7xl">
-            {problem.a} <span style={{ color: '#4ade80' }}>&times;</span> {problem.b}
-          </p>
-          <p className="mt-1 h-5 text-sm font-bold">
-            {showStreakPop ? (
-              <span className="text-orange-400">🔥 FREEZE unlocked!</span>
-            ) : flash === 'correct' ? (
-              <span style={{ color: '#22c55e' }}>Nice!</span>
-            ) : flash === 'wrong' ? (
-              <span style={{ color: '#dc2626' }}>{flashAnswer}</span>
-            ) : null}
-          </p>
-        </div>
-
-        {/* Input + button */}
-        <div className="mt-5 flex flex-col gap-1.5">
-          <input
-            ref={inputRef}
-            type="number"
-            inputMode="numeric"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="?"
-            autoFocus
-            className="w-full px-4 py-2 text-center text-2xl font-bold outline-none transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            style={
-              {
-                background: '#040e07',
-                border: `2px solid ${
-                  flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
-                }`,
-                color: '#86efac',
-                borderRadius: '2px',
-                MozAppearance: 'textfield',
-              } as CSSProperties
-            }
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={input.trim() === ''}
-            className="w-full py-2 text-lg font-bold transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30"
-            style={{
-              background: '#040e07',
-              border: BORDER_GREEN_BRIGHT,
-              color: '#4ade80',
-              boxShadow: '0 0 10px #22c55e44',
-              borderRadius: '2px',
-            }}
-          >
-            ENTER
-          </button>
-        </div>
-      </div>
+      {game.phase === 'done' && (
+        <DoneView
+          game={game}
+          onAgain={() => handleStart(game.factor)}
+          onMenu={() => setGame((prev) => ({ ...prev, phase: 'menu' }))}
+        />
+      )}
 
       <style>{`
-        @keyframes bs-victory {
-          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-          100% { transform: scale(1); filter: brightness(1); }
-        }
-        @keyframes bs-defeat {
-          0%,100% { transform: translate(0,0); }
-          20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
-          50%  { transform: translate(6px,-1px) rotate(1deg); }
-        }
         @keyframes multiply-correct {
           0%   { box-shadow: inset 0 0 0 2px #22c55e; }
           100% { box-shadow: inset 0 0 0 0px #22c55e00; }
@@ -439,13 +264,280 @@ export default function Multiply() {
           50%     { opacity: 1; }
         }
       `}</style>
+    </GameCabinet>
+  );
+}
+
+// ── Menu grid ───────────────────────────────────────────────────────
+
+function MenuGrid({ onStart }: { onStart: (factor: number | null) => void }) {
+  return (
+    <div className="grid w-full max-w-[340px] grid-cols-3 gap-3 lg:max-w-[440px]">
+      {FACTORS_GRID.map((n) => {
+        const factorBest = getBestTime(n);
+        return (
+          <button
+            key={n}
+            onClick={() => onStart(n)}
+            className="flex h-16 flex-col items-center justify-center rounded-[2px] border border-[#1a6632] bg-[#040e07] text-[#86efac] transition-all hover:border-[#22c55e] hover:text-[#4ade80] active:scale-95 lg:h-20"
+          >
+            <span className="text-3xl font-bold lg:text-4xl">{n}</span>
+            {factorBest !== null && (
+              <span className="mt-1 text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+                {formatTime(factorBest)}
+              </span>
+            )}
+          </button>
+        );
+      })}
+      <div />
+      <button
+        onClick={() => onStart(null)}
+        className="flex h-16 flex-col items-center justify-center transition-all active:scale-95 lg:h-20"
+        style={{
+          border: '1px solid #7f1d1d',
+          background: '#1c0607',
+          color: '#f87171',
+          borderRadius: '2px',
+        }}
+      >
+        <span className="text-3xl font-bold lg:text-4xl">?</span>
+        {getBestTime(null) !== null && (
+          <span className="mt-1 text-xs lg:text-sm" style={{ color: '#7f1d1d' }}>
+            {formatTime(getBestTime(null)!)}
+          </span>
+        )}
+      </button>
+      <div />
     </div>
   );
 }
 
-// ── Results subcomponent ────────────────────────────────────────────
+// ── Playing status (pips + streak + freeze + timer) ─────────────────
 
-function MultiplyResults({
+function PlayingStatus({
+  game,
+  elapsed,
+  freezeCountdown,
+  onFreeze,
+}: {
+  game: GameState;
+  elapsed: number;
+  freezeCountdown: number;
+  onFreeze: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
+          {game.current + 1}/{game.problems.length}
+        </span>
+        <div className="flex gap-0.5">
+          {game.problems.map((_, i) => (
+            <div
+              key={i}
+              className="h-1.5 w-1.5 rounded-full lg:h-2 lg:w-2"
+              style={{
+                background:
+                  i < game.current
+                    ? game.answered[i]?.correct
+                      ? '#22c55e'
+                      : '#dc2626'
+                    : i === game.current
+                      ? '#86efac'
+                      : '#0f2a18',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Streak */}
+        {game.streak >= 2 && (
+          <span
+            className={`text-sm lg:text-base ${game.streak >= 3 ? 'animate-[multiply-streak_0.5s_ease-in-out_infinite]' : ''}`}
+          >
+            {game.streak >= 5 ? '🔥🔥' : game.streak >= 3 ? '🔥' : '✨'}{' '}
+            <span className="text-xs font-bold text-orange-400 lg:text-sm">{game.streak}x</span>
+          </span>
+        )}
+
+        {/* Freeze button */}
+        {game.freezeAvailable && !game.freezeActive && (
+          <button
+            onClick={onFreeze}
+            className="animate-[multiply-streak_0.8s_ease-in-out_infinite] rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-400 active:scale-95 lg:text-sm"
+          >
+            ❄️ FREEZE
+          </button>
+        )}
+        {game.freezeActive && (
+          <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-300 lg:text-sm">
+            ❄️ {freezeCountdown}s
+          </span>
+        )}
+
+        <span
+          className="font-mono text-sm lg:text-base"
+          style={{ color: game.freezeActive ? '#67e8f9' : '#86efac' }}
+        >
+          {formatTime(elapsed)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Done status (time + correct summary) ────────────────────────────
+
+function DoneStatus({ game, lb }: { game: GameState; lb: LeaderboardResult }) {
+  const t = totalTime(game);
+  const correct = correctCount(game);
+  const perfect = correct === game.problems.length;
+
+  return (
+    <div className="text-center">
+      <p
+        className="text-4xl font-bold lg:text-5xl"
+        style={{
+          color: '#4ade80',
+          textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
+        }}
+      >
+        {formatTime(t)}
+      </p>
+      <p className="mt-1 text-sm lg:text-base" style={{ color: '#3f9e68' }}>
+        {correct}/{game.problems.length} correct
+        {lb.isNewBest && perfect && (
+          <span className="ml-2 font-semibold" style={{ color: '#4ade80' }}>
+            New best!
+          </span>
+        )}
+      </p>
+      {game.frozenMs > 0 && (
+        <p className="mt-0.5 text-xs text-cyan-400 lg:text-sm">
+          ❄️ -{formatTime(game.frozenMs)} frozen
+        </p>
+      )}
+      {lb.playerRank !== null && perfect && (
+        <p className="mt-1 text-sm font-semibold text-yellow-400 lg:text-base">
+          #{lb.playerRank} on leaderboard!
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Playing view (problem + input) ──────────────────────────────────
+
+function PlayingView({
+  game,
+  flash,
+  flashAnswer,
+  showStreakPop,
+  input,
+  onInput,
+  onSubmit,
+  inputRef,
+}: {
+  game: GameState;
+  flash: 'correct' | 'wrong' | null;
+  flashAnswer: number;
+  showStreakPop: boolean;
+  input: string;
+  onInput: (v: string) => void;
+  onSubmit: () => void;
+  inputRef: RefObject<globalThis.HTMLInputElement | null>;
+}) {
+  const problem = game.problems[game.current];
+  if (!problem) return null;
+
+  const flashBorderAnim =
+    flash === 'correct'
+      ? 'animate-[multiply-correct_0.4s_ease-out]'
+      : flash === 'wrong'
+        ? 'animate-[multiply-wrong_0.3s_ease-out]'
+        : '';
+
+  return (
+    <>
+      {/* Freeze overlay */}
+      {game.freezeActive && (
+        <div className="pointer-events-none fixed inset-0 z-10 animate-[freeze-pulse_1s_ease-in-out_infinite] bg-cyan-500/10" />
+      )}
+
+      <div
+        className={`w-full max-w-[320px] py-6 text-center lg:max-w-[400px] ${flashBorderAnim} ${
+          game.freezeActive ? 'border-2 border-cyan-400/40' : ''
+        }`}
+      >
+        <div
+          style={{
+            color: flash === 'correct' ? '#4ade80' : flash === 'wrong' ? '#f87171' : '#86efac',
+            transition: 'color 150ms',
+          }}
+        >
+          <p className="text-6xl font-bold sm:text-7xl lg:text-8xl">
+            {problem.a} <span style={{ color: '#4ade80' }}>&times;</span> {problem.b}
+          </p>
+          <p className="mt-1 h-5 text-sm font-bold lg:text-base">
+            {showStreakPop ? (
+              <span className="text-orange-400">🔥 FREEZE unlocked!</span>
+            ) : flash === 'correct' ? (
+              <span style={{ color: '#22c55e' }}>Nice!</span>
+            ) : flash === 'wrong' ? (
+              <span style={{ color: '#dc2626' }}>{flashAnswer}</span>
+            ) : null}
+          </p>
+        </div>
+
+        {/* Input + button */}
+        <div className="mt-5 flex flex-col gap-1.5">
+          <input
+            ref={inputRef}
+            type="number"
+            inputMode="numeric"
+            value={input}
+            onChange={(e) => onInput(e.target.value)}
+            placeholder="?"
+            autoFocus
+            className="w-full px-4 py-2 text-center text-2xl font-bold outline-none transition-colors lg:text-3xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            style={
+              {
+                background: '#040e07',
+                border: `2px solid ${
+                  flash === 'correct' ? '#22c55e' : flash === 'wrong' ? '#dc2626' : '#1a6632'
+                }`,
+                color: '#86efac',
+                borderRadius: '2px',
+                MozAppearance: 'textfield',
+              } as CSSProperties
+            }
+          />
+          <button
+            onClick={onSubmit}
+            disabled={input.trim() === ''}
+            className="w-full py-2 text-lg font-bold transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 lg:text-xl"
+            style={{
+              background: '#040e07',
+              border: BORDER_GREEN_BRIGHT,
+              color: '#4ade80',
+              boxShadow: '0 0 10px #22c55e44',
+              borderRadius: '2px',
+            }}
+          >
+            ENTER
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Done view (breakdown + buttons) ─────────────────────────────────
+
+function DoneView({
   game,
   onAgain,
   onMenu,
@@ -454,75 +546,12 @@ function MultiplyResults({
   onAgain: () => void;
   onMenu: () => void;
 }) {
-  const t = totalTime(game);
-  const correct = correctCount(game);
-  const perfect = correct === game.problems.length;
-
-  const lb = useMemo(
-    () =>
-      getLeaderboard(
-        {
-          gameId: `multiply-${game.factor ?? 'random'}`,
-          baseScore: 25000,
-          lowerIsBetter: true,
-          count: 6,
-        },
-        perfect ? t : undefined
-      ),
-    [game.factor, t, perfect]
-  );
-
   return (
-    <div
-      className="flex h-[100dvh] flex-col items-center overflow-auto px-4 pb-6 pt-4"
-      style={{ background: '#030c06', color: '#4ade80' }}
-    >
-      <CrtOverlay />
-
-      <div className="mb-4 w-full max-w-[400px]">
-        <BackLink />
-      </div>
-
-      {/* Score summary */}
-      <div className="text-center">
-        <p
-          className="text-4xl font-bold"
-          style={{
-            color: '#4ade80',
-            textShadow: '0 0 10px #22c55e, 0 0 30px #22c55e66',
-          }}
-        >
-          {formatTime(t)}
-        </p>
-        <p className="mt-1 text-sm" style={{ color: '#3f9e68' }}>
-          {correct}/{game.problems.length} correct
-          {lb.isNewBest && perfect && (
-            <span className="ml-2 font-semibold" style={{ color: '#4ade80' }}>
-              New best!
-            </span>
-          )}
-        </p>
-        {game.frozenMs > 0 && (
-          <p className="mt-0.5 text-xs text-cyan-400">❄️ -{formatTime(game.frozenMs)} frozen</p>
-        )}
-        {lb.playerRank !== null && perfect && (
-          <p className="mt-1 text-sm font-semibold text-yellow-400">
-            #{lb.playerRank} on leaderboard!
-          </p>
-        )}
-      </div>
-
-      <Leaderboard
-        result={lb}
-        title={`LEADERBOARD — ${game.factor !== null ? `${game.factor}s` : 'Random'}`}
-        format={formatTime}
-        className="mt-5 w-full max-w-[400px]"
-      />
-
+    <div className="w-full">
       {/* Problem breakdown */}
-      <details className="mt-4 w-full max-w-[400px]">
+      <details className="w-full">
         <summary
-          className="cursor-pointer text-center text-xs hover:underline"
+          className="cursor-pointer text-center text-xs hover:underline lg:text-sm"
           style={{ color: '#3f9e68' }}
         >
           Show problem breakdown
@@ -531,7 +560,7 @@ function MultiplyResults({
           {game.answered.map((a, i) => (
             <div
               key={i}
-              className="flex items-center justify-between px-3 py-1.5 text-sm"
+              className="flex items-center justify-between px-3 py-1.5 text-sm lg:text-base"
               style={
                 a.correct
                   ? { background: '#0a2a14', color: '#4ade80', borderRadius: '2px' }
@@ -548,7 +577,7 @@ function MultiplyResults({
                   </>
                 )}
               </span>
-              <span className="text-xs" style={{ color: '#3f9e68' }}>
+              <span className="text-xs lg:text-sm" style={{ color: '#3f9e68' }}>
                 {formatTime(a.timeMs)}
               </span>
             </div>
@@ -556,10 +585,10 @@ function MultiplyResults({
         </div>
       </details>
 
-      <div className="mt-5 flex gap-3">
+      <div className="mt-5 flex justify-center gap-3">
         <button
           onClick={onAgain}
-          className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+          className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95 lg:text-base"
           style={{
             background: '#040e07',
             border: BORDER_GREEN_BRIGHT,
@@ -568,11 +597,11 @@ function MultiplyResults({
             borderRadius: '2px',
           }}
         >
-          AGAIN
+          PLAY AGAIN
         </button>
         <button
           onClick={onMenu}
-          className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+          className="px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95 lg:text-base"
           style={{
             background: '#040e07',
             border: '1px solid #1a4a2a',
@@ -583,19 +612,6 @@ function MultiplyResults({
           MENU
         </button>
       </div>
-
-      <style>{`
-        @keyframes bs-victory {
-          0%   { transform: scale(0.92) rotate(-1deg); filter: brightness(0.6); }
-          15%  { transform: scale(1.06) rotate(1.5deg); filter: brightness(2.2); }
-          100% { transform: scale(1); filter: brightness(1); }
-        }
-        @keyframes bs-defeat {
-          0%,100% { transform: translate(0,0); }
-          20%  { transform: translate(-8px,2px) rotate(-2deg); filter: brightness(1.8); }
-          50%  { transform: translate(6px,-1px) rotate(1deg); }
-        }
-      `}</style>
     </div>
   );
 }
