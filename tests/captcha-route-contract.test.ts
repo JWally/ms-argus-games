@@ -22,7 +22,7 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
   assert.match(component, /returnUrl: challenge\.ssoReturnUrl/);
   assert.match(component, />\s*▶ CHECK WITH YOUR PHONE\s*</);
   assert.match(component, /max-w-md flex-1 flex-col items-center/);
-  assert.match(component, /'hidden w-full justify-center sm:flex'/);
+  assert.match(component, /'hidden min-h-\[445px\] w-full justify-center sm:flex'/);
   assert.doesNotMatch(component, /render\(slot, \{[\s\S]*ssoReturnUrl: challenge\.ssoReturnUrl/);
   assert.match(component, /returnPath: window\.location/);
   assert.match(component, /argus-check/);
@@ -35,4 +35,16 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
   assert.match(stack, /\/api\/captcha\/sso-return/);
   assert.match(stack, /PAIR_SSO_EXCHANGE_URL/);
   assert.match(stack, /CAPTCHA_CPI: captchaCpi/);
+});
+
+test('the QR widget starts only after a desktop viewport and keeps a stable desktop footprint', async () => {
+  const component = await read('src/components/CaptchaGate.tsx');
+
+  assert.match(component, /const DESKTOP_MEDIA_QUERY = '\(min-width: 640px\)'/);
+  assert.match(component, /function onFirstDesktop/);
+  assert.match(component, /let captchaPromise: Promise<CaptchaApi> \| null = null/);
+  assert.match(component, /sm:min-h-\[487px\]/);
+  assert.match(component, /sm:h-\[445px\]/);
+  assert.match(component, /setQrMounted\(true\)/);
+  assert.match(component, /const onChange = \(\) => \{\s*if \(!media\.matches\) return;/);
 });
