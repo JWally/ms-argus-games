@@ -3,6 +3,7 @@ import { CrtOverlay } from './GameShell';
 
 const LOADER_URL = 'https://static-captcha-dev-jw.argus.pw/captcha.js';
 const EMBED_ORIGIN = 'https://qr.arcades.click';
+const SSO_RESULT_PARAM = 'argus-check';
 
 interface CaptchaResult {
   token: string | null;
@@ -39,9 +40,32 @@ interface Challenge {
 }
 
 type Bootstrap = { passed: true } | { passed: false; challenge: Challenge };
-type Phase = 'checking' | 'ready' | 'verifying' | 'error';
+type Phase = 'checking' | 'ready' | 'verifying' | 'denied' | 'error';
+type ReturnedSsoResult = 'not-approved' | 'unavailable' | null;
 
 let bootstrapPromise: Promise<Bootstrap> | null = null;
+
+function returnedSsoResult(): ReturnedSsoResult {
+  const value = new URLSearchParams(window.location.search).get(SSO_RESULT_PARAM);
+  return value === 'not-approved' || value === 'unavailable' ? value : null;
+}
+
+function clearReturnedSsoResult(): void {
+  const current = new window.URL(window.location.href);
+  if (!current.searchParams.has(SSO_RESULT_PARAM)) return;
+  current.searchParams.delete(SSO_RESULT_PARAM);
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${current.pathname}${current.search}${current.hash}`
+  );
+}
+
+function returnedSsoPhase(result: ReturnedSsoResult): Phase {
+  if (result === 'not-approved') return 'denied';
+  if (result === 'unavailable') return 'error';
+  return 'checking';
+}
 
 async function requestChallenge(): Promise<Challenge> {
   const response = await fetch('/api/captcha/challenge', {
@@ -96,12 +120,18 @@ async function loadCaptcha(): Promise<CaptchaApi> {
 }
 
 export function CaptchaGate({ children }: { children: ReactNode }) {
+  const [ssoResult] = useState<ReturnedSsoResult>(returnedSsoResult);
   const [granted, setGranted] = useState(false);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
-  const [phase, setPhase] = useState<Phase>('checking');
+  const [phase, setPhase] = useState<Phase>(() => returnedSsoPhase(ssoResult));
   const slotRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (ssoResult) clearReturnedSsoResult();
+  }, [ssoResult]);
+
+  useEffect(() => {
+    if (ssoResult) return;
     let active = true;
     void sharedBootstrap()
       .then((result) => {
@@ -119,7 +149,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [ssoResult]);
 
   useEffect(() => {
     const slot = slotRef.current;
@@ -247,7 +277,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
           <div
             ref={slotRef}
             className={
-              phase === 'checking' || phase === 'error'
+              phase === 'checking' || phase === 'denied' || phase === 'error'
                 ? 'hidden'
                 : 'hidden w-full justify-center sm:flex'
             }
@@ -274,6 +304,29 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
             >
               CHECKING…
             </p>
+          )}
+          {phase === 'denied' && (
+            <div className="flex h-80 flex-col items-center justify-center text-center">
+              <p className="font-display text-sm tracking-widest" style={{ color: '#f87171' }}>
+                SESSION NOT APPROVED
+              </p>
+              <p className="mt-4 font-mono text-xs" style={{ color: '#3f9e68' }}>
+                This game stayed locked.
+              </p>
+              <button
+                type="button"
+                onClick={retry}
+                className="mt-6 font-display text-[10px] tracking-widest transition-all duration-150 hover:[box-shadow:0_0_12px_#22c55e66]"
+                style={{
+                  color: '#4ade80',
+                  background: 'transparent',
+                  border: '1px solid #1a6632',
+                  padding: '12px 18px',
+                }}
+              >
+                ▶ TRY AGAIN
+              </button>
+            </div>
           )}
           {phase === 'error' && (
             <div className="flex h-80 flex-col items-center justify-center text-center">

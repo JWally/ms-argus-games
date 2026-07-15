@@ -25,6 +25,9 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
   assert.match(component, /'hidden w-full justify-center sm:flex'/);
   assert.doesNotMatch(component, /render\(slot, \{[\s\S]*ssoReturnUrl: challenge\.ssoReturnUrl/);
   assert.match(component, /returnPath: window\.location/);
+  assert.match(component, /argus-check/);
+  assert.match(component, /phase === 'denied'/);
+  assert.match(component, />\s*SESSION NOT APPROVED\s*</);
   assert.match(component, /https:\/\/qr\.arcades\.click/);
   for (const route of ['challenge', 'verify', 'status']) {
     assert.match(stack, new RegExp(`/api/captcha/${route}`));
