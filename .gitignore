@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.shots/
 cdk.out/
 *.tsbuildinfo
 vite.config.js
