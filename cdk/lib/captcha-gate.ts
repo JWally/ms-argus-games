@@ -6,6 +6,8 @@ const CHALLENGE_COOKIE = 'argus_arcade_challenge';
 const GRANT_COOKIE = 'argus_arcade_grant';
 const CHALLENGE_TTL_SECONDS = 300;
 const GRANT_TTL_SECONDS = 3600;
+const SSO_RESULT_PARAM = 'argus-check';
+const RETURN_PATH_ORIGIN = 'https://arcades.invalid';
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -96,8 +98,8 @@ function safeReturnPath(value: unknown): string {
   if (typeof value !== 'string' || value.length > 1024 || !value.startsWith('/')) return '/';
   if (value.startsWith('//') || value.includes('\\')) return '/';
   try {
-    const parsed = new URL(value, 'https://arcades.invalid');
-    return parsed.origin === 'https://arcades.invalid' ? `${parsed.pathname}${parsed.search}` : '/';
+    const parsed = new URL(value, RETURN_PATH_ORIGIN);
+    return parsed.origin === RETURN_PATH_ORIGIN ? `${parsed.pathname}${parsed.search}` : '/';
   } catch {
     return '/';
   }
@@ -110,6 +112,24 @@ const redirect = (location: string, cookies: string[]): APIGatewayProxyResultV2 
   body: '',
 });
 
+function ssoResultPath(
+  returnPath: string | undefined,
+  result: 'not-approved' | 'unavailable'
+): string {
+  const target = new URL(safeReturnPath(returnPath), RETURN_PATH_ORIGIN);
+  target.searchParams.set(SSO_RESULT_PARAM, result);
+  return `${target.pathname}${target.search}`;
+}
+
+function failedSsoRedirect(
+  challenge: GateClaims,
+  result: 'not-approved' | 'unavailable'
+): APIGatewayProxyResultV2 {
+  return redirect(ssoResultPath(challenge.returnPath, result), [
+    secureCookie(CHALLENGE_COOKIE, '', 0),
+  ]);
+}
+
 async function handleSsoReturn(
   event: APIGatewayProxyEventV2,
   deps: GateDependencies,
@@ -117,8 +137,8 @@ async function handleSsoReturn(
   nowSeconds: number
 ): Promise<APIGatewayProxyResultV2> {
   const query = event.queryStringParameters ?? {};
-  const { session: sessionId, code, cpi, challengeId } = query;
-  if (!sessionId || !code || !cpi || !challengeId) {
+  const { session: sessionId, code, cpi, challengeId, status } = query;
+  if (!sessionId || !cpi || !challengeId) {
     return response(400, { error: 'sso_return_binding_required' });
   }
   const challenge = verifyClaims(deps.secret, cookieValue(event, CHALLENGE_COOKIE), nowSeconds);
@@ -128,6 +148,12 @@ async function handleSsoReturn(
   if (challenge.challengeId !== challengeId || cpi !== deps.cpi) {
     return response(409, { error: 'challenge_mismatch' });
   }
+  // Failure is denial-only. It consumes the signed challenge but never enters
+  // Pair's one-time approval exchange or creates an arcade grant.
+  if (status === 'failed') return failedSsoRedirect(challenge, 'not-approved');
+  if (status !== undefined || !code) {
+    return response(400, { error: 'sso_return_binding_required' });
+  }
   let pairResponse: Response;
   try {
     pairResponse = await fetchImpl(deps.pairSsoExchangeUrl, {
@@ -136,12 +162,12 @@ async function handleSsoReturn(
       body: JSON.stringify({ sessionId, code, cpi: deps.cpi, challengeId }),
     });
   } catch {
-    return response(502, { error: 'sso_exchange_unavailable' });
+    return failedSsoRedirect(challenge, 'unavailable');
   }
   const verdict = (await pairResponse.json().catch(() => ({}))) as Record<string, unknown>;
   const exactContext = verdict.cpi === deps.cpi && verdict.challengeId === challengeId;
   if (!pairResponse.ok || verdict.valid !== true || verdict.passed !== true || !exactContext) {
-    return response(403, { error: 'sso_exchange_rejected' });
+    return failedSsoRedirect(challenge, 'not-approved');
   }
   const grant = signClaims(deps.secret, {
     kind: 'grant',
