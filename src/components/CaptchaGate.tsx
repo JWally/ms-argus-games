@@ -4,6 +4,7 @@ import { CrtOverlay } from './GameShell';
 const LOADER_URL = 'https://static-captcha-dev-jw.argus.pw/captcha.js';
 const EMBED_ORIGIN = 'https://qr.arcades.click';
 const SSO_RESULT_PARAM = 'argus-check';
+const DESKTOP_MEDIA_QUERY = '(min-width: 640px)';
 
 interface CaptchaResult {
   token: string | null;
@@ -44,6 +45,19 @@ type Phase = 'checking' | 'ready' | 'verifying' | 'denied' | 'error';
 type ReturnedSsoResult = 'not-approved' | 'unavailable' | null;
 
 let bootstrapPromise: Promise<Bootstrap> | null = null;
+let captchaPromise: Promise<CaptchaApi> | null = null;
+
+function onFirstDesktop(start: () => void): () => void {
+  const media = window.matchMedia(DESKTOP_MEDIA_QUERY);
+  const onChange = () => {
+    if (!media.matches) return;
+    media.removeEventListener('change', onChange);
+    start();
+  };
+  if (media.matches) start();
+  else media.addEventListener('change', onChange);
+  return () => media.removeEventListener('change', onChange);
+}
 
 function returnedSsoResult(): ReturnedSsoResult {
   const value = new URLSearchParams(window.location.search).get(SSO_RESULT_PARAM);
@@ -98,8 +112,7 @@ function sharedBootstrap(): Promise<Bootstrap> {
   return bootstrapPromise;
 }
 
-async function loadCaptcha(): Promise<CaptchaApi> {
-  if (window.argusCaptcha) return window.argusCaptcha;
+async function loadCaptchaScript(): Promise<CaptchaApi> {
   const existing = document.querySelector<HTMLScriptElement>('script[data-argus-loader]');
   const script = existing ?? document.createElement('script');
   if (!existing) {
@@ -111,12 +124,26 @@ async function loadCaptcha(): Promise<CaptchaApi> {
   await new Promise<void>((resolve, reject) => {
     if (window.argusCaptcha) return resolve();
     script.addEventListener('load', () => resolve(), { once: true });
-    script.addEventListener('error', () => reject(new Error('loader_unavailable')), {
-      once: true,
-    });
+    script.addEventListener(
+      'error',
+      () => {
+        script.remove();
+        reject(new Error('loader_unavailable'));
+      },
+      { once: true }
+    );
   });
   if (!window.argusCaptcha) throw new Error('loader_unavailable');
   return window.argusCaptcha;
+}
+
+function loadCaptcha(): Promise<CaptchaApi> {
+  if (window.argusCaptcha) return Promise.resolve(window.argusCaptcha);
+  captchaPromise ??= loadCaptchaScript().catch((error) => {
+    captchaPromise = null;
+    throw error;
+  });
+  return captchaPromise;
 }
 
 export function CaptchaGate({ children }: { children: ReactNode }) {
@@ -124,10 +151,18 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
   const [granted, setGranted] = useState(false);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [phase, setPhase] = useState<Phase>(() => returnedSsoPhase(ssoResult));
+  const [qrMounted, setQrMounted] = useState(false);
   const slotRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (ssoResult) clearReturnedSsoResult();
+  }, [ssoResult]);
+
+  useEffect(() => {
+    if (ssoResult) return;
+    return onFirstDesktop(() => {
+      void loadCaptcha().catch(() => null);
+    });
   }, [ssoResult]);
 
   useEffect(() => {
@@ -157,52 +192,59 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
     let active = true;
     let handle: CaptchaHandle | null = null;
 
-    void loadCaptcha()
-      .then((captcha) => {
-        if (!active) return;
-        handle = captcha.render(slot, {
-          cpi: challenge.cpi,
-          challengeId: challenge.challengeId,
-          embedOrigin: EMBED_ORIGIN,
-          onEvent: (event) => {
-            if (event.event === 'error' && active) setPhase('error');
-          },
-          onResult: (result) => {
-            if (!active || !result.token) {
-              if (active) setPhase('error');
-              return;
-            }
-            setPhase('verifying');
-            void fetch('/api/captcha/verify', {
-              method: 'POST',
-              headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({
-                token: result.token,
-                challengeId: challenge.challengeId,
-              }),
-            })
-              .then(async (response) => {
-                const body = (await response.json().catch(() => ({}))) as {
-                  passed?: boolean;
-                };
-                if (!active) return;
-                if (!response.ok || body.passed !== true) throw new Error('captcha_failed');
-                bootstrapPromise = null;
-                setGranted(true);
-              })
-              .catch(() => {
+    const stopWaitingForDesktop = onFirstDesktop(() => {
+      void loadCaptcha()
+        .then((captcha) => {
+          if (!active) return;
+          handle = captcha.render(slot, {
+            cpi: challenge.cpi,
+            challengeId: challenge.challengeId,
+            embedOrigin: EMBED_ORIGIN,
+            onEvent: (event) => {
+              if (event.event === 'error' && active) setPhase('error');
+            },
+            onResult: (result) => {
+              if (!active || !result.token) {
                 if (active) setPhase('error');
-              });
-          },
+                return;
+              }
+              setPhase('verifying');
+              void fetch('/api/captcha/verify', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                  token: result.token,
+                  challengeId: challenge.challengeId,
+                }),
+              })
+                .then(async (response) => {
+                  const body = (await response.json().catch(() => ({}))) as {
+                    passed?: boolean;
+                  };
+                  if (!active) return;
+                  if (!response.ok || body.passed !== true) throw new Error('captcha_failed');
+                  bootstrapPromise = null;
+                  setGranted(true);
+                })
+                .catch(() => {
+                  if (active) setPhase('error');
+                });
+            },
+          });
+          if (!handle) {
+            setPhase('error');
+            return;
+          }
+          setQrMounted(true);
+        })
+        .catch(() => {
+          if (active) setPhase('error');
         });
-        if (!handle) setPhase('error');
-      })
-      .catch(() => {
-        if (active) setPhase('error');
-      });
+    });
 
     return () => {
       active = false;
+      stopWaitingForDesktop();
       handle?.destroy();
       slot.replaceChildren();
     };
@@ -210,6 +252,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
 
   const retry = () => {
     setPhase('checking');
+    setQrMounted(false);
     setChallenge(null);
     bootstrapPromise = null;
     void requestChallenge()
@@ -266,9 +309,12 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
           </p>
         </div>
 
-        <div className="w-full p-5" style={{ border: '1px solid #0f2a18', background: '#040e07' }}>
+        <div
+          className="relative w-full p-5 sm:min-h-[487px]"
+          style={{ border: '1px solid #0f2a18', background: '#040e07' }}
+        >
           {phase === 'checking' && (
-            <div className="flex h-80 items-center justify-center" role="status">
+            <div className="flex h-80 items-center justify-center sm:h-[445px]" role="status">
               <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#0f2a18] border-t-[#22c55e]" />
               <span className="sr-only">Loading check</span>
             </div>
@@ -279,9 +325,18 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
             className={
               phase === 'checking' || phase === 'denied' || phase === 'error'
                 ? 'hidden'
-                : 'hidden w-full justify-center sm:flex'
+                : 'hidden min-h-[445px] w-full justify-center sm:flex'
             }
           />
+          {phase === 'ready' && challenge && !qrMounted && (
+            <div
+              className="pointer-events-none absolute inset-x-5 top-5 hidden h-[445px] items-center justify-center sm:flex"
+              role="status"
+            >
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#0f2a18] border-t-[#22c55e]" />
+              <span className="sr-only">Loading check</span>
+            </div>
+          )}
           {phase === 'ready' && challenge && (
             <button
               type="button"
@@ -306,7 +361,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
             </p>
           )}
           {phase === 'denied' && (
-            <div className="flex h-80 flex-col items-center justify-center text-center">
+            <div className="flex h-80 flex-col items-center justify-center text-center sm:h-[445px]">
               <p className="font-display text-sm tracking-widest" style={{ color: '#f87171' }}>
                 SESSION NOT APPROVED
               </p>
@@ -329,7 +384,7 @@ export function CaptchaGate({ children }: { children: ReactNode }) {
             </div>
           )}
           {phase === 'error' && (
-            <div className="flex h-80 flex-col items-center justify-center text-center">
+            <div className="flex h-80 flex-col items-center justify-center text-center sm:h-[445px]">
               <p className="font-mono text-sm" style={{ color: '#86efac' }}>
                 The check didn&apos;t load.
               </p>
