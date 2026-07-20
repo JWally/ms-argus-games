@@ -4,9 +4,11 @@ import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda
 
 const CHALLENGE_COOKIE = 'argus_arcade_challenge';
 const GRANT_COOKIE = 'argus_arcade_grant';
-const CHALLENGE_TTL_SECONDS = 300;
+const CHALLENGE_TTL_SECONDS = 600;
 const GRANT_TTL_SECONDS = 3600;
 const SSO_RESULT_PARAM = 'argus-check';
+const SSO_NOT_APPROVED = 'not-approved';
+const SSO_UNAVAILABLE = 'unavailable';
 const RETURN_PATH_ORIGIN = 'https://arcades.invalid';
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
@@ -27,6 +29,7 @@ interface GateDependencies {
   fetchImpl?: FetchLike;
   now?: () => number;
   randomChallenge?: () => string;
+  log?: (message: string) => void;
 }
 
 const response = (
@@ -121,11 +124,27 @@ function ssoResultPath(
   return `${target.pathname}${target.search}`;
 }
 
+function logSsoFailure(
+  event: APIGatewayProxyEventV2,
+  deps: GateDependencies,
+  reason: string
+): void {
+  const requestId = event.requestContext.requestId;
+  const safeRequestId = /^[A-Za-z0-9._=-]{1,128}$/.test(requestId) ? requestId : '-';
+  const message = `[games] captcha_sso_return reason=${reason} request_id=${safeRequestId}`;
+  if (deps.log) deps.log(message);
+  else process.stdout.write(`${message}\n`);
+}
+
 function failedSsoRedirect(
-  challenge: GateClaims,
+  event: APIGatewayProxyEventV2,
+  deps: GateDependencies,
+  challenge: GateClaims | null,
+  reason: string,
   result: 'not-approved' | 'unavailable'
 ): APIGatewayProxyResultV2 {
-  return redirect(ssoResultPath(challenge.returnPath, result), [
+  logSsoFailure(event, deps, reason);
+  return redirect(ssoResultPath(challenge?.returnPath, result), [
     secureCookie(CHALLENGE_COOKIE, '', 0),
   ]);
 }
@@ -138,21 +157,29 @@ async function handleSsoReturn(
 ): Promise<APIGatewayProxyResultV2> {
   const query = event.queryStringParameters ?? {};
   const { session: sessionId, code, cpi, challengeId, status } = query;
-  if (!sessionId || !cpi || !challengeId) {
-    return response(400, { error: 'sso_return_binding_required' });
-  }
   const challenge = verifyClaims(deps.secret, cookieValue(event, CHALLENGE_COOKIE), nowSeconds);
+  if (!sessionId || !cpi || !challengeId) {
+    return failedSsoRedirect(event, deps, challenge, 'binding_required', SSO_NOT_APPROVED);
+  }
   if (challenge?.kind !== 'challenge' || !challenge.challengeId) {
-    return response(401, { error: 'challenge_missing_or_expired' });
+    return failedSsoRedirect(
+      event,
+      deps,
+      challenge,
+      'challenge_missing_or_expired',
+      SSO_UNAVAILABLE
+    );
   }
   if (challenge.challengeId !== challengeId || cpi !== deps.cpi) {
-    return response(409, { error: 'challenge_mismatch' });
+    return failedSsoRedirect(event, deps, challenge, 'challenge_mismatch', SSO_NOT_APPROVED);
   }
   // Failure is denial-only. It consumes the signed challenge but never enters
   // Pair's one-time approval exchange or creates an arcade grant.
-  if (status === 'failed') return failedSsoRedirect(challenge, 'not-approved');
+  if (status === 'failed') {
+    return failedSsoRedirect(event, deps, challenge, 'pair_denied', SSO_NOT_APPROVED);
+  }
   if (status !== undefined || !code) {
-    return response(400, { error: 'sso_return_binding_required' });
+    return failedSsoRedirect(event, deps, challenge, 'binding_required', SSO_NOT_APPROVED);
   }
   let pairResponse: Response;
   try {
@@ -162,12 +189,12 @@ async function handleSsoReturn(
       body: JSON.stringify({ sessionId, code, cpi: deps.cpi, challengeId }),
     });
   } catch {
-    return failedSsoRedirect(challenge, 'unavailable');
+    return failedSsoRedirect(event, deps, challenge, 'exchange_unavailable', SSO_UNAVAILABLE);
   }
   const verdict = (await pairResponse.json().catch(() => ({}))) as Record<string, unknown>;
   const exactContext = verdict.cpi === deps.cpi && verdict.challengeId === challengeId;
   if (!pairResponse.ok || verdict.valid !== true || verdict.passed !== true || !exactContext) {
-    return failedSsoRedirect(challenge, 'not-approved');
+    return failedSsoRedirect(event, deps, challenge, 'exchange_rejected', SSO_NOT_APPROVED);
   }
   const grant = signClaims(deps.secret, {
     kind: 'grant',

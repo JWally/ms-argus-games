@@ -35,6 +35,10 @@ test('the browser and CDK contracts carry the same server-bound challenge', asyn
   assert.match(stack, /\/api\/captcha\/sso-return/);
   assert.match(stack, /PAIR_SSO_EXCHANGE_URL/);
   assert.match(stack, /CAPTCHA_CPI: captchaCpi/);
+  assert.match(stack, /GamesApiAccessLogs/);
+  assert.match(stack, /accessLogSettings/);
+  assert.match(stack, /\$context\.requestId/);
+  assert.match(stack, /\$context\.integrationErrorMessage/);
 });
 
 test('the QR widget starts only after a desktop viewport and keeps a stable desktop footprint', async () => {

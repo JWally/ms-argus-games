@@ -67,7 +67,8 @@ If a push is rejected, the failing hook's output tells you what broke. **Never**
 - https://arcades.click — hub should render 20 tiles (19 games + SCAN)
 - Filter by `DIA` — SCAN tile should appear
 - https://arcades.click/bot-buster — runs the integrity diagnostic
-- All other game tiles should open immediately without any verification gate
+- A game route should show the shared Argus gate until a one-hour arcade grant is issued
+- A malformed or expired `/api/captcha/sso-return` should redirect to retry UX, never render JSON
 - https://games.wolcott.io — should 301 → https://arcades.click
 
 ## Troubleshooting
@@ -79,3 +80,11 @@ If a push is rejected, the failing hook's output tells you what broke. **Never**
 **CloudFront 403 / stale JS** — cache invalidation can take up to ~60 seconds after deploy. The deploy script invalidates via the `DeploySite` construct; verify in AWS Console → CloudFront → Invalidations.
 
 **Redirect stack unchanged** — normal. `ms-argus-games-redirect` rarely changes; only the main stack picks up new code on each deploy.
+
+**Mobile SSO returned JSON or stalled** — the signed arcade challenge lasts ten
+minutes to match the Pair approval window. Callback failures redirect to the
+signed game route (or `/` if the cookie is missing) with retry/denial UX. Search
+the captcha-gate Lambda logs for `[games] captcha_sso_return`; each record has a
+bounded reason and API request id, but never the one-time code. The Games HTTP
+API access log records route/status/integration failures without request bodies
+or credentials.
