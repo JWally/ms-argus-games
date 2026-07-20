@@ -11,7 +11,7 @@ type GateEvent = Parameters<ReturnType<typeof createCaptchaGateHandler>>[0];
 
 function event(method: string, path: string, body?: unknown, cookies?: string[]): GateEvent {
   return {
-    requestContext: { http: { method } },
+    requestContext: { http: { method }, requestId: 'request-test-123' },
     rawPath: path,
     body: body === undefined ? undefined : JSON.stringify(body),
     cookies,
@@ -28,7 +28,7 @@ function challengeCookie(response: { cookies?: string[] }): string {
   return cookie.split(';', 1)[0];
 }
 
-function setup(pairPassed = true) {
+function setup(pairPassed = true, log?: (message: string) => void) {
   const fetchImpl = async (input: string | URL | Request) =>
     new Response(
       JSON.stringify(
@@ -59,6 +59,7 @@ function setup(pairPassed = true) {
     fetchImpl,
     now: () => NOW,
     randomChallenge: () => CHALLENGE_ID,
+    log,
   });
 }
 
@@ -73,7 +74,7 @@ test('issues a server-bound challenge in an HttpOnly cookie', async () => {
     ssoReturnUrl: 'https://arcades.click/api/captcha/sso-return',
   });
   assert.match(challengeCookie(response), /^argus_arcade_challenge=/);
-  assert.match(response.cookies?.[0] ?? '', /HttpOnly; Secure; SameSite=Lax/);
+  assert.match(response.cookies?.[0] ?? '', /Max-Age=600; HttpOnly; Secure; SameSite=Lax/);
 });
 
 test('exchanges mobile SSO server-side and returns to the protected route', async () => {
@@ -212,8 +213,9 @@ test('returns an unavailable SSO exchange to retry UX instead of terminal JSON',
   assert.doesNotMatch(response.cookies?.join('\n') ?? '', /argus_arcade_grant=/);
 });
 
-test('rejects an SSO callback that does not match the signed challenge', async () => {
-  const handler = setup();
+test('redirects a mismatched SSO callback to denial UX without exposing JSON', async () => {
+  const messages: string[] = [];
+  const handler = setup(true, (message) => messages.push(message));
   const issued = await handler(event('POST', '/api/captcha/challenge', { returnPath: '/go' }));
   const callback = event('GET', '/api/captcha/sso-return', undefined, [challengeCookie(issued)]);
   callback.queryStringParameters = {
@@ -224,8 +226,44 @@ test('rejects an SSO callback that does not match the signed challenge', async (
   };
   const response = await handler(callback);
 
-  assert.equal(response.statusCode, 409);
-  assert.deepEqual(bodyOf(response), { error: 'challenge_mismatch' });
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers?.location, '/go?argus-check=not-approved');
+  assert.doesNotMatch(response.cookies?.join('\n') ?? '', /argus_arcade_grant=/);
+  assert.match(messages.join('\n'), /reason=challenge_mismatch/);
+  assert.match(messages.join('\n'), /request_id=request-test-123/);
+  assert.doesNotMatch(messages.join('\n'), /one-time-code/);
+});
+
+test('redirects an expired or missing challenge to retry UX without minting a grant', async () => {
+  const callback = event('GET', '/api/captcha/sso-return');
+  callback.queryStringParameters = {
+    session: 'sso-session',
+    code: 'one-time-code',
+    cpi: CPI,
+    challengeId: CHALLENGE_ID,
+  };
+  const response = await setup()(callback);
+
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers?.location, '/?argus-check=unavailable');
+  assert.match(response.cookies?.join('\n') ?? '', /argus_arcade_challenge=;.*Max-Age=0/);
+  assert.doesNotMatch(response.cookies?.join('\n') ?? '', /argus_arcade_grant=/);
+});
+
+test('redirects a malformed SSO return to the signed route instead of raw JSON', async () => {
+  const handler = setup();
+  const issued = await handler(event('POST', '/api/captcha/challenge', { returnPath: '/go' }));
+  const callback = event('GET', '/api/captcha/sso-return', undefined, [challengeCookie(issued)]);
+  callback.queryStringParameters = {
+    session: 'sso-session',
+    cpi: CPI,
+    challengeId: CHALLENGE_ID,
+  };
+  const response = await handler(callback);
+
+  assert.equal(response.statusCode, 302);
+  assert.equal(response.headers?.location, '/go?argus-check=not-approved');
+  assert.doesNotMatch(response.cookies?.join('\n') ?? '', /argus_arcade_grant=/);
 });
 
 test('rejects verification without the server-issued challenge cookie', async () => {

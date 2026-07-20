@@ -198,6 +198,23 @@ export class GamesStack extends cdk.Stack {
         allowHeaders: ['content-type', 'authorization'],
       },
     });
+    const apiAccessLogs = new logs.LogGroup(this, 'GamesApiAccessLogs', {
+      retention: logs.RetentionDays.ONE_WEEK,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const apiStage = api.defaultStage?.node.defaultChild as apigatewayv2.CfnStage | undefined;
+    if (!apiStage) throw new Error('Games HTTP API default stage was not created');
+    apiStage.accessLogSettings = {
+      destinationArn: apiAccessLogs.logGroupArn,
+      format: JSON.stringify({
+        requestId: '$context.requestId',
+        routeKey: '$context.routeKey',
+        status: '$context.status',
+        integrationStatus: '$context.integrationStatus',
+        integrationError: '$context.integrationErrorMessage',
+        responseLength: '$context.responseLength',
+      }),
+    };
 
     // ── Arcade captcha gate ─────────────────────────────────────────────
     // A server-issued challenge is verified against Pair, then exchanged for
