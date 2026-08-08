@@ -182,6 +182,12 @@ const IcoHanoi = () => (
     <line x1="0" y1="13" x2="16" y2="13" stroke="currentColor" strokeWidth=".9" fill="none" />
   </Ico>
 );
+const IcoProxy = () => (
+  <Ico>
+    <path d="M8 0 1.5 2.5v4.2c0 4.1 2.7 7.8 6.5 9.3 3.8-1.5 6.5-5.2 6.5-9.3V2.5zm0 1.1 5.5 2.1v3.5c0 3.5-2.2 6.7-5.5 8.2-3.3-1.5-5.5-4.7-5.5-8.2V3.2z" />
+    <path d="M4.3 7.5h7.4v1H4.3zm5.1-2.2 2.5 2.7-2.5 2.7-.7-.7 1.8-2-1.8-2z" />
+  </Ico>
+);
 
 // ── Game definitions ───────────────────────────────────────────────────
 
@@ -327,6 +333,14 @@ const games: Game[] = [
     tag: 'Puzzle',
     path: '/hanoi-hilton',
     Icon: IcoHanoi,
+  },
+  {
+    id: 'proxy-or-not',
+    name: 'Proxy or Not',
+    desc: 'Call your connection before we do',
+    tag: 'Diagnostic',
+    path: '/proxy-or-not',
+    Icon: IcoProxy,
   },
   {
     id: 'scan',

@@ -12,6 +12,14 @@ test('every game advertised by the lobby is behind the shared captcha gate', asy
   assert.match(app, /GAME_ROUTES\.has\(pathname\).*<CaptchaGate>/s);
 });
 
+test('Proxy or Not owns its lean scan and skips the full integrity collector', async () => {
+  const app = await read('src/App.tsx');
+  assert.match(app, /SELF_SCANNED_ROUTES[^;]*'\/proxy-or-not'/s);
+  assert.match(app, /path="\/proxy-or-not" element={<ProxyOrNot \/>}/);
+  const gatedRoutes = app.match(/const GAME_ROUTES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
+  assert.doesNotMatch(gatedRoutes, /'\/proxy-or-not'/);
+});
+
 test('the browser and CDK contracts carry the same server-bound challenge', async () => {
   const [component, stack] = await Promise.all([
     read('src/components/CaptchaGate.tsx'),

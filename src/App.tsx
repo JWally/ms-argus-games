@@ -6,7 +6,7 @@ import { CaptchaGate } from './components/CaptchaGate';
 
 // Routes that run their own integrity scan — the app-wide collector should
 // skip them so we don't double-POST to /v1/integrity-collect.
-const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/e2e']);
+const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/proxy-or-not', '/e2e']);
 const GAME_ROUTES = new Set([
   '/ataxx',
   '/breakout',
@@ -44,6 +44,7 @@ const Go = lazy(() => import('./pages/Go'));
 const TicTacToe = lazy(() => import('./pages/TicTacToe'));
 const HanoiHilton = lazy(() => import('./pages/HanoiHilton'));
 const Scan = lazy(() => import('./pages/Scan'));
+const ProxyOrNot = lazy(() => import('./pages/ProxyOrNot'));
 const E2e = lazy(() => import('./pages/E2e'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/tic-tac-toe" element={<TicTacToe />} />
         <Route path="/hanoi-hilton" element={<HanoiHilton />} />
         <Route path="/bot-buster" element={<Scan />} />
+        <Route path="/proxy-or-not" element={<ProxyOrNot />} />
         <Route path="/e2e" element={<E2e />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
