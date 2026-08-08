@@ -1,5 +1,11 @@
 import { GameCabinet } from '../components/GameCabinet';
-import { connectionLabel, isProxyConnection } from '../games/proxy-or-not/engine';
+import {
+  connectionLabel,
+  isProxyConnection,
+  locationLabel,
+  providerLabel,
+  signalLabels,
+} from '../games/proxy-or-not/engine';
 import { useProxyOrNot } from '../hooks/useProxyOrNot';
 
 const GREEN = '#4ade80';
@@ -11,6 +17,7 @@ export default function ProxyOrNot() {
   const { phase, result, error, test } = useProxyOrNot();
   const isScanning = phase === 'scanning';
   const proxy = result ? isProxyConnection(result) : false;
+  const observations = result ? signalLabels(result) : [];
 
   return (
     <GameCabinet title="PROXY OR NOT" tag="Diagnostic">
@@ -30,7 +37,7 @@ export default function ProxyOrNot() {
           Proxy or Not?
         </h1>
         <p className="mb-7 mt-3 max-w-sm font-mono text-xs leading-6" style={{ color: MUTED }}>
-          Test whether this connection looks like a proxy, VPN, relay, or network shield.
+          Looks for network patterns commonly associated with proxy traffic.
         </p>
 
         <button
@@ -56,16 +63,31 @@ export default function ProxyOrNot() {
                 className="font-display text-2xl tracking-[0.12em] sm:text-3xl"
                 style={{ color: proxy ? RED : GREEN }}
               >
-                {proxy ? 'Proxy' : 'Not Proxy'}
+                {proxy ? 'Proxy signals' : 'No proxy signals'}
               </div>
-              <p className="mt-3 font-mono text-xs leading-5" style={{ color: MUTED }}>
-                {connectionLabel(result)} · {result.network_tampering}% network risk
+
+              <dl
+                className="mx-auto mt-5 grid max-w-md grid-cols-2 gap-x-5 gap-y-4 border-y py-4 text-left font-mono"
+                style={{ borderColor: '#164e2d' }}
+              >
+                <Metric label="signal score" value={`${result.network_tampering}/100`} />
+                <Metric label="network" value={connectionLabel(result)} />
+                <Metric label="provider" value={providerLabel(result)} />
+                <Metric label="location" value={locationLabel(result)} />
+                <Metric label="exit ip" value={result.ip ?? 'Unavailable'} />
+                {result.ip_velocity_1h && (
+                  <Metric
+                    label="activity · 1h"
+                    value={`${result.ip_velocity_1h.hits} hits · ${result.ip_velocity_1h.distinct_devices_est} devices`}
+                  />
+                )}
+              </dl>
+
+              <p className="mt-4 font-mono text-[11px] leading-5" style={{ color: MUTED }}>
+                {observations.length > 0
+                  ? observations.join(' · ')
+                  : 'No elevated network observations'}
               </p>
-              {result.tags.length > 0 && (
-                <p className="mt-1 font-mono text-[11px] leading-5" style={{ color: MUTED }}>
-                  {result.tags.map((tag) => tag.replace(/_/g, ' ')).join(' · ')}
-                </p>
-              )}
             </div>
           )}
 
@@ -77,9 +99,22 @@ export default function ProxyOrNot() {
         </div>
 
         <p className="mt-2 font-mono text-[10px] tracking-wide" style={{ color: '#26714a' }}>
-          Network-only scan · no full device fingerprint
+          Network-only indicator · not proof of VPN use
         </p>
       </div>
     </GameCabinet>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[9px] uppercase tracking-[0.15em]" style={{ color: '#26714a' }}>
+        {label}
+      </dt>
+      <dd className="mt-1 break-words text-[11px] leading-4" style={{ color: MUTED }}>
+        {value}
+      </dd>
+    </div>
   );
 }

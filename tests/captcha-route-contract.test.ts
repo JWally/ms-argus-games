@@ -13,11 +13,14 @@ test('every game advertised by the lobby is behind the shared captcha gate', asy
 });
 
 test('Proxy or Not owns its lean scan and skips the full integrity collector', async () => {
-  const app = await read('src/App.tsx');
+  const [app, page] = await Promise.all([read('src/App.tsx'), read('src/pages/ProxyOrNot.tsx')]);
   assert.match(app, /SELF_SCANNED_ROUTES[^;]*'\/proxy-or-not'/s);
   assert.match(app, /path="\/proxy-or-not" element={<ProxyOrNot \/>}/);
   const gatedRoutes = app.match(/const GAME_ROUTES = new Set\(\[([\s\S]*?)\]\);/)?.[1] ?? '';
   assert.doesNotMatch(gatedRoutes, /'\/proxy-or-not'/);
+  assert.match(page, /commonly associated with proxy traffic/);
+  assert.match(page, /not proof of VPN use/);
+  assert.doesNotMatch(page, /looks like a proxy, VPN/);
 });
 
 test('the browser and CDK contracts carry the same server-bound challenge', async () => {

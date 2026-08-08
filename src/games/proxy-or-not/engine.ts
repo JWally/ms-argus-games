@@ -47,8 +47,12 @@ export interface ProxyProjection {
   tags: ProxyTag[];
   ip_velocity_1h: {
     hits: number;
+    blocked?: number;
     distinct_devices_est: number;
+    block_rate?: number;
     residential_proxy_suspect: boolean;
+    first_seen_ms?: number;
+    last_seen_ms?: number;
   } | null;
 }
 
@@ -72,6 +76,31 @@ export function connectionLabel(projection: ProxyProjection): string {
   if (projection.tags.includes('proxy')) return 'PROXY';
   if (projection.tags.includes('vpn')) return 'VPN';
   return 'UNCLASSIFIED NETWORK';
+}
+
+const SIGNAL_LABELS: Record<ProxyTag, string> = {
+  vpn: 'VPN-like routing',
+  proxy: 'proxy evidence',
+  hyperscaler: 'cloud-hosted ASN',
+  corporate_shield: 'managed network shield',
+  privacy_relay: 'privacy relay range',
+  cellular: 'cellular network',
+  no_webrtc: 'WebRTC unavailable',
+};
+
+export function signalLabels(projection: ProxyProjection): string[] {
+  return projection.tags.map((tag) => SIGNAL_LABELS[tag]);
+}
+
+export function providerLabel(projection: ProxyProjection): string {
+  const { number, organization } = projection.ipInfo.asn;
+  const asn = number === null ? null : `AS${number}`;
+  return [organization, asn].filter(Boolean).join(' · ') || 'Unavailable';
+}
+
+export function locationLabel(projection: ProxyProjection): string {
+  const { city, country } = projection.ipLocation;
+  return [city, country].filter(Boolean).join(', ') || 'Unavailable';
 }
 
 export function isProxyProjection(value: unknown): value is ProxyProjection {

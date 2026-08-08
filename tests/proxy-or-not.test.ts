@@ -4,6 +4,9 @@ import {
   connectionLabel,
   isProxyConnection,
   isProxyProjection,
+  locationLabel,
+  providerLabel,
+  signalLabels,
   type ProxyProjection,
 } from '../src/games/proxy-or-not/engine';
 
@@ -63,6 +66,28 @@ test('does not call datacenter or no-webrtc alone a proxy', () => {
 test('uses the projection taxonomy for the reveal label', () => {
   assert.equal(connectionLabel(projection()), 'RESIDENTIAL');
   assert.equal(connectionLabel(projection({ tags: ['proxy'] })), 'RESIDENTIAL');
+});
+
+test('turns raw tags into cautious user-facing observations', () => {
+  assert.deepEqual(signalLabels(projection({ tags: ['vpn', 'privacy_relay', 'no_webrtc'] })), [
+    'VPN-like routing',
+    'privacy relay range',
+    'WebRTC unavailable',
+  ]);
+});
+
+test('formats the merchant-safe network context', () => {
+  const value = projection({
+    ipLocation: {
+      city: 'Chicago',
+      country: 'US',
+      latitude: null,
+      longitude: null,
+      timezone: 'America/Chicago',
+    },
+  });
+  assert.equal(providerLabel(value), 'Example ISP · AS64512');
+  assert.equal(locationLabel(value), 'Chicago, US');
 });
 
 test('rejects a full or malformed merchant response', () => {
