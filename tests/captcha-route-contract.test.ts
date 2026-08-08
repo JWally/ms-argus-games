@@ -21,6 +21,8 @@ test('Proxy or Not owns its lean scan and skips the full integrity collector', a
   assert.match(page, /commonly associated with proxy traffic/);
   assert.match(page, /not proof of VPN use/);
   assert.doesNotMatch(page, /looks like a proxy, VPN/);
+  assert.match(page, /if \(hasRun\) \{\s*window\.location\.reload\(\)/s);
+  assert.match(page, /hasRun \? 'RE-TEST' : 'TEST'/);
 });
 
 test('the browser and CDK contracts carry the same server-bound challenge', async () => {

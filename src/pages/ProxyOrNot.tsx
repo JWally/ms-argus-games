@@ -16,8 +16,17 @@ const MUTED = '#3f9e68';
 export default function ProxyOrNot() {
   const { phase, result, error, test } = useProxyOrNot();
   const isScanning = phase === 'scanning';
+  const hasRun = phase === 'revealed' || phase === 'error';
   const proxy = result ? isProxyConnection(result) : false;
   const observations = result ? signalLabels(result) : [];
+
+  const handleTest = () => {
+    if (hasRun) {
+      window.location.reload();
+      return;
+    }
+    void test();
+  };
 
   return (
     <GameCabinet title="PROXY OR NOT" tag="Diagnostic">
@@ -42,12 +51,12 @@ export default function ProxyOrNot() {
 
         <button
           type="button"
-          onClick={() => void test()}
+          onClick={handleTest}
           disabled={isScanning}
           className="h-12 min-w-44 rounded-sm px-10 font-display text-sm tracking-[0.22em] transition-all hover:brightness-110 disabled:cursor-wait disabled:opacity-70"
           style={{ background: GREEN, color: '#031006', boxShadow: '0 4px 18px #22c55e22' }}
         >
-          TEST
+          {isScanning ? 'TESTING' : hasRun ? 'RE-TEST' : 'TEST'}
         </button>
 
         <div className="mt-8 min-h-24 w-full" aria-live="polite">
