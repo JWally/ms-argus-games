@@ -52,10 +52,13 @@ export function useIntegrityGuard({
     everRan.current = true;
     lastTrigger.current = trigger;
 
+    let cancelled = false;
     (async () => {
       try {
         await whenIdle();
+        if (cancelled) return;
         await loadArgusLoader();
+        if (cancelled) return;
         const argus = getArgusLoader();
         if (!argus || typeof argus.run !== 'function') return;
         const result = await argus.run({ cpi: MERCHANT_CPI, timeoutMs: RUN_TIMEOUT_MS });
@@ -74,5 +77,8 @@ export function useIntegrityGuard({
         console.warn('[integrity-guard]', err);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, trigger]);
 }
