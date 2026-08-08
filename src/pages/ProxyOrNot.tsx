@@ -1,148 +1,84 @@
 import { GameCabinet } from '../components/GameCabinet';
-import {
-  connectionLabel,
-  guessIsCorrect,
-  isProxyConnection,
-  type ProxyGuess,
-} from '../games/proxy-or-not/engine';
+import { connectionLabel, isProxyConnection } from '../games/proxy-or-not/engine';
 import { useProxyOrNot } from '../hooks/useProxyOrNot';
 
 const GREEN = '#4ade80';
 const RED = '#f87171';
+const TEXT = '#86efac';
 const MUTED = '#3f9e68';
-const BORDER = '1px solid #1a6632';
-
-function GuessButton({ guess, onChoose }: { guess: ProxyGuess; onChoose: () => void }) {
-  const label = guess === 'proxy' ? 'PROXY' : 'NOT PROXY';
-  return (
-    <button
-      type="button"
-      onClick={onChoose}
-      className="min-h-24 flex-1 font-display text-lg tracking-[0.16em] transition-all hover:[box-shadow:0_0_18px_#22c55e66] sm:text-xl"
-      style={{ color: GREEN, border: BORDER, background: '#06150a' }}
-    >
-      {label}
-    </button>
-  );
-}
 
 export default function ProxyOrNot() {
-  const { phase, result, error, choose, reset } = useProxyOrNot();
-  const actualProxy = result ? isProxyConnection(result.projection) : false;
-  const correct = result ? guessIsCorrect(result.guess, result.projection) : false;
-
-  const status = (
-    <div className="font-mono text-xs tracking-widest" style={{ color: MUTED }}>
-      {phase === 'guessing' && 'ROUND READY · MAKE YOUR CALL'}
-      {phase === 'scanning' && 'READING NETWORK PATH…'}
-      {phase === 'revealed' && (correct ? 'CORRECT CALL' : 'MISSED IT')}
-      {phase === 'error' && 'SCAN INTERRUPTED'}
-    </div>
-  );
+  const { phase, result, error, test } = useProxyOrNot();
+  const isScanning = phase === 'scanning';
+  const proxy = result ? isProxyConnection(result) : false;
 
   return (
-    <GameCabinet
-      title="PROXY OR NOT"
-      subtitle="CALL THE CONNECTION BEFORE ARGUS DOES"
-      tag="Diagnostic"
-      status={status}
-      onRestart={phase === 'revealed' || phase === 'error' ? reset : undefined}
-      rules={
-        <p className="font-mono text-xs leading-relaxed" style={{ color: MUTED }}>
-          Guess whether your current connection is passing through a proxy, VPN, privacy relay,
-          hosting proxy, or corporate shield. Argus checks the network-only product, then reveals
-          the merchant verdict.
+    <GameCabinet title="PROXY OR NOT" tag="Diagnostic">
+      <div className="flex min-h-[390px] w-full max-w-lg flex-col items-center justify-center px-4 py-8 text-center sm:px-8">
+        <div
+          className="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+          style={{ background: '#092213', border: '1px solid #1a6632', color: GREEN }}
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor">
+            <path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z" strokeWidth="1.4" />
+            <path d="M8 12h8m-3-3 3 3-3 3" strokeWidth="1.4" />
+          </svg>
+        </div>
+
+        <h1 className="font-display text-xl tracking-[0.14em] sm:text-2xl" style={{ color: TEXT }}>
+          Proxy or Not?
+        </h1>
+        <p className="mb-7 mt-3 max-w-sm font-mono text-xs leading-6" style={{ color: MUTED }}>
+          Test whether this connection looks like a proxy, VPN, relay, or network shield.
         </p>
-      }
-    >
-      <div className="flex min-h-[340px] w-full max-w-[560px] flex-col items-center justify-center py-5">
-        {phase === 'guessing' && (
-          <>
-            <div
-              className="mb-8 text-center font-display text-2xl tracking-[0.18em] sm:text-3xl"
-              style={{ color: GREEN, textShadow: '0 0 14px #22c55e66' }}
-            >
-              WHAT&apos;S YOUR CALL?
-            </div>
-            <div className="flex w-full flex-col gap-4 sm:flex-row">
-              <GuessButton guess="proxy" onChoose={() => void choose('proxy')} />
-              <GuessButton guess="not_proxy" onChoose={() => void choose('not_proxy')} />
-            </div>
-          </>
-        )}
 
-        {phase === 'scanning' && (
-          <div className="text-center">
-            <div
-              className="mb-5 animate-pulse font-display text-3xl tracking-[0.2em]"
-              style={{ color: GREEN, textShadow: '0 0 18px #22c55e88' }}
-            >
-              SCANNING
+        <button
+          type="button"
+          onClick={() => void test()}
+          disabled={isScanning}
+          className="h-12 min-w-44 rounded-sm px-10 font-display text-sm tracking-[0.22em] transition-all hover:brightness-110 disabled:cursor-wait disabled:opacity-70"
+          style={{ background: GREEN, color: '#031006', boxShadow: '0 4px 18px #22c55e22' }}
+        >
+          TEST
+        </button>
+
+        <div className="mt-8 min-h-24 w-full" aria-live="polite">
+          {isScanning && (
+            <div className="font-mono text-xs tracking-[0.18em]" style={{ color: MUTED }}>
+              <span className="animate-pulse">Checking network path…</span>
             </div>
-            <p className="font-mono text-xs tracking-widest" style={{ color: MUTED }}>
-              TLS · TCP · HTTP/2 · WEBRTC · IP/ASN
+          )}
+
+          {phase === 'revealed' && result && (
+            <div>
+              <div
+                className="font-display text-2xl tracking-[0.12em] sm:text-3xl"
+                style={{ color: proxy ? RED : GREEN }}
+              >
+                {proxy ? 'Proxy' : 'Not Proxy'}
+              </div>
+              <p className="mt-3 font-mono text-xs leading-5" style={{ color: MUTED }}>
+                {connectionLabel(result)} · {result.network_tampering}% network risk
+              </p>
+              {result.tags.length > 0 && (
+                <p className="mt-1 font-mono text-[11px] leading-5" style={{ color: MUTED }}>
+                  {result.tags.map((tag) => tag.replace(/_/g, ' ')).join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
+
+          {phase === 'error' && (
+            <p className="mx-auto max-w-sm font-mono text-xs leading-5" style={{ color: RED }}>
+              {error ?? 'The test could not be completed. Please try again.'}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
-        {phase === 'revealed' && result && (
-          <div className="w-full text-center">
-            <div
-              className="font-display text-lg tracking-[0.2em]"
-              style={{ color: correct ? GREEN : RED }}
-            >
-              {correct ? '✓ YOU CALLED IT' : '✕ ARGUS GOT YOU'}
-            </div>
-            <div
-              className="my-7 font-display text-4xl tracking-[0.16em] sm:text-5xl"
-              style={{
-                color: actualProxy ? RED : GREEN,
-                textShadow: `0 0 22px ${actualProxy ? '#ef444488' : '#22c55e88'}`,
-              }}
-            >
-              {actualProxy ? 'PROXY' : 'NOT PROXY'}
-            </div>
-            <div
-              className="mx-auto grid max-w-md grid-cols-1 gap-px text-left font-mono text-xs sm:grid-cols-2"
-              style={{ border: '1px solid #0f2a18', background: '#0f2a18' }}
-            >
-              <div className="p-3" style={{ background: '#030c06', color: MUTED }}>
-                NETWORK CLASS
-                <div className="mt-1 text-sm" style={{ color: GREEN }}>
-                  {connectionLabel(result.projection)}
-                </div>
-              </div>
-              <div className="p-3" style={{ background: '#030c06', color: MUTED }}>
-                NETWORK RISK
-                <div className="mt-1 text-sm" style={{ color: GREEN }}>
-                  {result.projection.network_tampering}% · {result.projection.verdict.toUpperCase()}
-                </div>
-              </div>
-              <div className="p-3 sm:col-span-2" style={{ background: '#030c06', color: MUTED }}>
-                MERCHANT SIGNALS
-                <div className="mt-1 text-sm" style={{ color: GREEN }}>
-                  {result.projection.tags.length > 0
-                    ? result.projection.tags
-                        .map((tag) => tag.replace(/_/g, ' '))
-                        .join(' · ')
-                        .toUpperCase()
-                    : 'NONE'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {phase === 'error' && (
-          <div className="max-w-md text-center">
-            <div className="mb-4 font-display text-2xl tracking-[0.16em]" style={{ color: RED }}>
-              NO SIGNAL
-            </div>
-            <p className="font-mono text-xs leading-relaxed" style={{ color: MUTED }}>
-              {error ?? 'The proxy scan could not be completed.'}
-            </p>
-          </div>
-        )}
+        <p className="mt-2 font-mono text-[10px] tracking-wide" style={{ color: '#26714a' }}>
+          Network-only scan · no full device fingerprint
+        </p>
       </div>
     </GameCabinet>
   );

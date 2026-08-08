@@ -1,9 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  type ProxyGuess,
-  type ProxyProjection,
-  isProxyProjection,
-} from '../games/proxy-or-not/engine';
+import { type ProxyProjection, isProxyProjection } from '../games/proxy-or-not/engine';
 import {
   MERCHANT_CPI,
   PROXY_LOADER_SCRIPT_URL,
@@ -14,12 +10,7 @@ import {
 
 const RESULT_URL = '/api/integrity/check';
 
-export type ProxyGamePhase = 'guessing' | 'scanning' | 'revealed' | 'error';
-
-interface ProxyGameResult {
-  guess: ProxyGuess;
-  projection: ProxyProjection;
-}
+export type ProxyGamePhase = 'ready' | 'scanning' | 'revealed' | 'error';
 
 async function fetchProjection(sessionId: string): Promise<ProxyProjection> {
   const response = await fetch(RESULT_URL, {
@@ -35,12 +26,13 @@ async function fetchProjection(sessionId: string): Promise<ProxyProjection> {
 }
 
 export function useProxyOrNot() {
-  const [phase, setPhase] = useState<ProxyGamePhase>('guessing');
-  const [result, setResult] = useState<ProxyGameResult | null>(null);
+  const [phase, setPhase] = useState<ProxyGamePhase>('ready');
+  const [result, setResult] = useState<ProxyProjection | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const choose = useCallback(async (guess: ProxyGuess) => {
+  const test = useCallback(async () => {
     setPhase('scanning');
+    setResult(null);
     setError(null);
     try {
       if (!MERCHANT_CPI) throw new Error('Arcade merchant CPI is not configured');
@@ -50,7 +42,7 @@ export function useProxyOrNot() {
       const scan = await argus.run({ cpi: MERCHANT_CPI, timeoutMs: RUN_TIMEOUT_MS });
       if (!scan.argusSessionId) throw new Error('Proxy detector returned no session');
       const projection = await fetchProjection(scan.argusSessionId);
-      setResult({ guess, projection });
+      setResult(projection);
       setPhase('revealed');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
@@ -58,11 +50,5 @@ export function useProxyOrNot() {
     }
   }, []);
 
-  const reset = useCallback(() => {
-    setResult(null);
-    setError(null);
-    setPhase('guessing');
-  }, []);
-
-  return { phase, result, error, choose, reset };
+  return { phase, result, error, test };
 }

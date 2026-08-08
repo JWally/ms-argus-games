@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   connectionLabel,
-  guessIsCorrect,
   isProxyConnection,
   isProxyProjection,
   type ProxyProjection,
@@ -59,7 +58,6 @@ test('does not call datacenter or no-webrtc alone a proxy', () => {
     ipInfo: { ...projection().ipInfo, datacenter: { result: true } },
   });
   assert.equal(isProxyConnection(value), false);
-  assert.equal(guessIsCorrect('not_proxy', value), true);
 });
 
 test('uses the projection taxonomy for the reveal label', () => {

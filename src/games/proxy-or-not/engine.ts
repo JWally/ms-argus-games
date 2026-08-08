@@ -1,5 +1,3 @@
-export type ProxyGuess = 'proxy' | 'not_proxy';
-
 export type ProxyTag =
   | 'vpn'
   | 'proxy'
@@ -66,10 +64,6 @@ export function isProxyConnection(projection: ProxyProjection): boolean {
     projection.ipInfo.corporate_shield.result ||
     projection.ip_velocity_1h?.residential_proxy_suspect === true
   );
-}
-
-export function guessIsCorrect(guess: ProxyGuess, projection: ProxyProjection): boolean {
-  return (guess === 'proxy') === isProxyConnection(projection);
 }
 
 export function connectionLabel(projection: ProxyProjection): string {
