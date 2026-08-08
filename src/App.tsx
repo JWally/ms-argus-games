@@ -2,31 +2,10 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Hub from './pages/Hub';
 import { useIntegrityGuard } from './hooks/useIntegrityGuard';
-import { CaptchaGate } from './components/CaptchaGate';
 
 // Routes that run their own integrity scan — the app-wide collector should
 // skip them so we don't double-POST to /v1/integrity-collect.
 const SELF_SCANNED_ROUTES = new Set(['/bot-buster', '/proxy-or-not', '/e2e']);
-const GAME_ROUTES = new Set([
-  '/ataxx',
-  '/breakout',
-  '/flappy',
-  '/multiply',
-  '/checkers',
-  '/peg-solitaire',
-  '/connect-4',
-  '/color-flood',
-  '/spelling-bee',
-  '/card-counter',
-  '/rps',
-  '/battleship',
-  '/ball-sort',
-  '/go',
-  '/tic-tac-toe',
-  '/hanoi-hilton',
-  '/bot-buster',
-]);
-
 const Ataxx = lazy(() => import('./pages/Ataxx'));
 const Breakout = lazy(() => import('./pages/Breakout'));
 const Checkers = lazy(() => import('./pages/Checkers'));
@@ -83,5 +62,5 @@ export default function App() {
     </Suspense>
   );
 
-  return GAME_ROUTES.has(pathname) ? <CaptchaGate>{routes}</CaptchaGate> : routes;
+  return routes;
 }
