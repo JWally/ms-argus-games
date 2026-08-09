@@ -90,6 +90,23 @@ export default function ProxyOrNot() {
                     value={`${result.ip_velocity_1h.hits} hits · ${result.ip_velocity_1h.distinct_devices_est} devices`}
                   />
                 )}
+                <div
+                  className="col-span-2 min-w-0 border-t pt-3"
+                  style={{ borderColor: '#164e2d' }}
+                >
+                  <dt
+                    className="text-[9px] uppercase tracking-[0.15em]"
+                    style={{ color: '#26714a' }}
+                  >
+                    session id
+                  </dt>
+                  <dd
+                    className="mt-1 select-all break-all text-[11px] leading-4"
+                    style={{ color: MUTED }}
+                  >
+                    {result.session_id}
+                  </dd>
+                </div>
               </dl>
 
               <p className="mt-4 font-mono text-[11px] leading-5" style={{ color: MUTED }}>
