@@ -37,6 +37,5 @@ export const GAME_LINKS: GameLink[] = [
   { id: 'go', name: 'Go', path: '/go', tag: 'Strategy' },
   { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', path: '/tic-tac-toe', tag: 'Strategy' },
   { id: 'hanoi', name: 'Tower of Hanoi', path: '/hanoi-hilton', tag: 'Puzzle' },
-  { id: 'scan', name: 'BOT-BUSTER', path: '/bot-buster', tag: 'Diagnostic' },
   { id: 'proxy-or-not', name: 'Proxy or Not', path: '/proxy-or-not', tag: 'Diagnostic' },
 ];

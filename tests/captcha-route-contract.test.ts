@@ -26,6 +26,19 @@ test('Proxy or Not owns its lean scan and skips the full integrity collector', a
   assert.match(page, /hasRun \? 'RE-TEST' : 'TEST'/);
 });
 
+test('Bot Buster stays directly routable but is hidden from public game discovery', async () => {
+  const [app, hub, catalog, notFound] = await Promise.all([
+    read('src/App.tsx'),
+    read('src/pages/Hub.tsx'),
+    read('src/games/catalog.ts'),
+    read('src/pages/NotFound.tsx'),
+  ]);
+  assert.match(app, /path="\/bot-buster" element={<Scan \/>}/);
+  assert.doesNotMatch(hub, /bot-buster|BOT-BUSTER/);
+  assert.doesNotMatch(catalog, /bot-buster|BOT-BUSTER/);
+  assert.doesNotMatch(notFound, /bot-buster|RUN DIAGNOSTIC/);
+});
+
 test('the dormant captcha API retains its server-bound challenge contract', async () => {
   const stack = await read('cdk/lib/games-stack.ts');
   for (const route of ['challenge', 'verify', 'status']) {
