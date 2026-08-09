@@ -13,18 +13,12 @@ export default function NotFound() {
           <br />
           Possible scrambled coordinates. Recommend retrace to base.
         </p>
-        <div className="flex justify-center gap-3 pt-4">
+        <div className="flex justify-center pt-4">
           <Link
             to="/"
             className="border border-emerald-500 text-emerald-300 px-4 py-2 text-xs hover:bg-emerald-900/40 transition-colors"
           >
             [ RETURN TO HUB ]
-          </Link>
-          <Link
-            to="/bot-buster"
-            className="border border-emerald-700 text-emerald-400 px-4 py-2 text-xs hover:bg-emerald-900/40 transition-colors"
-          >
-            [ RUN DIAGNOSTIC ]
           </Link>
         </div>
       </div>

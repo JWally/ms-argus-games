@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from 'react';
 import { SiteShell } from '../components/SiteShell';
-import { ScanIcon } from './scan/icons/ScanIcon';
 
 // ── Bootstrap Icons (MIT) ──────────────────────────────────────────────
 // https://icons.getbootstrap.com
@@ -341,14 +340,6 @@ const games: Game[] = [
     tag: 'Diagnostic',
     path: '/proxy-or-not',
     Icon: IcoProxy,
-  },
-  {
-    id: 'scan',
-    name: 'BOT-BUSTER',
-    desc: 'Run diagnostic. See what we see.',
-    tag: 'Diagnostic',
-    path: '/bot-buster',
-    Icon: ScanIcon,
   },
 ];
 
